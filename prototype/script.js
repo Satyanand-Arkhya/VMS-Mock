@@ -311,6 +311,25 @@ const ACCOUNT_MANAGERS = [
 let selectedAm = 0;
 let flashMessage = null; // one-time success banner shown on the next screen
 
+// Each client has exactly one account manager (PRD CL-8). null = not assigned yet.
+const CLIENT_AM = {
+  'Northwind Labs': 'Alicia Ross',
+  'Blue Harbor Health': 'Alicia Ross',
+  'Meridian Retail Group': 'Alicia Ross',
+  'Lumen Logistics': 'Alicia Ross',
+  'Apex Systems': 'Benjamin Cole',
+  'Helix Biotech': 'Benjamin Cole',
+  'GlobalCare Insurance': 'Priya Natarajan',
+  'Lakeshore Financial': null
+};
+
+function clientOptions(forAm) {
+  return Object.entries(CLIENT_AM).map(([client, am]) => ({
+    value: client,
+    hint: !am ? 'Unassigned' : am === forAm ? 'Assigned' : `Currently ${am}`
+  }));
+}
+
 function adminUsersScreen(screen) {
   return {
     ...screen,
@@ -344,6 +363,13 @@ function adminUserAddScreen(screen) {
             { label: 'Phone', placeholder: '(555) 555-0100' },
             { label: 'Role', value: 'Account Manager', readonly: true, lock: 'Fixed' }
           ]
+        },
+        {
+          title: 'Clients',
+          hint: 'Select one or more clients. A client has one account manager, so picking an assigned client moves it to this account manager.',
+          fields: [
+            { label: 'Clients', type: 'multiselect', full: true, required: true, placeholder: 'Select clients…', options: clientOptions(null), selected: [] }
+          ]
         }
       ],
       submit: { label: 'Save and Send Invite', target: 'adminUsers', action: 'am-invite' },
@@ -369,6 +395,17 @@ function adminUserEditScreen(screen) {
             { label: 'Phone', value: am.phone },
             { label: 'Role', value: 'Account Manager', readonly: true, lock: 'Fixed' },
             { label: 'Status', type: 'select', options: statuses }
+          ]
+        },
+        {
+          title: 'Clients',
+          hint: 'Add clients here. To take a client away, assign it to another account manager instead, so it is never left without one.',
+          fields: [
+            {
+              label: 'Clients', type: 'multiselect', full: true, required: true, placeholder: 'Select clients…',
+              options: clientOptions(am.name),
+              selected: Object.keys(CLIENT_AM).filter((c) => CLIENT_AM[c] === am.name)
+            }
           ]
         }
       ],
@@ -2219,7 +2256,7 @@ const personaConfig = {
       id: 'adminUserAdd',
       parent: 'adminUsers',
       title: 'Add Account Manager',
-      description: 'Enter the account manager’s details. Clients and vendors can be assigned to them afterwards from Clients and Vendors.'
+      description: 'Enter the account manager’s details and choose the clients they manage. Vendors can be assigned to them afterwards from Vendors.'
     },
     { id: 'adminUserEdit', parent: 'adminUsers', title: 'Edit Account Manager' }
   );
@@ -2717,6 +2754,22 @@ function createField(field) {
         control += '<div class="expiry-row"><span class="expiry-label">Expiry date</span><input type="date" /></div>';
       }
       break;
+    case 'multiselect': {
+      // Dropdown with search + checkboxes; selected values show as chips in the closed control.
+      const selected = field.selected || [];
+      control = `<div class="ms" data-ms>
+          <button type="button" class="ms-toggle" aria-haspopup="listbox" aria-expanded="false">
+            <span class="ms-summary" data-placeholder="${field.placeholder || 'Select…'}"></span><span class="ms-caret" aria-hidden="true">▾</span>
+          </button>
+          <div class="ms-panel" hidden>
+            <input type="text" class="ms-search" placeholder="Search…" />
+            <div class="ms-list" role="listbox" aria-multiselectable="true">
+              ${field.options.map((o) => `<div class="ms-option" role="option"><input type="checkbox" value="${o.value}" ${selected.includes(o.value) ? 'checked data-initial' : ''} /><span class="ms-name">${o.value}</span><span class="ms-hint">${o.hint || ''}</span></div>`).join('')}
+            </div>
+          </div>
+        </div>`;
+      break;
+    }
     case 'chips':
       control = `<div class="chip-row">${field.options.map((o) => `<span class="chip">${o}<span class="chip-x">×</span></span>`).join('')}<button class="chip chip-add">+ Add holiday</button></div>`;
       break;
@@ -2906,6 +2959,41 @@ function wireFormControls(root) {
     });
   });
 
+  // Multi-select dropdowns (e.g. Clients on Add / Edit Account Manager).
+  root.querySelectorAll('.ms').forEach((ms) => {
+    const toggle = ms.querySelector('.ms-toggle');
+    const panel = ms.querySelector('.ms-panel');
+    const summary = ms.querySelector('.ms-summary');
+    const search = ms.querySelector('.ms-search');
+    const boxes = [...ms.querySelectorAll('input[type=checkbox]')];
+    const paint = () => {
+      const picked = boxes.filter((b) => b.checked).map((b) => b.value);
+      summary.innerHTML = picked.length
+        ? picked.map((v) => `<span class="chip ms-chip">${v}<span class="chip-x" data-remove="${v}" title="Remove">×</span></span>`).join('')
+        : `<span class="ms-placeholder">${summary.dataset.placeholder}</span>`;
+      summary.querySelectorAll('[data-remove]').forEach((x) => x.addEventListener('click', (e) => {
+        e.stopPropagation();
+        boxes.find((b) => b.value === x.dataset.remove).checked = false;
+        paint();
+      }));
+    };
+    const open = (yes) => { panel.hidden = !yes; toggle.setAttribute('aria-expanded', String(yes)); if (yes) search.focus(); };
+    toggle.addEventListener('click', (e) => { e.stopPropagation(); open(panel.hidden); });
+    ms.querySelectorAll('.ms-option').forEach((opt) => opt.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const box = opt.querySelector('input');
+      if (e.target !== box) box.checked = !box.checked;
+      paint();
+    }));
+    search.addEventListener('click', (e) => e.stopPropagation());
+    search.addEventListener('input', () => {
+      const q = search.value.trim().toLowerCase();
+      ms.querySelectorAll('.ms-option').forEach((opt) => { opt.hidden = !opt.textContent.toLowerCase().includes(q); });
+    });
+    document.addEventListener('click', (e) => { if (!ms.contains(e.target)) open(false); });
+    paint();
+  });
+
   // Admin User Management: Save and Send Invite / Save Changes validate, update the list and show a banner.
   root.querySelectorAll('[data-action="am-invite"], [data-action="am-save"]').forEach((btn) => {
     btn.addEventListener('click', (event) => {
@@ -2921,14 +3009,44 @@ function wireFormControls(root) {
       else if (ACCOUNT_MANAGERS.some((am, i) => am.email.toLowerCase() === email.toLowerCase() && !(editing && i === selectedAm))) {
         showFieldError(form, 'Work email', 'An account manager with this email already exists.'); ok = false;
       }
+      const boxes = [...form.querySelectorAll('.ms input[type=checkbox]')];
+      const picked = boxes.filter((b) => b.checked).map((b) => b.value);
+      const removed = boxes.filter((b) => b.hasAttribute('data-initial') && !b.checked).map((b) => b.value);
+      if (!picked.length) { showFieldError(form, 'Clients', 'Select at least one client for this account manager.'); ok = false; }
+      if (removed.length) {
+        showFieldError(form, 'Clients', `${removed.join(', ')} would be left without an account manager. Assign ${removed.length > 1 ? 'them' : 'it'} to another account manager instead.`);
+        ok = false;
+      }
       if (!ok) { event.stopPropagation(); return; } // stay on the form
+
+      const oldName = editing ? ACCOUNT_MANAGERS[selectedAm].name : null;
+      if (editing && oldName !== name) {
+        Object.keys(CLIENT_AM).forEach((c) => { if (CLIENT_AM[c] === oldName) CLIENT_AM[c] = name; });
+      }
+      // Assign the picked clients; any that belonged to someone else move to this account manager.
+      const moved = [];
+      picked.forEach((c) => {
+        const prev = CLIENT_AM[c];
+        if (prev && prev !== name) {
+          moved.push(`${c} (from ${prev})`);
+          const prevAm = ACCOUNT_MANAGERS.find((a) => a.name === prev);
+          if (prevAm) prevAm.clients = Math.max(0, prevAm.clients - 1);
+        }
+        CLIENT_AM[c] = name;
+      });
+      const added = picked.filter((c) => !boxes.find((b) => b.value === c).hasAttribute('data-initial')).length;
+      const movedText = moved.length ? ` Moved: ${moved.join(', ')}.` : '';
+
       if (editing) {
         const am = ACCOUNT_MANAGERS[selectedAm];
-        Object.assign(am, { name, email, phone, status: formValue(form, 'Status') || am.status });
-        flashMessage = { title: 'Changes saved', text: `${name}’s details were updated.` };
+        Object.assign(am, { name, email, phone, status: formValue(form, 'Status') || am.status, clients: am.clients + added });
+        flashMessage = { title: 'Changes saved', text: `${name}’s details were updated.${added ? ` ${added} client${added > 1 ? 's' : ''} added.` : ''}${movedText}` };
       } else {
-        ACCOUNT_MANAGERS.push({ name, email, phone: phone || '—', clients: 0, vendors: 0, status: 'Invited', lastLogin: '—' });
-        flashMessage = { title: 'Invite sent', text: `${name} was added as an account manager. An invite to set their password was emailed to ${email} (link valid 72 hours).` };
+        ACCOUNT_MANAGERS.push({ name, email, phone: phone || '—', clients: picked.length, vendors: 0, status: 'Invited', lastLogin: '—' });
+        flashMessage = {
+          title: 'Invite sent',
+          text: `${name} was added as an account manager for ${picked.join(', ')}. An invite to set their password was emailed to ${email} (link valid 72 hours).${movedText}`
+        };
       }
     });
   });
