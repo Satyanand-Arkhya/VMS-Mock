@@ -311,23 +311,65 @@ const ACCOUNT_MANAGERS = [
 let selectedAm = 0;
 let flashMessage = null; // one-time success banner shown on the next screen
 
-// Each client has exactly one account manager (PRD CL-8). null = not assigned yet.
+// A client has one or more account managers (PRD CL-8). [] = none yet.
 const CLIENT_AM = {
-  'Northwind Labs': 'Alicia Ross',
-  'Blue Harbor Health': 'Alicia Ross',
-  'Meridian Retail Group': 'Alicia Ross',
-  'Lumen Logistics': 'Alicia Ross',
-  'Apex Systems': 'Benjamin Cole',
-  'Helix Biotech': 'Benjamin Cole',
-  'GlobalCare Insurance': 'Priya Natarajan',
-  'Lakeshore Financial': null
+  'Northwind Labs': ['Alicia Ross'],
+  'Blue Harbor Health': ['Alicia Ross', 'Priya Natarajan'],
+  'Meridian Retail Group': ['Alicia Ross'],
+  'Lumen Logistics': ['Alicia Ross'],
+  'Apex Systems': ['Benjamin Cole'],
+  'Helix Biotech': ['Benjamin Cole'],
+  'GlobalCare Insurance': ['Priya Natarajan'],
+  'Lakeshore Financial': []
 };
 
+// Client options for the Account Manager forms: hint shows who else manages each client.
 function clientOptions(forAm) {
-  return Object.entries(CLIENT_AM).map(([client, am]) => ({
-    value: client,
-    hint: !am ? 'Unassigned' : am === forAm ? 'Assigned' : `Currently ${am}`
-  }));
+  return Object.entries(CLIENT_AM).map(([client, ams]) => {
+    const others = ams.filter((n) => n !== forAm);
+    return { value: client, hint: others.length ? `${forAm && ams.includes(forAm) ? 'Also' : 'Managed by'} ${others.join(', ')}` : ams.length ? 'Only you' : 'No account manager yet' };
+  });
+}
+
+// Account manager options for the client forms (Inactive ones are not offered).
+function accountManagerOptions() {
+  return ACCOUNT_MANAGERS.filter((a) => a.status !== 'Inactive').map((a) => ({ value: a.name, hint: a.status === 'Invited' ? 'Invited' : `${a.clients} clients` }));
+}
+
+const clientNameOf = (form) => formValue(form, 'Client name');
+
+// Client forms: "Account managers" is a multi-select for Super Admin; read-only for an Account Manager.
+function clientFormScreen(screen) {
+  if (!screen.form) return screen;
+  const nameField = screen.form.sections.flatMap((s) => s.fields).find((f) => f.label === 'Client name');
+  const client = nameField ? nameField.value : '';
+  const current = screen.id === 'clientEdit' ? (CLIENT_AM[client] || []) : [];
+  const amField = activePersona === 'superadmin'
+    ? { label: 'Account managers', type: 'multiselect', full: true, required: true, placeholder: 'Select account managers…', options: accountManagerOptions(), selected: current }
+    : { label: 'Account managers', value: current.length ? current.map((n) => (n === currentPersona().user.name ? `${n} (you)` : n)).join(', ') : `${currentPersona().user.name} (you)`, readonly: true, lock: 'Assigned by Super Admin', full: true };
+  return {
+    ...screen,
+    form: {
+      ...screen.form,
+      sections: screen.form.sections.map((s) => ({ ...s, fields: s.fields.map((f) => (/^Account manager/.test(f.label || '') ? amField : f)) })),
+      submit: activePersona === 'superadmin' ? { ...screen.form.submit, action: 'client-save' } : screen.form.submit
+    }
+  };
+}
+
+// Clients list: Account Managers column comes from CLIENT_AM so it reflects every change.
+function clientsTable(table) {
+  const col = table.headers.indexOf('Account Manager');
+  if (col < 0) return table;
+  return {
+    ...table,
+    headers: table.headers.map((h, i) => (i === col ? 'Account Managers' : h)),
+    rows: table.rows.map((row) => {
+      const name = (row[0].match(/person-name">([^<]+)/) || [])[1];
+      const ams = CLIENT_AM[name];
+      return ams ? row.map((cell, i) => (i === col ? (ams.length ? ams.join('<br>') : '<span class="person-sub inline">None</span>') : cell)) : row;
+    })
+  };
 }
 
 function adminUsersScreen(screen) {
@@ -366,7 +408,7 @@ function adminUserAddScreen(screen) {
         },
         {
           title: 'Clients',
-          hint: 'Select one or more clients. A client has one account manager, so picking an assigned client moves it to this account manager.',
+          hint: 'Select one or more clients. A client can have several account managers; picking one that is already managed adds this account manager alongside.',
           fields: [
             { label: 'Clients', type: 'multiselect', full: true, required: true, placeholder: 'Select clients…', options: clientOptions(null), selected: [] }
           ]
@@ -399,12 +441,12 @@ function adminUserEditScreen(screen) {
         },
         {
           title: 'Clients',
-          hint: 'Add clients here. To take a client away, assign it to another account manager instead, so it is never left without one.',
+          hint: 'Add or remove clients. A client can be removed only if another account manager still manages it.',
           fields: [
             {
               label: 'Clients', type: 'multiselect', full: true, required: true, placeholder: 'Select clients…',
               options: clientOptions(am.name),
-              selected: Object.keys(CLIENT_AM).filter((c) => CLIENT_AM[c] === am.name)
+              selected: Object.keys(CLIENT_AM).filter((c) => CLIENT_AM[c].includes(am.name))
             }
           ]
         }
@@ -979,7 +1021,7 @@ const personaConfig = {
         id: 'clientAdd',
         parent: 'clients',
         title: 'Add Client',
-        description: 'Create a client, assign its account manager and upload the MSA.',
+        description: 'Create a client, assign one or more account managers and upload the MSA.',
         form: {
           sections: [
             {
@@ -2858,6 +2900,8 @@ function resolveScreenState(screen) {
   if (screen.id === 'memberSubmissions') return memberSubmissionsScreen(screen, selectedMember);
   if (screen.id === 'submitOnBehalf') return submitOnBehalfScreen(screen, selectedMember);
   if (screen.id === 'invoiceView') return invoiceViewScreen(screen, selectedInvoice);
+  if (screen.id === 'clientAdd' || screen.id === 'clientEdit') return clientFormScreen(screen);
+  if (screen.id === 'clients' && activePersona === 'superadmin') return { ...screen, table: clientsTable(screen.table) };
   if (screen.id === 'documentTracker' || (screen.id === 'docs' && activePersona === 'accountmanager')) return { ...screen, table: trackerTable(screen.table) };
   if (screen.id === 'docDetail') return docDetailScreen(screen, selectedDoc);
   if (screen.id === 'invoiceAudit') return { ...screen, table: auditInvoicesTable(screen.table) };
@@ -3012,40 +3056,42 @@ function wireFormControls(root) {
       const boxes = [...form.querySelectorAll('.ms input[type=checkbox]')];
       const picked = boxes.filter((b) => b.checked).map((b) => b.value);
       const removed = boxes.filter((b) => b.hasAttribute('data-initial') && !b.checked).map((b) => b.value);
+      const oldName = editing ? ACCOUNT_MANAGERS[selectedAm].name : null;
+      // A client may be removed only if another account manager still manages it.
+      const orphaned = removed.filter((c) => CLIENT_AM[c].filter((n) => n !== oldName).length === 0);
       if (!picked.length) { showFieldError(form, 'Clients', 'Select at least one client for this account manager.'); ok = false; }
-      if (removed.length) {
-        showFieldError(form, 'Clients', `${removed.join(', ')} would be left without an account manager. Assign ${removed.length > 1 ? 'them' : 'it'} to another account manager instead.`);
+      if (orphaned.length) {
+        showFieldError(form, 'Clients', `${orphaned.join(', ')} would be left without an account manager. Add another account manager to ${orphaned.length > 1 ? 'them' : 'it'} first.`);
         ok = false;
       }
       if (!ok) { event.stopPropagation(); return; } // stay on the form
 
-      const oldName = editing ? ACCOUNT_MANAGERS[selectedAm].name : null;
       if (editing && oldName !== name) {
-        Object.keys(CLIENT_AM).forEach((c) => { if (CLIENT_AM[c] === oldName) CLIENT_AM[c] = name; });
+        Object.keys(CLIENT_AM).forEach((c) => { CLIENT_AM[c] = CLIENT_AM[c].map((n) => (n === oldName ? name : n)); });
       }
-      // Assign the picked clients; any that belonged to someone else move to this account manager.
-      const moved = [];
+      removed.forEach((c) => { CLIENT_AM[c] = CLIENT_AM[c].filter((n) => n !== name); });
+      // Add this account manager to each picked client, alongside any existing ones.
+      const shared = [];
       picked.forEach((c) => {
-        const prev = CLIENT_AM[c];
-        if (prev && prev !== name) {
-          moved.push(`${c} (from ${prev})`);
-          const prevAm = ACCOUNT_MANAGERS.find((a) => a.name === prev);
-          if (prevAm) prevAm.clients = Math.max(0, prevAm.clients - 1);
+        const others = CLIENT_AM[c].filter((n) => n !== name);
+        if (!CLIENT_AM[c].includes(name)) {
+          if (others.length) shared.push(`${c} (with ${others.join(', ')})`);
+          CLIENT_AM[c].push(name);
         }
-        CLIENT_AM[c] = name;
       });
       const added = picked.filter((c) => !boxes.find((b) => b.value === c).hasAttribute('data-initial')).length;
-      const movedText = moved.length ? ` Moved: ${moved.join(', ')}.` : '';
+      const sharedText = shared.length ? ` Shared clients: ${shared.join(', ')}.` : '';
 
       if (editing) {
         const am = ACCOUNT_MANAGERS[selectedAm];
-        Object.assign(am, { name, email, phone, status: formValue(form, 'Status') || am.status, clients: am.clients + added });
-        flashMessage = { title: 'Changes saved', text: `${name}’s details were updated.${added ? ` ${added} client${added > 1 ? 's' : ''} added.` : ''}${movedText}` };
+        Object.assign(am, { name, email, phone, status: formValue(form, 'Status') || am.status, clients: Math.max(0, am.clients + added - removed.length) });
+        const changes = [added ? `${added} client${added > 1 ? 's' : ''} added` : '', removed.length ? `${removed.join(', ')} removed` : ''].filter(Boolean).join('; ');
+        flashMessage = { title: 'Changes saved', text: `${name}’s details were updated.${changes ? ` ${changes}.` : ''}${sharedText}` };
       } else {
         ACCOUNT_MANAGERS.push({ name, email, phone: phone || '—', clients: picked.length, vendors: 0, status: 'Invited', lastLogin: '—' });
         flashMessage = {
           title: 'Invite sent',
-          text: `${name} was added as an account manager for ${picked.join(', ')}. An invite to set their password was emailed to ${email} (link valid 72 hours).${movedText}`
+          text: `${name} was added as an account manager for ${picked.join(', ')}. An invite to set their password was emailed to ${email} (link valid 72 hours).${sharedText}`
         };
       }
     });
@@ -3200,6 +3246,27 @@ function wireFormControls(root) {
     });
   });
 
+  // Add / Edit Client (Super Admin): at least one account manager; update CLIENT_AM and the managers' client counts.
+  root.querySelectorAll('[data-action="client-save"]').forEach((btn) => {
+    btn.addEventListener('click', (event) => {
+      const form = btn.closest('.form-card');
+      form.querySelectorAll('.field-error').forEach((n) => n.remove());
+      const client = clientNameOf(form);
+      const boxes = [...form.querySelectorAll('.ms input[type=checkbox]')];
+      const picked = boxes.filter((b) => b.checked).map((b) => b.value);
+      if (!client) { showFieldError(form, 'Client name', 'Enter the client name.'); event.stopPropagation(); return; }
+      if (!picked.length) { showFieldError(form, 'Account managers', 'Select at least one account manager for this client.'); event.stopPropagation(); return; }
+      const before = CLIENT_AM[client] || [];
+      picked.filter((n) => !before.includes(n)).forEach((n) => { const a = ACCOUNT_MANAGERS.find((x) => x.name === n); if (a) a.clients += 1; });
+      before.filter((n) => !picked.includes(n)).forEach((n) => { const a = ACCOUNT_MANAGERS.find((x) => x.name === n); if (a) a.clients = Math.max(0, a.clients - 1); });
+      CLIENT_AM[client] = picked;
+      flashMessage = {
+        title: activeScreen === 'clientEdit' ? 'Client updated' : 'Client saved',
+        text: `${client} is managed by ${picked.join(', ')}.`
+      };
+    });
+  });
+
   root.querySelectorAll('.am-resend').forEach((btn) => {
     btn.addEventListener('click', () => {
       const am = ACCOUNT_MANAGERS[Number(btn.dataset.am)];
@@ -3230,8 +3297,14 @@ function wireFormControls(root) {
       cell.querySelector('.am-cancel').addEventListener('click', () => goToScreen('adminUsers'));
       cell.querySelector('.am-confirm').addEventListener('click', () => {
         let text = `${am.name} can no longer sign in.`;
+        const takeover = needsReassign ? cell.querySelector('.am-reassign').value : null;
+        Object.keys(CLIENT_AM).forEach((c) => {
+          if (!CLIENT_AM[c].includes(am.name)) return;
+          CLIENT_AM[c] = CLIENT_AM[c].filter((n) => n !== am.name);
+          if (takeover && !CLIENT_AM[c].includes(takeover)) CLIENT_AM[c].push(takeover);
+        });
         if (needsReassign) {
-          const toName = cell.querySelector('.am-reassign').value;
+          const toName = takeover;
           const to = ACCOUNT_MANAGERS.find((x) => x.name === toName);
           to.clients += am.clients;
           to.vendors += am.vendors;
