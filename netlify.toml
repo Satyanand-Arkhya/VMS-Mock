@@ -1,0 +1,4 @@
+# Static prototype: no build step, Netlify serves the prototype folder as-is.
+[build]
+  publish = "prototype"
+  command = ""

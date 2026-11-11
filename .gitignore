@@ -1,0 +1,10 @@
+.DS_Store
+**/.DS_Store
+**/~$
+*.log
+
+# Word lock files (created while a .docx is open)
+~$*
+
+# Local Claude Code tooling (PRD sync hook, PRD backups)
+.claude/
