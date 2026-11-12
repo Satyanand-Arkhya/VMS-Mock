@@ -2595,7 +2595,8 @@ let replaceNextNav = false;
 /* Add / edit forms open as pop-ups over the screen they were opened from (modalBase). */
 const MODAL_SCREENS = new Set([
   'clientAdd', 'clientEdit', 'vendorAdd', 'vendorEdit', 'resourceAdd', 'consultantAdd', 'memberEdit',
-  'submitOnBehalf', 'invoiceUpdate', 'adminUserAdd', 'adminUserEdit', 'invoiceSubmit', 'timesheet', 'correction', 'rejectedInvoice'
+  'submitOnBehalf', 'invoiceUpdate', 'adminUserAdd', 'adminUserEdit', 'invoiceSubmit', 'timesheet', 'correction', 'rejectedInvoice',
+  'clientHolidayCalendar'
 ]);
 let modalBase = null; // { screen, tab } behind the open pop-up
 
@@ -3136,7 +3137,10 @@ function modalMarkup(screen) {
         </div>
         <div class="modal-body">
           ${createAlert(screen.alert)}
-          ${createForm(screen.form, true)}
+          ${screen.form
+            ? createForm(screen.form, true)
+            : `<div class="modal-content">${createTable(screen.table)}${createDetail(screen.detail)}</div>
+               <div class="form-footer modal-footer"><span></span><div class="form-buttons"><button type="button" class="btn btn-primary" data-modal-close>Close</button></div></div>`}
         </div>
       </div>
     </div>
