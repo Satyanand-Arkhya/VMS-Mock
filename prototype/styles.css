@@ -758,6 +758,20 @@ td > .person-name + .person-sub { margin-top: 1px; }
 .validity-cell input { min-width: 0; width: 100%; }
 .add-doc-btn { align-self: flex-start; }
 
+/* MM/DD/YYYY date field with calendar button */
+.date-field { position: relative; display: flex; min-width: 0; flex: 0 0 auto; }
+.expiry-row .date-field { flex: 1; }
+.date-field .date-text { flex: 1; min-width: 0; width: 100%; padding-right: 42px; }
+.date-field .date-pick { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border: 0; border-radius: 8px; background: transparent; color: var(--brand-700); cursor: pointer; }
+.date-field .date-pick:hover { background: var(--brand-100); }
+.date-field input.date-native { position: absolute; right: 0; bottom: 0; width: 1px; height: 1px; min-height: 0; padding: 0; border: 0; opacity: 0; pointer-events: none; }
+
+/* View / Edit icon actions */
+.link-btn.icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; padding: 0; border-radius: 8px; color: var(--brand-700); }
+.link-btn.icon-btn:hover { background: var(--brand-100); }
+.link-btn.icon-btn:focus-visible { outline: 2px solid var(--brand-500); outline-offset: 1px; }
+.row-actions:has(.icon-btn) { align-items: center; }
+
 /* Invoice Management review pop-up */
 .person-link { text-align: left; padding: 0; }
 .review-summary { display: flex; flex-wrap: wrap; gap: 12px 28px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: #fbfdff; margin-bottom: 14px; }
