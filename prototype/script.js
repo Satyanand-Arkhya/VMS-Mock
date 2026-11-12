@@ -833,7 +833,7 @@ const VENDOR_INVOICE_IDS = ['INV-2026-10-0203', 'INV-2026-10-0142', 'INV-2026-10
    review: 'Approved' | 'Rejected' | null (not reviewed yet). inv links the shared invoice record, if any. */
 const IM_PERIOD = 'October 2026';
 const IM_RECORDS = {
-  'im-kumar': { person: 'Deepa Kumar', type: 'Consultant', vendor: 'Coral Staffing LLC', client: 'Persistent', clientInvoice: 'PER-Oct26-Kumar.pdf', clientHours: 168, doc: 'CS-INV-10477.pdf', docHours: 160, review: 'Rejected', reason: 'Vendor billed 160 h; the client invoice shows 168 h. Please correct the hours and resubmit.', inv: 'INV-2026-10-0203' },
+  'im-kumar': { person: 'Deepa Kumar', type: 'Consultant', vendor: 'Coral Staffing LLC', client: 'Persistent', clientInvoice: 'PER-Oct26-Kumar.pdf', clientHours: 168, doc: 'CS-INV-10477.pdf', docHours: 160, review: 'Rejected', reason: 'Vendor billed 160 h; the client invoice shows 168 h. Please update the hours and resubmit.', inv: 'INV-2026-10-0203' },
   'im-singh': { person: 'Kevin Singh', type: 'Consultant', vendor: 'Summit IT Solutions', client: 'Persistent', clientInvoice: 'PER-Oct26-Singh.pdf', clientHours: 152, doc: 'SIT-INV-2210.pdf', docHours: 160, review: 'Rejected', reason: 'Client approved 152 h for October; vendor invoice shows 160 h.', inv: 'INV-2026-10-0187' },
   'im-silva': { person: 'Rinaldo Silva', type: 'Consultant', vendor: 'Coral Staffing LLC', client: 'Citus Tech', clientInvoice: 'CT-Oct26-Silva.pdf', clientHours: 168, doc: 'CS-INV-10482.pdf', docHours: 168, review: 'Approved', inv: 'INV-2026-10-0142' },
   'im-torres': { person: 'Ana Torres', type: 'Consultant', vendor: 'BluePeak Consulting Inc.', client: 'Persistent', clientInvoice: 'PER-Oct26-Torres.pdf', clientHours: 176, doc: 'BP-INV-5521.pdf', docHours: 176, review: 'Approved', inv: 'INV-2026-10-0211' },
@@ -2173,8 +2173,8 @@ const personaConfig = {
         description: 'INV-2026-10-0203 · Deepa Kumar · Persistent · October 2026',
         alert: {
           tone: 'danger',
-          title: 'Rejected on Nov 10, 2026 at 9:58 AM',
-          text: 'Total hours did not match the client invoice uploaded by Alicia Ross. Correct the hours and timesheet, then resubmit. Previous versions are kept in history.'
+          title: 'Rejected by Alicia Ross on Nov 10, 2026 at 9:58 AM',
+          text: 'Reason: Vendor billed 160 h; the client invoice shows 168 h. Update the hours and files below, then resubmit. Previous versions are kept in history.'
         },
         table: {
           title: 'Mismatch details',
@@ -2188,13 +2188,13 @@ const personaConfig = {
         form: {
           sections: [
             {
-              title: 'Corrected submission (v2)',
+              title: 'Resubmission (v2)',
               fields: [
                 { label: 'Total billed hours', value: '168', required: true },
                 { label: 'Invoice amount (USD)', value: '$13,440.00', readonly: true },
-                { label: 'Corrected timesheet', type: 'upload', file: 'Kumar_Oct2026_timesheet_v2.pdf', size: '102 KB' },
-                { label: 'Corrected invoice', type: 'upload', file: 'CS-INV-10477-R1.pdf', size: '214 KB' },
-                { label: 'Note to account manager', type: 'textarea', full: true, value: 'Timesheet v1 omitted Oct 29–30 (16 h). Corrected timesheet attached, approved by client manager.' }
+                { label: 'Updated timesheet', type: 'upload', file: 'Kumar_Oct2026_timesheet_v2.pdf', size: '102 KB' },
+                { label: 'Updated invoice', type: 'upload', file: 'CS-INV-10477-R1.pdf', size: '214 KB' },
+                { label: 'Note to account manager', type: 'textarea', full: true, value: 'Timesheet v1 omitted Oct 29–30 (16 h). Updated timesheet attached, approved by client manager.' }
               ]
             }
           ],
@@ -2441,8 +2441,8 @@ const personaConfig = {
         description: 'INV-2026-09-0388 · HTC · UX Consultant',
         alert: {
           tone: 'danger',
-          title: 'Rejected on Oct 9, 2026',
-          text: 'The billing period on your invoice did not match the client invoice. Correct the period and resubmit. Earlier versions are kept.'
+          title: 'Rejected by Alicia Ross on Oct 9, 2026',
+          text: 'Reason: The billing period on your invoice did not match the client invoice. Update the billing period below, then resubmit. Earlier versions are kept in history.'
         },
         table: {
           title: 'Mismatch details',
@@ -2456,11 +2456,11 @@ const personaConfig = {
         form: {
           sections: [
             {
-              title: 'Corrected submission (v2)',
+              title: 'Resubmission (v2)',
               fields: [
                 { label: 'Billing period', type: 'select', options: ['September 2026', 'August 2026'] },
                 { label: 'Total billed hours', value: '160' },
-                { label: 'Corrected invoice', type: 'upload', file: 'BlakeUX-0041-R1.pdf', size: '150 KB' },
+                { label: 'Updated invoice', type: 'upload', file: 'BlakeUX-0041-R1.pdf', size: '150 KB' },
                 { label: 'Timesheet', type: 'upload', file: 'Blake_HTC_Sep26.pdf', size: '92 KB' }
               ]
             }
