@@ -1399,11 +1399,11 @@ const personaConfig = {
         table: {
           title: 'All clients',
           total: 3,
-          headers: ['Client', 'Region', 'Account Manager', 'MSA Expiry', 'Client invoice status', 'Actions'],
+          headers: ['Client', 'Region', 'Account Manager', 'MSA Expiry', 'Client invoice status', 'Status', 'Actions'],
           rows: [
-            [sub('Persistent', 'USD · America/Chicago'), 'Central', 'Alicia Ross, Priya Natarajan', `Dec 9, 2026 ${b('Expiring Soon')}`, `${b('In Progress')} <span class="person-sub inline">2 of 5</span>`, `<div class="row-actions"><button class="link-btn" data-target="clientView">View</button><button class="link-btn" data-target="clientEdit">Edit</button>${clientInvoiceAction('Persistent')}</div>`],
-            [sub('HTC', 'USD · America/New_York'), 'US-East', 'Alicia Ross', 'Feb 12, 2027', b('Uploaded'), `<div class="row-actions"><button class="link-btn" data-target="clientView">View</button><button class="link-btn" data-target="clientEdit">Edit</button>${clientInvoiceAction('HTC')}</div>`],
-            [sub('Citus Tech', 'USD · America/Los_Angeles'), 'US-West', 'Benjamin Cole, Alicia Ross', 'Jan 30, 2028', b('Pending'), `<div class="row-actions"><button class="link-btn" data-target="clientView">View</button><button class="link-btn" data-target="clientEdit">Edit</button>${clientInvoiceAction('Citus Tech')}</div>`]
+            [sub('Persistent', 'USD · America/Chicago'), 'Central', 'Alicia Ross, Priya Natarajan', `Dec 9, 2026 ${b('Expiring Soon')}`, `${b('In Progress')} <span class="person-sub inline">2 of 5</span>`, b('Active'), `<div class="row-actions"><button class="link-btn" data-target="clientView">View</button><button class="link-btn" data-target="clientEdit">Edit</button>${clientInvoiceAction('Persistent')}</div>`],
+            [sub('HTC', 'USD · America/New_York'), 'US-East', 'Alicia Ross', 'Feb 12, 2027', b('Uploaded'), b('Active'), `<div class="row-actions"><button class="link-btn" data-target="clientView">View</button><button class="link-btn" data-target="clientEdit">Edit</button>${clientInvoiceAction('HTC')}</div>`],
+            [sub('Citus Tech', 'USD · America/Los_Angeles'), 'US-West', 'Benjamin Cole, Alicia Ross', 'Jan 30, 2028', b('Pending'), b('Active'), `<div class="row-actions"><button class="link-btn" data-target="clientView">View</button><button class="link-btn" data-target="clientEdit">Edit</button>${clientInvoiceAction('Citus Tech')}</div>`]
           ]
         }
       },
@@ -1454,7 +1454,8 @@ const personaConfig = {
                 { label: 'Address', value: '200 N LaSalle St, Suite 1400, Chicago, IL 60601', full: true },
                 { label: 'Currency', type: 'select', options: ['USD — US Dollar', 'CAD — Canadian Dollar'] },
                 { label: 'Time zone', type: 'select', options: ['America/Chicago (CST)', 'America/New_York (EST)', 'America/Los_Angeles (PST)'] },
-                { label: 'Account manager', type: 'select', options: ['Alicia Ross', 'Benjamin Cole', 'Priya Natarajan'], required: true }
+                { label: 'Account manager', type: 'select', options: ['Alicia Ross', 'Benjamin Cole', 'Priya Natarajan'], required: true },
+                { label: 'Status', type: 'select', options: ['Active', 'Inactive'], required: true, note: 'Inactive clients stay on record but get no new invoices.' }
               ]
             },
             {
@@ -1467,9 +1468,9 @@ const personaConfig = {
               ]
             }
           ],
+          // No Delete: a client is set Inactive instead (Status above), like vendors and people.
           submit: { label: 'Save Client', target: 'clients' },
-          cancel: { label: 'Cancel', target: 'clients' },
-          delete: { label: 'Delete Client', target: 'clients' }
+          cancel: { label: 'Cancel', target: 'clients' }
         }
       },
       {
@@ -1814,11 +1815,11 @@ const personaConfig = {
         table: {
           title: 'Assigned clients',
           total: 3,
-          headers: ['Client', 'Region', 'Vendors', 'People', 'MSA Expiry', 'Client invoice status', 'Actions'],
+          headers: ['Client', 'Region', 'Vendors', 'People', 'MSA Expiry', 'Client invoice status', 'Status', 'Actions'],
           rows: [
-            [sub('Persistent', 'America/Chicago'), 'Central', '2', '5', `Dec 9, 2026 ${b('Expiring Soon')}`, `${b('In Progress')} <span class="person-sub inline">2 of 5</span>`, `<div class="row-actions"><button class="link-btn" data-target="clientView">View</button><button class="link-btn" data-target="clientEdit">Edit</button>${clientInvoiceAction('Persistent')}</div>`],
-            [sub('HTC', 'America/New_York'), 'US-East', '3', '5', 'Feb 12, 2027', b('Uploaded'), `<div class="row-actions"><button class="link-btn" data-target="clientView">View</button><button class="link-btn" data-target="clientEdit">Edit</button>${clientInvoiceAction('HTC')}</div>`],
-            [sub('Citus Tech', 'America/Los_Angeles'), 'US-West', '1', '2', 'Jan 30, 2028', b('Pending'), `<div class="row-actions"><button class="link-btn" data-target="clientView">View</button><button class="link-btn" data-target="clientEdit">Edit</button>${clientInvoiceAction('Citus Tech')}</div>`]
+            [sub('Persistent', 'America/Chicago'), 'Central', '2', '5', `Dec 9, 2026 ${b('Expiring Soon')}`, `${b('In Progress')} <span class="person-sub inline">2 of 5</span>`, b('Active'), `<div class="row-actions"><button class="link-btn" data-target="clientView">View</button><button class="link-btn" data-target="clientEdit">Edit</button>${clientInvoiceAction('Persistent')}</div>`],
+            [sub('HTC', 'America/New_York'), 'US-East', '3', '5', 'Feb 12, 2027', b('Uploaded'), b('Active'), `<div class="row-actions"><button class="link-btn" data-target="clientView">View</button><button class="link-btn" data-target="clientEdit">Edit</button>${clientInvoiceAction('HTC')}</div>`],
+            [sub('Citus Tech', 'America/Los_Angeles'), 'US-West', '1', '2', 'Jan 30, 2028', b('Pending'), b('Active'), `<div class="row-actions"><button class="link-btn" data-target="clientView">View</button><button class="link-btn" data-target="clientEdit">Edit</button>${clientInvoiceAction('Citus Tech')}</div>`]
           ]
         }
       },
