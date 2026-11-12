@@ -749,6 +749,13 @@ td > .person-name + .person-sub { margin-top: 1px; }
 .field-note { font-size: 0.78rem; color: var(--danger); }
 .doc-cell { display: flex; align-items: center; gap: 10px; white-space: nowrap; }
 
+/* Back button on nested screens */
+.back-btn { margin-right: 12px; border: 1px solid var(--line); background: #fff; color: var(--brand-700); border-radius: 8px; padding: 3px 10px; font: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; vertical-align: middle; }
+.back-btn:hover { background: #f2f7fc; }
+.back-btn:focus-visible { outline: 2px solid var(--brand-500); outline-offset: 2px; }
+@media (max-width: 980px) { .back-btn { padding: 8px 14px; font-size: 0.9rem; margin-bottom: 6px; } }
+.alert-success .btn-alert { color: var(--success); }
+
 /* Multi-select dropdown (Clients on Add / Edit Account Manager) */
 .ms { position: relative; }
 .ms-toggle { width: 100%; min-height: 42px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 12px; border: 1px solid var(--line); border-radius: 10px; background: #fff; font: inherit; color: var(--text); cursor: pointer; text-align: left; }

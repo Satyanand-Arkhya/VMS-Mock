@@ -41,6 +41,52 @@ function clientInvoiceAction(clientName) {
   return `<button class="link-btn" data-target="invoiceUpload" data-client="${clientName}">Client invoice</button>`;
 }
 
+/* Client invoice upload (Invoice Management): one row per person per client for October 2026.
+   file: client invoice uploaded for that person; billable: client billable hours; status: reconciliation result. */
+const CLIENT_INVOICE_DATA = {
+  'Blue Harbor Health': [
+    { person: 'Deepa Kumar', sub: 'Coral Staffing', type: 'Consultant', submitted: 160, file: 'BH-Oct26-Kumar.pdf', size: '420 KB', billable: 168, status: 'Rejected' },
+    { person: 'Kevin Singh', sub: 'Summit IT', type: 'Consultant', submitted: 160, file: 'BH-Oct26-Singh.pdf', size: '418 KB', billable: 152, status: 'Rejected' },
+    { person: 'Lena Fischer', sub: 'Summit IT', type: 'Consultant', submitted: 168, file: null, billable: null, status: 'Awaiting Client Invoice' },
+    { person: 'Omar Haddad', sub: 'Coral Staffing', type: 'Consultant', submitted: 144, file: null, billable: null, status: 'Awaiting Client Invoice' },
+    { person: 'Grace Liu', sub: 'W-2', type: 'W-2', submitted: 168, file: null, billable: null, status: 'Awaiting Client Invoice' }
+  ],
+  'Northwind Labs': [
+    { person: 'Jordan Blake', sub: '1099', type: '1099', submitted: 152, file: null, billable: null, status: 'Awaiting Client Invoice' },
+    { person: 'Maya Reed', sub: 'W-2', type: 'W-2', submitted: 168, file: 'NL-Oct26-Maya.pdf', size: '405 KB', billable: 168, status: 'Approved' },
+    { person: 'Ava Chen', sub: '1099', type: '1099', submitted: null, file: null, billable: null, status: 'Awaiting Client Invoice' }
+  ],
+  'Meridian Retail Group': [
+    { person: 'Sofia Marin', sub: 'Coral Staffing', type: 'Consultant', submitted: 168, file: null, billable: null, status: 'Awaiting Client Invoice' },
+    { person: 'Maya Reed', sub: 'W-2', type: 'W-2', submitted: 40, file: null, billable: null, status: 'Awaiting Client Invoice' },
+    { person: 'Natalie Brooks', sub: 'Consultant', type: 'Consultant', submitted: 152, file: null, billable: null, status: 'Awaiting Client Invoice' }
+  ],
+  'Lumen Logistics': [
+    { person: 'Alex Morgan', sub: 'W-2', type: 'W-2', submitted: 160, file: 'LL-Oct26-Morgan.pdf', size: '390 KB', billable: 160, status: 'Approved' },
+    { person: 'Ravi Menon', sub: 'Cascade Data', type: 'Consultant', submitted: 144, file: 'LL-Oct26-Menon.pdf', size: '410 KB', billable: 144, status: 'Approved' }
+  ]
+};
+
+function clientInvoiceTable(table, clientName) {
+  const rows = CLIENT_INVOICE_DATA[clientName] || [];
+  const awaiting = rows.filter((r) => r.status === 'Awaiting Client Invoice').length;
+  return {
+    ...table,
+    title: `${clientName} · October 2026`,
+    chip: `${rows.length} people · ${awaiting} awaiting client invoice`,
+    rows: rows.map((r, i) => [
+      person(r.person, r.sub),
+      r.type,
+      r.submitted ?? '<span class="person-sub inline">Not submitted</span>',
+      r.file
+        ? `<div class="doc-cell">${fileChip(r.file, r.size)}</div>`
+        : `<span class="cell-upload-wrap"><button type="button" class="upload-mini ci-upload" data-row="${i}">Upload</button><input type="file" class="upload-input" accept=".pdf,.docx,.jpg,.jpeg,.png" hidden /></span>`,
+      `<input class="cell-input ci-hours" data-row="${i}" inputmode="decimal" ${r.billable != null ? `value="${r.billable}"` : 'placeholder="0"'} />`,
+      b(r.status)
+    ])
+  };
+}
+
 function getClientInvoiceRows(clientName) {
   const rowsByClient = {
     'Blue Harbor Health': [
@@ -1136,8 +1182,8 @@ const personaConfig = {
           ]
         },
         footerActions: [
-          { label: 'Save & Reconcile', target: 'reconciliation', primary: true },
-          { label: 'Save Draft', target: 'invoiceUpload' }
+          { label: 'Save & Reconcile', action: 'ci-reconcile', primary: true },
+          { label: 'Save Draft', action: 'ci-draft' }
         ]
       },
       {
@@ -1644,8 +1690,8 @@ const personaConfig = {
           ]
         },
         footerActions: [
-          { label: 'Save & Reconcile', target: 'reconciliation', primary: true },
-          { label: 'Save Draft', target: 'invoiceUpload' }
+          { label: 'Save & Reconcile', action: 'ci-reconcile', primary: true },
+          { label: 'Save Draft', action: 'ci-draft' }
         ]
       },
       {
@@ -2362,6 +2408,9 @@ function enterApp(personaKey) {
   loginScreen.classList.add('hidden');
   appShell.classList.remove('hidden');
   render();
+  // First app entry sits on top of the sign-in page, so Back from the dashboard returns to sign-in.
+  navDepth = 0;
+  history.pushState({ nav: navSnapshot(), depth: 0 }, '');
 }
 
 loginButton.addEventListener('click', () => enterApp('superadmin'));
@@ -2514,11 +2563,66 @@ resendCode.addEventListener('click', () => {
   otpInputs[0].focus();
 });
 
+/* ---------- Back navigation (Android back button / gesture, browser Back) ----------
+   Every screen change is a history entry holding what is on screen, so the system Back
+   button steps back through the app instead of leaving it. */
+let navDepth = 0;
+let restoringNav = false;
+
+function navSnapshot() {
+  return {
+    persona: activePersona, screen: activeScreen, tab: activeTab, member: selectedMember, inv: selectedInv,
+    invReturn: invoiceReturn, invoice: selectedInvoice, doc: selectedDoc, am: selectedAm, client: selectedClientInvoiceClient
+  };
+}
+
+function pushNav() {
+  if (restoringNav) return;
+  const snap = navSnapshot();
+  const prev = history.state && history.state.nav;
+  if (prev && JSON.stringify(prev) === JSON.stringify(snap)) {
+    history.replaceState({ nav: snap, depth: history.state.depth }, ''); // same screen again: no new entry
+    return;
+  }
+  navDepth += 1;
+  history.pushState({ nav: snap, depth: navDepth }, '');
+}
+
+window.addEventListener('popstate', (event) => {
+  const state = event.state;
+  if (!state || !state.nav) {
+    // Back from the first app screen returns to sign-in.
+    appShell.classList.add('hidden');
+    loginScreen.classList.remove('hidden');
+    showPane('paneStaff');
+    navDepth = 0;
+    return;
+  }
+  const s = state.nav;
+  restoringNav = true;
+  activePersona = s.persona; activeScreen = s.screen; activeTab = s.tab || 0;
+  selectedMember = s.member; selectedInv = s.inv; invoiceReturn = s.invReturn; selectedInvoice = s.invoice;
+  selectedDoc = s.doc; selectedAm = s.am; selectedClientInvoiceClient = s.client;
+  navDepth = state.depth || 0;
+  loginScreen.classList.add('hidden');
+  appShell.classList.remove('hidden');
+  render();
+  window.scrollTo({ top: 0 });
+  restoringNav = false;
+});
+
+// On-screen Back (shown on nested screens): same as the system Back when there is in-app history.
+function goBack(screen) {
+  if (navDepth > 0) history.back();
+  else if (screen.parent) goToScreen(screen.parent);
+}
+
 function setPersona(personaKey) {
   activePersona = personaKey;
   activeScreen = 'dashboard';
   activeTab = 0;
   render();
+  pushNav();
 }
 
 function goToScreen(screenId, clientName, tab = 0) {
@@ -2529,6 +2633,7 @@ function goToScreen(screenId, clientName, tab = 0) {
   activeScreen = screenId;
   render();
   window.scrollTo({ top: 0 });
+  pushNav();
 }
 
 function currentPersona() {
@@ -2586,7 +2691,8 @@ function renderUser() {
 }
 
 function renderBreadcrumb(screen) {
-  const crumbs = ['Home'];
+  const back = screen.parent ? '<button type="button" class="back-btn" aria-label="Go back">‹ Back</button>' : '';
+  const crumbs = [`${back}Home`];
   if (screen.parent) {
     const parent = findScreen(screen.parent);
     crumbs.push(`<button class="crumb-link" data-target="${parent.id}">${parent.title}</button>`);
@@ -2855,7 +2961,7 @@ function createForm(form) {
 
 function createFooterActions(actions) {
   if (!actions) return '';
-  return `<div class="form-buttons page-footer">${[...actions].reverse().map((a) => `<button class="btn ${a.primary ? 'btn-primary' : 'btn-secondary'}" data-target="${a.target}">${a.label}</button>`).join('')}</div>`;
+  return `<div class="form-buttons page-footer">${[...actions].reverse().map((a) => `<button type="button" class="btn ${a.primary ? 'btn-primary' : 'btn-secondary'}" ${a.action ? `data-action="${a.action}"` : `data-target="${a.target}"`}>${a.label}</button>`).join('')}</div>`;
 }
 
 function createDetail(detail) {
@@ -2920,11 +3026,7 @@ function resolveScreenState(screen) {
       ...filter,
       options: filter.label === 'Client' ? ['Blue Harbor Health', 'Northwind Labs', 'Meridian Retail Group', 'Lumen Logistics'] : filter.options
     })),
-    table: {
-      ...screen.table,
-      title: `${clientName} · October 2026`,
-      rows: getClientInvoiceRows(clientName)
-    }
+    table: clientInvoiceTable(screen.table, clientName)
   };
 }
 
@@ -3235,6 +3337,81 @@ function wireFormControls(root) {
     });
   });
 
+  // Invoice Management (client invoices): client picker, per-person upload, Save Draft, Save & Reconcile — all stay on this page.
+  if (activeScreen === 'invoiceUpload') {
+    const clientRows = () => CLIENT_INVOICE_DATA[selectedClientInvoiceClient] || [];
+    const clientSelect = [...root.querySelectorAll('.filter-bar .field')].find((f) => f.querySelector('label')?.textContent.trim() === 'Client')?.querySelector('select');
+    clientSelect?.addEventListener('change', () => goToScreen('invoiceUpload', clientSelect.value));
+
+    root.querySelectorAll('.ci-upload').forEach((btn) => {
+      const wrap = btn.parentElement;
+      const input = wrap.querySelector('.upload-input');
+      btn.addEventListener('click', (e) => { e.stopPropagation(); input.click(); });
+      input.addEventListener('change', () => {
+        const file = input.files[0];
+        if (!file) return;
+        const ext = file.name.split('.').pop().toLowerCase();
+        wrap.querySelector('.upload-error')?.remove();
+        if (!UPLOAD_TYPES.includes(ext) || file.size > UPLOAD_MAX_BYTES) {
+          const err = document.createElement('div');
+          err.className = 'upload-error';
+          err.textContent = !UPLOAD_TYPES.includes(ext) ? 'Only PDF, DOCX, JPG, JPEG or PNG.' : 'Max 5 MB per file.';
+          wrap.appendChild(err);
+          input.value = '';
+          return;
+        }
+        const row = clientRows()[Number(btn.dataset.row)];
+        row.file = file.name;
+        row.size = fmtSize(file.size);
+        wrap.outerHTML = `<div class="doc-cell">${fileChip(row.file, row.size)}</div>`; // keep typed hours: no re-render
+      });
+    });
+
+    const readHours = () => {
+      root.querySelectorAll('.ci-hours').forEach((input) => {
+        const v = input.value.trim();
+        clientRows()[Number(input.dataset.row)].billable = v === '' ? null : Number(v);
+      });
+    };
+
+    root.querySelector('[data-action="ci-draft"]')?.addEventListener('click', () => {
+      readHours();
+      flashMessage = { title: 'Draft saved', text: `Client invoices and billable hours for ${selectedClientInvoiceClient} are saved. Nothing has been reconciled yet.` };
+      render();
+    });
+
+    root.querySelector('[data-action="ci-reconcile"]')?.addEventListener('click', () => {
+      readHours();
+      const rows = clientRows();
+      const counts = { Approved: 0, Rejected: 0, 'Awaiting Client Invoice': 0 };
+      const missingFile = [];
+      rows.forEach((r) => {
+        const hasHours = r.billable != null && r.billable > 0;
+        if (!r.file || !hasHours || r.submitted == null) {
+          r.status = 'Awaiting Client Invoice';
+          if (hasHours && !r.file) missingFile.push(r.person);
+        } else {
+          r.status = r.submitted === r.billable ? 'Approved' : 'Rejected';
+        }
+        counts[r.status] += 1;
+        // Keep the shared invoice records in step (Invoices / Vendor Invoices screens).
+        const inv = Object.values(INVOICES).find((x) => x.person === r.person && x.client === selectedClientInvoiceClient && x.period === 'October 2026');
+        if (inv && r.file && hasHours) {
+          inv.clientHours = r.billable;
+          if (inv.hours != null) inv.status = inv.hours === r.billable ? 'Approved' : 'Rejected';
+        }
+      });
+      const parts = [`${counts.Approved} approved`, `${counts.Rejected} rejected`, `${counts['Awaiting Client Invoice']} awaiting client invoice`];
+      flashMessage = {
+        tone: counts.Rejected ? 'warning' : 'success',
+        title: `Reconciled ${selectedClientInvoiceClient} · October 2026`,
+        text: `${parts.join(', ')}. Results are in the Submission column below.${missingFile.length ? ` Upload the client invoice for ${missingFile.join(', ')} to reconcile ${missingFile.length > 1 ? 'them' : 'it'}.` : ''}`,
+        action: activePersona === 'accountmanager' ? { label: 'Open Reconciliation', target: 'reconciliation' } : { label: 'View Invoices', target: 'invoiceAudit' }
+      };
+      render();
+    });
+  }
+
   // Document Tracker: Remind / Request confirm on the same page (they used to jump to the dashboard).
   root.querySelectorAll('.doc-notify').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -3417,7 +3594,7 @@ function render() {
   let screen = applyActiveTab(resolveScreenState(findScreen(activeScreen)));
   activeScreen = screen.id;
   if (flashMessage) {
-    screen = { ...screen, alert: { tone: 'success', ...flashMessage } };
+    screen = { ...screen, alert: { ...flashMessage, tone: flashMessage.tone || 'success' } };
     flashMessage = null;
   }
 
@@ -3436,6 +3613,7 @@ function render() {
   });
 
   breadcrumb.onclick = handleTargetClick;
+  breadcrumb.querySelector('.back-btn')?.addEventListener('click', (e) => { e.stopPropagation(); goBack(screen); });
 
   // Inline "Add holiday" input (browser prompt() dialogs are blocked in the hosted viewer).
   // PRD CL-5: at most 10 holidays per client; an 11th is blocked with a message.
