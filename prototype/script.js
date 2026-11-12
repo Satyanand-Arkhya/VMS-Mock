@@ -34,8 +34,128 @@ function acts(...labels) {
     'Correct': 'invoiceAudit'
   };
 
-  return `<div class="row-actions">${labels.map((l) => `<button class="link-btn" data-target="${targets[l] || 'dashboard'}">${l}</button>`).join('')}</div>`;
+  // View opens a document preview pop-up; Download / Replace act on the row's document (no page change).
+  const special = {
+    View: '<button type="button" class="link-btn" data-preview>View</button>',
+    Download: '<button type="button" class="link-btn" data-download>Download</button>',
+    Replace: '<button type="button" class="link-btn" data-replace>Replace</button>'
+  };
+  return `<div class="row-actions">${labels.map((l) => special[l] || `<button class="link-btn" data-target="${targets[l] || 'dashboard'}">${l}</button>`).join('')}</div>`;
 }
+
+/* ---------- Toast notifications ---------- */
+
+function showToast({ tone = 'success', title, text = '' }) {
+  let stack = document.getElementById('toastStack');
+  if (!stack) {
+    stack = document.createElement('div');
+    stack.id = 'toastStack';
+    stack.className = 'toast-stack';
+    document.body.appendChild(stack);
+  }
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${tone}`;
+  toast.setAttribute('role', tone === 'error' ? 'alert' : 'status');
+  toast.innerHTML = `
+    <span class="toast-icon" aria-hidden="true">${tone === 'error' ? '✕' : '✓'}</span>
+    <div class="toast-body"><div class="toast-title"></div>${text ? '<div class="toast-text"></div>' : ''}</div>
+    <button type="button" class="toast-close" aria-label="Dismiss">×</button>`;
+  toast.querySelector('.toast-title').textContent = title;
+  if (text) toast.querySelector('.toast-text').textContent = text;
+  const remove = () => { toast.classList.add('toast-out'); setTimeout(() => toast.remove(), 200); };
+  toast.querySelector('.toast-close').addEventListener('click', remove);
+  stack.appendChild(toast);
+  setTimeout(remove, tone === 'error' ? 6000 : 4500);
+}
+
+/* ---------- Document preview pop-up (every "View" on a file) ---------- */
+
+// File name for a View / Download button: its data value, else the row's file chip, else the row's first cell.
+function docNameFor(btn, attr) {
+  const v = btn.getAttribute(attr);
+  if (v) return v;
+  const row = btn.closest('tr') || btn.closest('.doc-cell')?.parentElement;
+  const chip = (btn.closest('.doc-cell') || row)?.querySelector('.file-chip');
+  if (chip) return chip.childNodes[1]?.textContent.trim() || chip.textContent.trim();
+  return row?.querySelector('td')?.textContent.trim() || 'Document';
+}
+
+let previewPushed = false;
+const sentNotifications = new Set(); // reminders / requests sent this session (one per owner + document + kind per day)
+
+function closePreview(fromHistory) {
+  const el = document.getElementById('docPreview');
+  if (!el) return false;
+  el.remove();
+  if (!document.querySelector('.modal-backdrop')) document.body.classList.remove('modal-open');
+  if (previewPushed && !fromHistory) { previewPushed = false; history.back(); }
+  previewPushed = false;
+  return true;
+}
+
+function openPreview(name) {
+  closePreview(true);
+  const ext = (name.match(/\.([a-z0-9]+)$/i) || [])[1];
+  const el = document.createElement('div');
+  el.id = 'docPreview';
+  el.className = 'modal-backdrop preview-backdrop';
+  el.innerHTML = `
+    <div class="modal preview-modal" role="dialog" aria-modal="true" aria-labelledby="previewTitle" tabindex="-1">
+      <div class="modal-head">
+        <div><h2 class="modal-title" id="previewTitle"></h2><p class="modal-desc">Document preview</p></div>
+        <button type="button" class="modal-close" aria-label="Close">×</button>
+      </div>
+      <div class="modal-body preview-body">
+        <div class="preview-page">
+          <div class="preview-badge">${(ext || 'DOC').toUpperCase()}</div>
+          <div class="preview-name"></div>
+          ${Array.from({ length: 9 }, (_, i) => `<div class="preview-line" style="width:${[92, 80, 86, 60, 94, 72, 88, 66, 40][i]}%"></div>`).join('')}
+        </div>
+      </div>
+      <div class="form-footer modal-footer"><span class="person-sub inline">Preview only · sample data</span>
+        <div class="form-buttons"><button type="button" class="btn btn-secondary" data-close>Close</button><button type="button" class="btn btn-primary" data-dl>Download</button></div>
+      </div>
+    </div>`;
+  el.querySelector('#previewTitle').textContent = name;
+  el.querySelector('.preview-name').textContent = name;
+  document.body.appendChild(el);
+  document.body.classList.add('modal-open');
+  const close = () => closePreview(false);
+  el.addEventListener('click', (e) => { if (e.target === el) close(); });
+  el.querySelector('.modal-close').addEventListener('click', close);
+  el.querySelector('[data-close]').addEventListener('click', close);
+  el.querySelector('[data-dl]').addEventListener('click', () => showToast({ title: 'Download started', text: name }));
+  el.querySelector('.modal').focus({ preventScroll: true });
+  // Its own history entry, so Android / browser Back closes the preview first.
+  if (history.state && history.state.nav) {
+    history.pushState({ ...history.state, preview: true }, '');
+    previewPushed = true;
+  }
+}
+
+document.addEventListener('click', (e) => {
+  const view = e.target.closest('[data-preview]');
+  if (view) { e.stopPropagation(); openPreview(docNameFor(view, 'data-preview')); return; }
+  const dl = e.target.closest('[data-download]');
+  if (dl) { e.stopPropagation(); showToast({ title: 'Download started', text: docNameFor(dl, 'data-download') }); return; }
+  const rep = e.target.closest('[data-replace]');
+  if (rep) {
+    e.stopPropagation();
+    const docName = docNameFor(rep, 'data-replace');
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.pdf,.docx,.jpg,.jpeg,.png';
+    input.addEventListener('change', () => {
+      const file = input.files[0];
+      if (!file) return;
+      const ext = file.name.split('.').pop().toLowerCase();
+      if (!['pdf', 'docx', 'jpg', 'jpeg', 'png'].includes(ext)) showToast({ tone: 'error', title: `${docName} not replaced`, text: 'Only PDF, DOCX, JPG, JPEG or PNG files are allowed.' });
+      else if (file.size > 5 * 1024 * 1024) showToast({ tone: 'error', title: `${docName} not replaced`, text: `${file.name} is larger than 5 MB.` });
+      else showToast({ title: `${docName} replaced`, text: `${file.name} uploaded as a new version. The earlier version is kept in history.` });
+    });
+    input.click();
+  }
+}, true);
 
 function clientInvoiceAction(clientName) {
   return `<button class="link-btn" data-target="invoiceUpload" data-client="${clientName}">Client invoice</button>`;
@@ -292,7 +412,7 @@ const MEMBER_SUBMISSIONS = {
 
 function submissionDocCell(file, kind) {
   if (file === 'na') return '<span class="person-sub inline">Not applicable</span>';
-  if (file) return `<div class="doc-cell">${fileChip(file)}<button class="link-btn">View</button></div>`;
+  if (file) return `<div class="doc-cell">${fileChip(file)}<button type="button" class="link-btn" data-preview="${file}">View</button></div>`;
   return `<span class="cell-upload-wrap"><button type="button" class="upload-mini cell-upload">Upload ${kind}</button>
     <input type="file" class="upload-input" accept=".pdf,.docx,.jpg,.jpeg,.png" hidden /></span>`;
 }
@@ -567,7 +687,7 @@ function invoiceViewAction(id) {
 
 function invoiceViewScreen(screen, id) {
   const inv = RESOURCE_INVOICES[id] || RESOURCE_INVOICES['INV-2026-10-0151'];
-  const docRow = (label, [file, size]) => [label, fileChip(file, size), inv.submitted, '<div class="row-actions"><button class="link-btn">View</button><button class="link-btn">Download</button></div>'];
+  const docRow = (label, [file, size]) => [label, fileChip(file, size), inv.submitted, '<div class="row-actions"><button type="button" class="link-btn" data-preview>View</button><button type="button" class="link-btn" data-download>Download</button></div>'];
   return {
     ...screen,
     title: id,
@@ -694,7 +814,7 @@ function docDetailScreen(screen, id) {
           ? [...d.versions].reverse().map(([v, file, uploaded, by, until], i) => [
               `<span class="version-tag">${v}</span>`, fileChip(file), uploaded, by, until,
               i === 0 ? b('Current') : b('Superseded'),
-              '<div class="row-actions"><button class="link-btn">View</button><button class="link-btn">Download</button></div>'
+              '<div class="row-actions"><button type="button" class="link-btn" data-preview>View</button><button type="button" class="link-btn" data-download>Download</button></div>'
             ])
           : [['<span class="person-sub inline">No versions uploaded.</span>', '', '', '', '', '', '']]
       }
@@ -796,7 +916,7 @@ function invoiceDetailScreen(screen, id) {
   const fileRow = (label, kind) => {
     const file = inv[kind];
     return [label, invoiceFileCell(id, kind), file && file !== 'na' ? inv.submitted : '—',
-      file && file !== 'na' ? '<div class="row-actions"><button class="link-btn">View</button><button class="link-btn">Download</button></div>' : ''];
+      file && file !== 'na' ? '<div class="row-actions"><button type="button" class="link-btn" data-preview>View</button><button type="button" class="link-btn" data-download>Download</button></div>' : ''];
   };
   return {
     ...screen,
@@ -944,7 +1064,7 @@ function memberDetailScreen(screen, name) {
           updated,
           expires,
           b(status),
-          file ? '<div class="row-actions"><button class="link-btn">View</button><button class="link-btn">Download</button></div>' : '<button class="link-btn">Request</button>'
+          file ? '<div class="row-actions"><button type="button" class="link-btn" data-preview>View</button><button type="button" class="link-btn" data-download>Download</button></div>' : `<button type="button" class="link-btn doc-notify" data-kind="request" data-owner="${name}" data-docname="${doc}">Request</button>`
         ])
       }
     }
@@ -2654,7 +2774,9 @@ function closeModal() {
 }
 
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && document.querySelector('.modal-backdrop') && !document.querySelector('.ms-panel:not([hidden])')) closeModal();
+  if (e.key !== 'Escape' || document.querySelector('.ms-panel:not([hidden])')) return;
+  if (document.getElementById('docPreview')) { closePreview(false); return; }
+  if (document.querySelector('[data-modal-backdrop]')) closeModal();
 });
 
 function navSnapshot() {
@@ -2684,6 +2806,7 @@ function pushNav() {
 }
 
 window.addEventListener('popstate', (event) => {
+  closePreview(true); // Back closes an open document preview first
   const state = event.state;
   if (!state || !state.nav) {
     // Back from the first app screen returns to sign-in.
@@ -3561,14 +3684,25 @@ function wireFormControls(root) {
     });
   }
 
-  // Document Tracker: Remind / Request confirm on the same page (they used to jump to the dashboard).
+  // Document Tracker / profile documents: Remind and Request answer with a toast (success, or failure if already sent today).
   root.querySelectorAll('.doc-notify').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const d = DOCUMENTS[btn.dataset.doc];
-      flashMessage = btn.dataset.kind === 'remind'
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const d = btn.dataset.doc ? DOCUMENTS[btn.dataset.doc] : { owner: btn.dataset.owner, name: btn.dataset.docname };
+      const remind = btn.dataset.kind === 'remind';
+      const key = `${btn.dataset.kind}|${d.owner}|${d.name}`;
+      if (sentNotifications.has(key)) {
+        showToast({
+          tone: 'error',
+          title: remind ? 'Reminder not sent' : 'Request not sent',
+          text: `${d.owner} was already ${remind ? 'reminded about' : 'asked for'} the ${d.name} today. You can send another tomorrow.`
+        });
+        return;
+      }
+      sentNotifications.add(key);
+      showToast(remind
         ? { title: 'Reminder sent', text: `${d.owner} and their account manager were reminded to upload a new version of the ${d.name}.` }
-        : { title: 'Request sent', text: `${d.owner} was asked to upload the ${d.name}.` };
-      render();
+        : { title: 'Request sent', text: `${d.owner} was asked to upload the ${d.name}.` });
     });
   });
 
@@ -3661,7 +3795,7 @@ function wireFormControls(root) {
         input.value = '';
         return;
       }
-      wrap.outerHTML = `<div class="doc-cell">${fileChip(file.name, fmtSize(file.size))}<button class="link-btn">View</button></div><span class="person-sub inline">Uploaded by you · just now</span>`;
+      wrap.outerHTML = `<div class="doc-cell">${fileChip(file.name, fmtSize(file.size))}<button type="button" class="link-btn" data-preview="${file.name}">View</button></div><span class="person-sub inline">Uploaded by you · just now</span>`;
     });
   });
 
