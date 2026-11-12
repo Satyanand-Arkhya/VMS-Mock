@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -31,9 +31,9 @@
 
         <!-- Vendor / resource: step 1, email -->
         <div class="login-pane hidden" id="paneOtpEmail">
-          <button class="back-link" data-pane="paneStaff">â† Staff sign-in</button>
+          <button class="back-link" data-pane="paneStaff">← Staff sign-in</button>
           <h2>Sign in with a one-time code</h2>
-          <p class="login-sub">For vendors and W-2 / 1099 resources. Enter the email your account manager registered and weâ€™ll send a 6-digit code.</p>
+          <p class="login-sub">For vendors and W-2 / 1099 resources. Enter the email your account manager registered and we’ll send a 6-digit code.</p>
           <div class="login-form">
             <label for="otpEmail">Email</label>
             <input type="email" id="otpEmail" value="d.ortiz@coralstaffing.com" autocomplete="email" />
@@ -43,9 +43,9 @@
           <div class="demo-accounts">
             <div class="demo-title">Prototype demo accounts</div>
             <div class="demo-row">
-              <button class="demo-chip" data-email="d.ortiz@coralstaffing.com">Vendor Â· Daniel Ortiz</button>
-              <button class="demo-chip" data-email="maya.reed@outlook.com">W-2 Â· Maya Reed</button>
-              <button class="demo-chip" data-email="jordan@blakeux.studio">1099 Â· Jordan Blake</button>
+              <button class="demo-chip" data-email="d.ortiz@coralstaffing.com">Vendor · Daniel Ortiz</button>
+              <button class="demo-chip" data-email="maya.reed@outlook.com">W-2 · Maya Reed</button>
+              <button class="demo-chip" data-email="jordan@blakeux.studio">1099 · Jordan Blake</button>
               <button class="demo-chip" data-email="billing@orbitsystems.com">Inactive vendor</button>
             </div>
           </div>
@@ -54,21 +54,21 @@
 
         <!-- Vendor / resource: step 2, code -->
         <div class="login-pane hidden" id="paneOtpCode">
-          <button class="back-link" data-pane="paneOtpEmail">â† Use a different email</button>
+          <button class="back-link" data-pane="paneOtpEmail">← Use a different email</button>
           <h2>Check your email</h2>
           <p class="login-sub">We sent a 6-digit code to <b id="otpSentTo">d.ortiz@coralstaffing.com</b>. It expires in 10 minutes.</p>
           <div class="otp-boxes" id="otpBoxes">
             <input inputmode="numeric" maxlength="1" aria-label="Digit 1" />
             <input inputmode="numeric" maxlength="1" aria-label="Digit 2" />
             <input inputmode="numeric" maxlength="1" aria-label="Digit 3" />
-            <span class="otp-dash">â€“</span>
+            <span class="otp-dash">–</span>
             <input inputmode="numeric" maxlength="1" aria-label="Digit 4" />
             <input inputmode="numeric" maxlength="1" aria-label="Digit 5" />
             <input inputmode="numeric" maxlength="1" aria-label="Digit 6" />
           </div>
           <div class="login-error hidden" id="otpCodeError"></div>
           <button class="btn btn-primary login-button otp-verify" id="verifyCode" disabled>Verify &amp; Sign In</button>
-          <div class="otp-resend">Didnâ€™t get it? <button class="link-btn" id="resendCode" disabled>Resend code in <span id="resendTimer">30</span>s</button></div>
+          <div class="otp-resend">Didn’t get it? <button class="link-btn" id="resendCode" disabled>Resend code in <span id="resendTimer">30</span>s</button></div>
           <div class="login-alt">Prototype: any 6 digits sign you in. Enter <b>000000</b> to see the wrong-code state.</div>
         </div>
       </div>
@@ -78,13 +78,13 @@
       <aside class="sidebar" id="sidebar">
         <div class="brand-block">
           <img src="arkhya-lockup-dark.svg" alt="Arkhya Tech" class="brand-logo-image" />
-          <button type="button" class="menu-toggle" id="menuToggle" aria-expanded="false" aria-controls="sidebarMenu">â˜° Menu</button>
+          <button type="button" class="menu-toggle" id="menuToggle" aria-expanded="false" aria-controls="sidebarMenu">☰ Menu</button>
         </div>
 
         <div class="sidebar-menu" id="sidebarMenu">
           <nav class="left-nav" id="leftNav"></nav>
           <div class="persona-box">
-            <label class="persona-title" for="personaSelect">Prototype Â· view as</label>
+            <label class="persona-title" for="personaSelect">Prototype · view as</label>
             <nav class="persona-nav" id="personaNav"></nav>
           </div>
         </div>
