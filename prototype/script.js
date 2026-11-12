@@ -1147,7 +1147,7 @@ function vendorConsultantDocFields(files = {}, extra = [], auditPeriod = '') {
     doc('I-9'),
     doc('E-Verify document'),
     ...extra.map(doc),
-    { type: 'addDocument', full: true },
+    { label: 'Other documents', type: 'extraDocs', full: true, validity: true },
     { label: 'I-9 audit report', type: 'upload', amOnly: true, readonly: true, lock: 'Uploaded by account manager', file: auditFile, size: auditSize, note: auditNote }
   ];
 }
@@ -1262,7 +1262,12 @@ function memberEditScreen(screen, name) {
       sections: [
         { title: 'Personal details', fields: personal },
         { title: 'Assignment', ...(vendorEditing ? { hint: 'The client is mapped by your account manager.' } : {}), fields: engagement },
-        { title: 'Documents', hint: 'PDF, DOCX, JPG or PNG · max 5 MB each. Replacing a file keeps the previous version.', fields: documents }
+        {
+          title: 'Documents',
+          hint: 'PDF, DOCX, JPG or PNG · max 5 MB each. Replacing a file keeps the previous version.',
+          // Every document area can take extra named documents (the vendor's list already includes it).
+          fields: documents.some((f) => f.type === 'extraDocs') ? documents : [...documents, { label: 'Other documents', type: 'extraDocs', full: true, validity: true }]
+        }
       ],
       // Edit opens on its own (not from View), so Save / Cancel return to the list it was opened from.
       submit: { label: 'Save Changes', target: (modalBase && modalBase.screen) || screen.parent },
@@ -1382,7 +1387,8 @@ const personaConfig = {
               fields: [
                 { label: 'MSA start date', type: 'date', required: true },
                 { label: 'MSA end date', type: 'date', required: true },
-                { label: 'MSA document', type: 'upload', full: true }
+                { label: 'MSA document', type: 'upload', full: true },
+                { label: 'Other documents', type: 'extraDocs', full: true, validity: true }
               ]
             }
           ],
@@ -1413,7 +1419,8 @@ const personaConfig = {
               fields: [
                 { label: 'MSA start date', type: 'date', value: '2026-12-01', required: true },
                 { label: 'MSA end date', type: 'date', value: '2028-11-30', required: true },
-                { label: 'MSA document', type: 'upload', full: true, file: 'Persistent_MSA_signed.pdf', size: '1.8 MB' }
+                { label: 'MSA document', type: 'upload', full: true, file: 'Persistent_MSA_signed.pdf', size: '1.8 MB' },
+                { label: 'Other documents', type: 'extraDocs', full: true, validity: true }
               ]
             }
           ],
@@ -1543,7 +1550,8 @@ const personaConfig = {
               hint: 'PDF, DOCX, JPG or PNG · max 5 MB. Enter the start and end date of each. Documents not uploaded now are marked Incomplete in the Document Tracker.',
               fields: [
                 { label: 'MSA', type: 'upload', validity: true, start: '2026-11-15', end: '2028-11-14', file: 'Harborview_MSA.pdf', size: '2.1 MB' },
-                { label: 'PO', type: 'upload', validity: true, start: '2026-11-15', end: '2027-05-14', file: 'PO-44120.pdf', size: '340 KB' }
+                { label: 'PO', type: 'upload', validity: true, start: '2026-11-15', end: '2027-05-14', file: 'PO-44120.pdf', size: '340 KB' },
+                { label: 'Other documents', type: 'extraDocs', full: true, validity: true }
               ]
             },
             {
@@ -1882,10 +1890,11 @@ const personaConfig = {
               title: 'Documents',
               hint: 'PDF, DOCX, JPG or PNG · max 5 MB each. Missing documents can be added later.',
               fields: [
-                { label: 'Resume', type: 'upload', file: 'Marcus_Lee_Resume.pdf', size: '186 KB' },
-                { label: 'Work authorization (start / end date)', type: 'upload', file: 'Lee_EAD_2026.pdf', size: '1.2 MB' },
+                { label: 'Resume', type: 'upload', validity: true, file: 'Marcus_Lee_Resume.pdf', size: '186 KB' },
+                { label: 'Work authorization', type: 'upload', validity: true, file: 'Lee_EAD_2026.pdf', size: '1.2 MB' },
                 { label: 'I-9 audit report', type: 'upload', auditPeriod: true },
-                { label: 'E-Verify document', type: 'upload' }
+                { label: 'E-Verify document', type: 'upload', validity: true },
+                { label: 'Other documents', type: 'extraDocs', full: true, validity: true }
               ]
             }
           ],
