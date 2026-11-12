@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=2026-11-12a" />
   </head>
   <body>
     <div id="loginScreen" class="login-screen active">
@@ -75,15 +75,18 @@
     </div>
 
     <div id="appShell" class="app-shell hidden">
-      <aside class="sidebar">
+      <aside class="sidebar" id="sidebar">
         <div class="brand-block">
           <img src="arkhya-lockup-dark.svg" alt="Arkhya Tech" class="brand-logo-image" />
+          <button type="button" class="menu-toggle" id="menuToggle" aria-expanded="false" aria-controls="sidebarMenu">☰ Menu</button>
         </div>
 
-        <nav class="left-nav" id="leftNav"></nav>
-        <div class="persona-box">
-          <label class="persona-title" for="personaSelect">Prototype · view as</label>
-          <nav class="persona-nav" id="personaNav"></nav>
+        <div class="sidebar-menu" id="sidebarMenu">
+          <nav class="left-nav" id="leftNav"></nav>
+          <div class="persona-box">
+            <label class="persona-title" for="personaSelect">Prototype · view as</label>
+            <nav class="persona-nav" id="personaNav"></nav>
+          </div>
         </div>
       </aside>
 
@@ -113,6 +116,6 @@
       </main>
     </div>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=2026-11-12a"></script>
   </body>
 </html>

@@ -2362,6 +2362,9 @@ const personaConfig = {
   personaConfig.superadmin.screens.push({ id: 'docDetail', parent: 'documentTracker', title: 'Document' });
   personaConfig.accountmanager.screens.push({ id: 'docDetail', parent: 'docs', title: 'Document' });
 
+  // Super Admin opens Invoice Management from Clients → Client invoice, so it sits under Clients (gives it a Back button).
+  sa.screens.find((s) => s.id === 'invoiceUpload').parent = 'clients';
+
   // 1099 resource: View on an invoice shows the invoice and timesheet.
   personaConfig.w9.screens.push({ id: 'invoiceView', parent: 'status', title: 'Invoice' });
 })();
@@ -2563,6 +2566,23 @@ resendCode.addEventListener('click', () => {
   otpInputs[0].focus();
 });
 
+/* ---------- Mobile menu (☰ Menu on phones) ---------- */
+const sidebarEl = document.getElementById('sidebar');
+const menuToggle = document.getElementById('menuToggle');
+
+function closeMobileMenu() {
+  sidebarEl.classList.remove('menu-open');
+  menuToggle.setAttribute('aria-expanded', 'false');
+  menuToggle.textContent = '☰ Menu';
+}
+
+menuToggle.addEventListener('click', () => {
+  const open = !sidebarEl.classList.contains('menu-open');
+  sidebarEl.classList.toggle('menu-open', open);
+  menuToggle.setAttribute('aria-expanded', String(open));
+  menuToggle.textContent = open ? '✕ Close' : '☰ Menu';
+});
+
 /* ---------- Back navigation (Android back button / gesture, browser Back) ----------
    Every screen change is a history entry holding what is on screen, so the system Back
    button steps back through the app instead of leaving it. */
@@ -2660,7 +2680,7 @@ function renderLeftNav(screen) {
     const button = document.createElement('button');
     button.textContent = item.label;
     button.className = item.target === screen.id || item.target === navKey ? 'active' : '';
-    button.addEventListener('click', () => goToScreen(item.target));
+    button.addEventListener('click', () => { closeMobileMenu(); goToScreen(item.target); });
     leftNav.appendChild(button);
   });
 }
@@ -2677,7 +2697,7 @@ function renderPersonaButtons() {
     option.title = persona.user.name;
     select.appendChild(option);
   });
-  select.addEventListener('change', () => setPersona(select.value));
+  select.addEventListener('change', () => { closeMobileMenu(); setPersona(select.value); });
   personaNav.appendChild(select);
 }
 
