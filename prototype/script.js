@@ -2215,7 +2215,6 @@ const personaConfig = {
             {
               title: 'Timesheet',
               fields: [
-                { label: 'Engagement', value: 'HTC — Data Analyst', readonly: true, lock: 'One client' },
                 { label: 'Billing period', type: 'select', options: ['November 2026'], required: true },
                 { label: 'Total hours', value: '160', required: true },
                 { label: 'Timesheet', type: 'upload', file: 'Reed_Nov26.pdf', size: '88 KB' }
@@ -2319,7 +2318,6 @@ const personaConfig = {
             {
               title: 'Invoice',
               fields: [
-                { label: 'Engagement', value: 'HTC — UX Consultant', readonly: true, lock: 'One client' },
                 { label: 'Billing period', type: 'select', options: ['November 2026'], required: true },
                 { label: 'Total billed hours', value: '136', required: true },
                 { label: 'Hourly rate', value: '$90.00', readonly: true },
