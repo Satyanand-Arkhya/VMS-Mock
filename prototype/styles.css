@@ -671,6 +671,7 @@ h1 {
 .alert-warning .btn-alert { color: #b45309; }
 
 .content-grid { grid-template-columns: 1fr 1fr; }
+.content-grid.single { grid-template-columns: 1fr; }
 
 .list-plain li { gap: 12px; background: #fff; padding: 10px 12px; }
 .li-label { display: flex; flex-direction: column; min-width: 0; }

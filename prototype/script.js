@@ -2193,13 +2193,6 @@ const personaConfig = {
         ],
         panels: [
           {
-            title: 'Current assignment',
-            chip: '1 active',
-            items: [
-              { label: sub('HTC', 'Data Analyst · Remote · through Feb 26, 2027'), value: b('Active'), meta: '' }
-            ]
-          },
-          {
             title: 'Submission status by month',
             chip: 'Last 3 months',
             items: [
@@ -2302,13 +2295,6 @@ const personaConfig = {
               { label: sub('October 2026', 'HTC · $13,680.00'), value: b('In Progress'), meta: '' },
               { label: sub('September 2026', 'HTC · $14,400.00'), value: b('Rejected'), meta: '' },
               { label: sub('August 2026', 'HTC · $15,120.00'), value: b('Approved'), meta: '' }
-            ]
-          },
-          {
-            title: 'Current assignment',
-            chip: '1 active',
-            items: [
-              { label: sub('HTC', 'UX Consultant · $90.00/hr · Net 10'), value: b('Active'), meta: '' }
             ]
           }
         ]
@@ -3037,7 +3023,7 @@ function createPanel(panel) {
 
 function createPanels(panels) {
   if (!panels) return '';
-  return `<div class="content-grid">${panels.map(createPanel).join('')}</div>`;
+  return `<div class="content-grid${panels.length === 1 ? ' single' : ''}">${panels.map(createPanel).join('')}</div>`;
 }
 
 function createActivity(activity) {
