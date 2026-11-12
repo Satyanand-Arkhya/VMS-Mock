@@ -695,6 +695,7 @@ const AUDIT_INVOICE_IDS = ['INV-2026-10-0142', 'INV-2026-10-0151', 'INV-2026-10-
 const VENDOR_INVOICE_IDS = ['INV-2026-10-0203', 'INV-2026-10-0142', 'INV-2026-10-0198', 'INV-2026-10-0176', 'NS-ELENA'];
 
 let selectedInv = 'INV-2026-10-0142';
+const INVOICE_ALIASES = {}; // placeholder id (NS-…) → real invoice number once submitted
 let invoiceReturn = null; // list screen the user opened an invoice from (for breadcrumb / Cancel)
 
 const canManageInvoices = () => activePersona === 'superadmin' || activePersona === 'accountmanager';
@@ -752,6 +753,7 @@ function vendorInvoicesTable(table) {
 }
 
 function invoiceDetailScreen(screen, id) {
+  id = INVOICE_ALIASES[id] || id;
   const inv = INVOICES[id] || INVOICES['INV-2026-10-0142'];
   const manage = canManageInvoices();
   const actions = [];
@@ -2588,17 +2590,54 @@ menuToggle.addEventListener('click', () => {
    button steps back through the app instead of leaving it. */
 let navDepth = 0;
 let restoringNav = false;
+let replaceNextNav = false;
+
+/* Add / edit forms open as pop-ups over the screen they were opened from (modalBase). */
+const MODAL_SCREENS = new Set([
+  'clientAdd', 'clientEdit', 'vendorAdd', 'vendorEdit', 'resourceAdd', 'consultantAdd', 'memberEdit',
+  'submitOnBehalf', 'invoiceUpdate', 'adminUserAdd', 'adminUserEdit', 'invoiceSubmit', 'timesheet', 'correction', 'rejectedInvoice'
+]);
+let modalBase = null; // { screen, tab } behind the open pop-up
+
+function isModalId(id) {
+  return MODAL_SCREENS.has(id) && !currentPersona().nav.some((n) => n.target === id) && !!findScreenExact(id);
+}
+
+function findScreenExact(id) {
+  return currentPersona().screens.find((s) => s.id === id);
+}
+
+// Close the open pop-up: step back in history when the pop-up has its own entry, else go to the screen behind it.
+function closeModal() {
+  if (navDepth > 0 && history.state && history.state.nav && history.state.nav.screen === activeScreen) {
+    history.back();
+  } else {
+    const base = (modalBase && modalBase.screen) || findScreen(activeScreen).parent || 'dashboard';
+    goToScreen(base);
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && document.querySelector('.modal-backdrop') && !document.querySelector('.ms-panel:not([hidden])')) closeModal();
+});
 
 function navSnapshot() {
   return {
     persona: activePersona, screen: activeScreen, tab: activeTab, member: selectedMember, inv: selectedInv,
-    invReturn: invoiceReturn, invoice: selectedInvoice, doc: selectedDoc, am: selectedAm, client: selectedClientInvoiceClient
+    invReturn: invoiceReturn, invoice: selectedInvoice, doc: selectedDoc, am: selectedAm, client: selectedClientInvoiceClient,
+    modalBase
   };
 }
 
 function pushNav() {
   if (restoringNav) return;
   const snap = navSnapshot();
+  if (replaceNextNav) {
+    // Leaving a pop-up for another screen: the pop-up's history entry becomes that screen.
+    replaceNextNav = false;
+    history.replaceState({ nav: snap, depth: (history.state && history.state.depth) || navDepth }, '');
+    return;
+  }
   const prev = history.state && history.state.nav;
   if (prev && JSON.stringify(prev) === JSON.stringify(snap)) {
     history.replaceState({ nav: snap, depth: history.state.depth }, ''); // same screen again: no new entry
@@ -2623,6 +2662,7 @@ window.addEventListener('popstate', (event) => {
   activePersona = s.persona; activeScreen = s.screen; activeTab = s.tab || 0;
   selectedMember = s.member; selectedInv = s.inv; invoiceReturn = s.invReturn; selectedInvoice = s.invoice;
   selectedDoc = s.doc; selectedAm = s.am; selectedClientInvoiceClient = s.client;
+  modalBase = s.modalBase || null;
   navDepth = state.depth || 0;
   loginScreen.classList.add('hidden');
   appShell.classList.remove('hidden');
@@ -2648,6 +2688,18 @@ function setPersona(personaKey) {
 function goToScreen(screenId, clientName, tab = 0) {
   if (screenId === 'invoiceUpload' && clientName) {
     selectedClientInvoiceClient = clientName;
+  }
+  const fromModal = isModalId(activeScreen);
+  const toModal = isModalId(screenId);
+  if (toModal && !fromModal) modalBase = { screen: activeScreen, tab: activeTab };
+  if (fromModal && !toModal) {
+    // Save / Cancel back to the screen behind the pop-up: just close it (so Back won't reopen the form).
+    if (modalBase && screenId === modalBase.screen && navDepth > 0 && history.state && history.state.nav && history.state.nav.screen === activeScreen) {
+      history.back();
+      return;
+    }
+    replaceNextNav = true;
+    modalBase = null;
   }
   activeTab = tab;
   activeScreen = screenId;
@@ -2951,7 +3003,7 @@ function createField(field) {
   return `<div class="field ${field.full ? 'full' : ''}">${label}${control}${field.note ? `<span class="person-sub">${field.note}</span>` : ''}</div>`;
 }
 
-function createForm(form) {
+function createForm(form, inModal = false) {
   if (!form) return '';
   // Sections with showFor appear only when that option is picked in the form's segmented control.
   const seg = form.sections.flatMap((s) => s.fields).find((f) => f.type === 'segmented');
@@ -2971,7 +3023,7 @@ function createForm(form) {
         <span class="person-sub inline"><span class="req">*</span> Required</span>
         <div class="form-buttons">
           ${form.delete ? `<button class="btn btn-secondary btn-delete" data-target="${form.delete.target}">${form.delete.label}</button>` : ''}
-          ${form.cancel ? `<button class="btn btn-secondary" data-target="${form.cancel.target}">${form.cancel.label}</button>` : ''}
+          ${form.cancel ? `<button type="button" class="btn btn-secondary" ${inModal ? 'data-modal-close' : `data-target="${form.cancel.target}"`}>${form.cancel.label}</button>` : ''}
           <button class="btn btn-primary" data-target="${form.submit.target}" ${form.submit.action ? `data-action="${form.submit.action}"` : ''}>${form.submit.label}</button>
         </div>
       </div>
@@ -3067,6 +3119,26 @@ function screenMarkup(screen) {
       ${createDetail(screen.detail)}
       ${createForm(screen.form)}
       ${createFooterActions(screen.footerActions)}
+    </div>
+  `;
+}
+
+function modalMarkup(screen) {
+  return `
+    <div class="modal-backdrop" data-modal-backdrop>
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" tabindex="-1">
+        <div class="modal-head">
+          <div>
+            <h2 class="modal-title" id="modalTitle">${screen.title}</h2>
+            ${screen.description ? `<p class="modal-desc">${screen.description}</p>` : ''}
+          </div>
+          <button type="button" class="modal-close" data-modal-close aria-label="Close">×</button>
+        </div>
+        <div class="modal-body">
+          ${createAlert(screen.alert)}
+          ${createForm(screen.form, true)}
+        </div>
+      </div>
     </div>
   `;
 }
@@ -3342,6 +3414,7 @@ function wireFormControls(root) {
         shownId = `${inv.w2 ? 'TS' : 'INV'}-2026-10-0${300 + Math.floor(Math.random() * 600)}`;
         INVOICES[shownId] = inv;
         delete INVOICES[id];
+        INVOICE_ALIASES[id] = shownId;
         [AUDIT_INVOICE_IDS, VENDOR_INVOICE_IDS].forEach((list) => { const i = list.indexOf(id); if (i >= 0) list[i] = shownId; });
         selectedInv = shownId;
       }
@@ -3618,14 +3691,32 @@ function render() {
     flashMessage = null;
   }
 
+  // Pop-up forms: draw the screen they were opened from, with the form in a dialog on top.
+  const modal = isModalId(screen.id) ? screen : null;
+  let page = screen;
+  if (modal) {
+    const baseId = (modalBase && modalBase.screen && !isModalId(modalBase.screen)) ? modalBase.screen : (screen.parent || 'dashboard');
+    const keepTab = activeTab;
+    activeTab = (modalBase && modalBase.tab) || 0;
+    page = applyActiveTab(resolveScreenState(findScreen(baseId)));
+    activeTab = keepTab;
+  }
+
   renderLeftNav(screen);
   renderPersonaButtons();
   renderUser();
-  renderBreadcrumb(screen);
+  renderBreadcrumb(page);
 
-  pageTitle.textContent = screen.title;
+  pageTitle.textContent = page.title;
   document.title = `${screen.title} · Arkhya Tech VMS`;
-  screenContainer.innerHTML = screenMarkup(screen);
+  screenContainer.innerHTML = screenMarkup(page) + (modal ? modalMarkup(modal) : '');
+  document.body.classList.toggle('modal-open', !!modal);
+  if (modal) {
+    const backdrop = screenContainer.querySelector('[data-modal-backdrop]');
+    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) closeModal(); });
+    backdrop.querySelectorAll('[data-modal-close]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); closeModal(); }));
+    backdrop.querySelector('.modal').focus({ preventScroll: true });
+  }
   screenContainer.onclick = handleTargetClick;
   wireFormControls(screenContainer);
   screenContainer.querySelectorAll('.tab[data-tab-index]').forEach((tab) => {
