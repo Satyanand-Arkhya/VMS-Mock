@@ -136,6 +136,43 @@ document.addEventListener('click', (e) => {
   if (view) { e.stopPropagation(); openPreview(docNameFor(view, 'data-preview')); return; }
   const dl = e.target.closest('[data-download]');
   if (dl) { e.stopPropagation(); showToast({ title: 'Download started', text: docNameFor(dl, 'data-download') }); return; }
+  // Vendor replaces (or uploads) the invoice / timesheet file of a Rejected or In Progress invoice.
+  const invFile = e.target.closest('[data-inv-file]');
+  if (invFile) {
+    e.stopPropagation();
+    const kind = invFile.dataset.invFile;
+    const id = invFile.dataset.invId;
+    const inv = INVOICES[id];
+    const what = kind === 'invoice' ? 'Invoice' : 'Timesheet';
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.pdf,.docx,.jpg,.jpeg,.png';
+    input.addEventListener('change', () => {
+      const file = input.files[0];
+      if (!file) return;
+      const ext = file.name.split('.').pop().toLowerCase();
+      if (!UPLOAD_TYPES.includes(ext)) { showToast({ tone: 'error', title: `${what} not replaced`, text: 'Only PDF, DOCX, JPG, JPEG or PNG files are allowed.' }); return; }
+      if (file.size > UPLOAD_MAX_BYTES) { showToast({ tone: 'error', title: `${what} not replaced`, text: `${file.name} is larger than 5 MB.` }); return; }
+      const wasRejected = inv.status === 'Rejected';
+      const hadFile = !!inv[kind];
+      inv[kind] = file.name;
+      // A replaced file goes back for review: Rejected becomes In Progress; the earlier file stays in history.
+      if (wasRejected) { inv.status = 'In Progress'; inv.submitted = 'Nov 13, 2026 (resubmitted)'; }
+      const rec = Object.values(IM_RECORDS).find((r) => r.inv === id);
+      if (rec) {
+        if (kind === 'invoice' || rec.type === 'W-2') rec.doc = file.name;
+        rec.review = null;
+        rec.reason = '';
+      }
+      showToast({
+        title: `${what} ${hadFile ? 'replaced' : 'uploaded'}`,
+        text: `${file.name}${hadFile ? ' replaces the earlier file, which is kept in history' : ''}. ${wasRejected ? 'The invoice is back In Progress for your account manager to review.' : 'Your account manager will review it.'}`
+      });
+      render();
+    });
+    input.click();
+    return;
+  }
   const rep = e.target.closest('[data-replace]');
   if (rep) {
     e.stopPropagation();
@@ -1021,10 +1058,16 @@ function invoiceDetailScreen(screen, id) {
   } else if (inv.status === 'Not Submitted' && manage) {
     actions.push({ label: inv.w2 ? 'Upload Timesheet' : 'Upload Invoice & Timesheet', target: 'invoiceUpdate', primary: true });
   }
+  // Vendor: while the invoice is Rejected or In Progress (not yet approved) they can replace a wrong file, or upload a missing one.
+  const vendorCanChange = activePersona === 'vendor' && ['Rejected', 'In Progress'].includes(inv.status);
   const fileRow = (label, kind) => {
     const file = inv[kind];
-    return [label, invoiceFileCell(id, kind), file && file !== 'na' ? inv.submitted : '—',
-      file && file !== 'na' ? '<div class="row-actions"><button type="button" class="link-btn" data-preview>View</button><button type="button" class="link-btn" data-download>Download</button></div>' : ''];
+    const has = file && file !== 'na';
+    const change = vendorCanChange && file !== 'na'
+      ? `<button type="button" class="link-btn" data-inv-file="${kind}" data-inv-id="${id}">${has ? 'Replace' : 'Upload'}</button>`
+      : '';
+    return [label, invoiceFileCell(id, kind), has ? inv.submitted : '—',
+      has || change ? `<div class="row-actions">${has ? '<button type="button" class="link-btn" data-preview>View</button><button type="button" class="link-btn" data-download>Download</button>' : ''}${change}</div>` : ''];
   };
   return {
     ...screen,
@@ -3424,6 +3467,22 @@ function resolveScreenState(screen) {
   if (screen.id === 'vendorInvoices') return { ...screen, table: vendorInvoicesTable(screen.table) };
   if (screen.id === 'invoiceReview') return invoiceReviewScreen(screen, selectedRec);
   if (screen.id === 'clientInvoices') return clientInvoicesScreen(screen);
+  // Vendor's Invoices list follows the shared invoice records (so a replaced file / resubmission shows at once).
+  if (screen.id === 'invoices' && activePersona === 'vendor') {
+    const ids = ['INV-2026-10-0203', 'INV-2026-10-0142', 'INV-2026-10-0198', 'INV-2026-10-0176'];
+    return {
+      ...screen,
+      table: {
+        ...screen.table,
+        rows: ids.map((id) => {
+          const inv = INVOICES[id];
+          const view = `<button class="link-btn" data-target="invoiceDetail" data-inv="${id}">View</button>`;
+          return [mono(id), person(inv.person), inv.client, String(inv.hours), invAmount(inv), inv.submitted, b(inv.status),
+            `<div class="row-actions">${view}${inv.status === 'Rejected' ? '<button class="link-btn" data-target="rejectedInvoice">Correct</button>' : ''}</div>`];
+        })
+      }
+    };
+  }
   if (screen.id === 'invoiceDetail') return invoiceDetailScreen(screen, selectedInv);
   if (screen.id === 'invoiceUpdate') return invoiceUpdateScreen(screen, selectedInv);
   if (screen.id === 'adminUsers') return adminUsersScreen(screen);
