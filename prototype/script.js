@@ -22,16 +22,14 @@ function b(text) {
 function acts(...labels) {
   const targets = {
     'View / Edit': 'clientEdit',
-    'Holiday Calendar': 'clientHolidayCalendar',
     'Client invoice': 'invoiceUpload',
     'Vendor Invoice': 'vendorInvoices',
     'Consultants': 'vendorConsultants',
     'Open': 'clientEdit',
-    'Holidays': 'clientHolidayCalendar',
     'View': 'clients',
     'Edit': 'clientEdit',
     'View all': 'dashboard',
-    'Correct': 'invoiceAudit'
+    'Correct': 'invoiceUpload'
   };
 
   // View opens a document preview pop-up; Download / Replace act on the row's document (no page change).
@@ -161,87 +159,12 @@ function clientInvoiceAction(clientName) {
   return `<button class="link-btn" data-target="invoiceUpload" data-client="${clientName}">Client invoice</button>`;
 }
 
-/* Client invoice upload (Invoice Management): one row per person per client for October 2026.
-   file: client invoice uploaded for that person; billable: client billable hours; status: reconciliation result. */
-const CLIENT_INVOICE_DATA = {
-  'Blue Harbor Health': [
-    { person: 'Deepa Kumar', sub: 'Coral Staffing', type: 'Consultant', submitted: 160, file: 'BH-Oct26-Kumar.pdf', size: '420 KB', billable: 168, status: 'Rejected' },
-    { person: 'Kevin Singh', sub: 'Summit IT', type: 'Consultant', submitted: 160, file: 'BH-Oct26-Singh.pdf', size: '418 KB', billable: 152, status: 'Rejected' },
-    { person: 'Lena Fischer', sub: 'Summit IT', type: 'Consultant', submitted: 168, file: null, billable: null, status: 'Awaiting Client Invoice' },
-    { person: 'Omar Haddad', sub: 'Coral Staffing', type: 'Consultant', submitted: 144, file: null, billable: null, status: 'Awaiting Client Invoice' },
-    { person: 'Grace Liu', sub: 'W-2', type: 'W-2', submitted: 168, file: null, billable: null, status: 'Awaiting Client Invoice' }
-  ],
-  'Northwind Labs': [
-    { person: 'Jordan Blake', sub: '1099', type: '1099', submitted: 152, file: null, billable: null, status: 'Awaiting Client Invoice' },
-    { person: 'Maya Reed', sub: 'W-2', type: 'W-2', submitted: 168, file: 'NL-Oct26-Maya.pdf', size: '405 KB', billable: 168, status: 'Approved' },
-    { person: 'Ava Chen', sub: '1099', type: '1099', submitted: null, file: null, billable: null, status: 'Awaiting Client Invoice' }
-  ],
-  'Meridian Retail Group': [
-    { person: 'Sofia Marin', sub: 'Coral Staffing', type: 'Consultant', submitted: 168, file: null, billable: null, status: 'Awaiting Client Invoice' },
-    { person: 'Maya Reed', sub: 'W-2', type: 'W-2', submitted: 40, file: null, billable: null, status: 'Awaiting Client Invoice' },
-    { person: 'Natalie Brooks', sub: 'Consultant', type: 'Consultant', submitted: 152, file: null, billable: null, status: 'Awaiting Client Invoice' }
-  ],
-  'Lumen Logistics': [
-    { person: 'Alex Morgan', sub: 'W-2', type: 'W-2', submitted: 160, file: 'LL-Oct26-Morgan.pdf', size: '390 KB', billable: 160, status: 'Approved' },
-    { person: 'Ravi Menon', sub: 'Cascade Data', type: 'Consultant', submitted: 144, file: 'LL-Oct26-Menon.pdf', size: '410 KB', billable: 144, status: 'Approved' }
-  ]
-};
-
-function clientInvoiceTable(table, clientName) {
-  const rows = CLIENT_INVOICE_DATA[clientName] || [];
-  const awaiting = rows.filter((r) => r.status === 'Awaiting Client Invoice').length;
-  return {
-    ...table,
-    title: `${clientName} · October 2026`,
-    chip: `${rows.length} people · ${awaiting} awaiting client invoice`,
-    rows: rows.map((r, i) => [
-      person(r.person, r.sub),
-      r.type,
-      r.submitted ?? '<span class="person-sub inline">Not submitted</span>',
-      r.file
-        ? `<div class="doc-cell">${fileChip(r.file, r.size)}</div>`
-        : `<span class="cell-upload-wrap"><button type="button" class="upload-mini ci-upload" data-row="${i}">Upload</button><input type="file" class="upload-input" accept=".pdf,.docx,.jpg,.jpeg,.png" hidden /></span>`,
-      `<input class="cell-input ci-hours" data-row="${i}" inputmode="decimal" ${r.billable != null ? `value="${r.billable}"` : 'placeholder="0"'} />`,
-      b(r.status)
-    ])
-  };
-}
-
-function getClientInvoiceRows(clientName) {
-  const rowsByClient = {
-    'Blue Harbor Health': [
-      [person('Deepa Kumar', 'Coral Staffing'), 'Consultant', '160', fileChip('BH-Oct26-Kumar.pdf', '420 KB'), '<input class="cell-input" value="168" />', b('Rejected')],
-      [person('Kevin Singh', 'Summit IT'), 'Consultant', '160', fileChip('BH-Oct26-Singh.pdf', '418 KB'), '<input class="cell-input" value="152" />', b('Rejected')],
-      [person('Lena Fischer', 'Summit IT'), 'Consultant', '168', '<button class="upload-mini">Upload</button>', '<input class="cell-input" placeholder="0" />', b('Awaiting Client Invoice')],
-      [person('Omar Haddad', 'Coral Staffing'), 'Consultant', '144', '<button class="upload-mini">Upload</button>', '<input class="cell-input" placeholder="0" />', b('Awaiting Client Invoice')],
-      [person('Grace Liu', 'W-2'), 'W-2', '168', '<button class="upload-mini">Upload</button>', '<input class="cell-input" placeholder="0" />', b('Awaiting Client Invoice')]
-    ],
-    'Northwind Labs': [
-      [person('Jordan Blake', '1099'), '1099', '152', fileChip('NL-Oct26-Blake.pdf', '402 KB'), '<input class="cell-input" value="152" />', b('Approved')],
-      [person('Maya Reed', 'W-2'), 'W-2', '168', fileChip('NL-Oct26-Maya.pdf', '405 KB'), '<input class="cell-input" value="168" />', b('Approved')],
-      [person('Ava Chen', 'Contractor'), '1099', '160', '<button class="upload-mini">Upload</button>', '<input class="cell-input" placeholder="0" />', b('Awaiting Client Invoice')]
-    ],
-    'Meridian Retail Group': [
-      [person('Priya Shah', 'Coral Staffing'), 'Consultant', '164', fileChip('MR-Oct26-Shah.pdf', '431 KB'), '<input class="cell-input" value="168" />', b('Rejected')],
-      [person('Maya Reed', 'W-2'), 'W-2', '168', fileChip('MR-Oct26-Maya.pdf', '410 KB'), '<input class="cell-input" value="168" />', b('Approved')],
-      [person('Natalie Brooks', 'Consultant'), 'Consultant', '152', '<button class="upload-mini">Upload</button>', '<input class="cell-input" placeholder="0" />', b('Awaiting Client Invoice')]
-    ],
-    'Lumen Logistics': [
-      [person('Alex Morgan', 'W-2'), 'W-2', '160', fileChip('LL-Oct26-Morgan.pdf', '390 KB'), '<input class="cell-input" value="160" />', b('Approved')],
-      [person('Ravi Menon', 'Consultant'), 'Consultant', '144', fileChip('LL-Oct26-Menon.pdf', '410 KB'), '<input class="cell-input" value="144" />', b('Approved')],
-      [person('Alicia Ross', 'Account Manager'), 'W-2', '168', '<button class="upload-mini">Upload</button>', '<input class="cell-input" placeholder="0" />', b('Awaiting Client Invoice')]
-    ]
-  };
-
-  return rowsByClient[clientName] || rowsByClient['Blue Harbor Health'];
-}
-
 const DASHBOARD_KPI_TARGETS = {
   superadmin: ['clients', 'vendors', 'teamMembers', 'teamMembers'],
-  accountmanager: ['clients', 'vendorList', 'invoiceUpload', 'reconciliation'],
+  accountmanager: ['clients', 'vendorList', 'invoiceUpload', 'invoiceUpload'],
   vendor: ['consultants', 'invoices', 'rejectedInvoice', 'docs'],
-  w2: ['engagements', 'status', 'status', 'docs'],
-  w9: ['engagements', 'status', 'correction', 'docs']
+  w2: ['status', 'status', 'docs'],
+  w9: ['status', 'correction', 'docs']
 };
 
 function person(name, sub) {
@@ -272,7 +195,7 @@ const TEAM_MEMBERS = {
   'Maya Reed': {
     type: 'W-2', role: 'Data Analyst', email: 'maya.reed@outlook.com', phone: '(646) 555-0128',
     address: '312 W 88th St, Apt 4B, New York, NY 10024', ssn: '•••-••-2290',
-    client: 'Northwind Labs', rate: '62.00', location: 'Remote', start: '2026-03-02', end: '2027-02-26',
+    client: 'HTC', rate: '62.00', location: 'Remote', start: '2026-03-02', end: '2027-02-26',
     term: 'Net 10', status: 'Active', am: 'Alicia Ross',
     docs: [
       ['W-4', 'W4_Reed_2026.pdf', 'Mar 2, 2026', '—', 'Valid'],
@@ -284,10 +207,10 @@ const TEAM_MEMBERS = {
   'Jordan Blake': {
     type: '1099', role: 'UX Consultant', email: 'jordan@blakeux.studio', phone: '(415) 555-0186',
     address: '2201 Mission St, Suite 5, San Francisco, CA 94110', ssn: '•••-••-7731',
-    client: 'Northwind Labs', rate: '90.00', location: 'Remote', start: '2026-07-06', end: '2027-01-08',
+    client: 'HTC', rate: '90.00', location: 'Remote', start: '2026-07-06', end: '2027-01-08',
     term: 'Net 10', status: 'Active', am: 'Alicia Ross',
     docs: [
-      ['1099 contract — Northwind Labs', 'Blake_1099_Northwind.pdf', 'Jul 1, 2026', 'Jan 8, 2027', 'Signed'],
+      ['1099 contract — HTC', 'Blake_1099_HTC.pdf', 'Jul 1, 2026', 'Jan 8, 2027', 'Signed'],
       ['W-9', 'Blake_W9_2026.pdf', 'Jun 30, 2026', '—', 'Valid'],
       ['ACH form', 'Blake_ACH.pdf', 'Jun 30, 2026', '—', 'Valid']
     ]
@@ -295,67 +218,68 @@ const TEAM_MEMBERS = {
   'Deepa Kumar': {
     type: 'Consultant', vendor: 'Coral Staffing LLC', vendorContact: 'Daniel Ortiz · d.ortiz@coralstaffing.com',
     role: 'Business Analyst', email: 'deepa.kumar@coralstaffing.com', phone: '(512) 555-0147',
-    client: 'Blue Harbor Health', rate: '80.00', location: 'Hybrid', start: '2026-01-12', end: '2026-12-31',
+    client: 'Persistent', rate: '80.00', location: 'Boston, MA', start: '2026-01-12', end: '2026-12-31',
     term: 'Net 10', status: 'Active', am: 'Alicia Ross',
     docs: [
       ['Resume', 'Deepa_Kumar_Resume.pdf', 'Jan 5, 2026', '—', 'Valid'],
       ['Work authorization (H-1B)', 'Kumar_H1B_Approval.pdf', 'Dec 1, 2025', 'Nov 30, 2026', 'Expiring Soon'],
-      ['I-9 audit report', 'Kumar_I9_Audit.pdf', 'Jan 9, 2026', '—', 'Valid'],
+      // Audit report: [doc, file, uploaded, period end, status, period covered, earlier reports kept in history]
+      ['I-9 audit report', 'Kumar_I9_Audit_Jul-Dec26.pdf', 'Jul 3, 2026', 'Dec 31, 2026', 'Valid', 'Jul 1 – Dec 31, 2026 (6 months)', 1],
       ['E-Verify document', 'Kumar_EVerify.pdf', 'Jan 9, 2026', '—', 'Valid']
     ]
   },
   'Rinaldo Silva': {
     type: 'Consultant', vendor: 'Coral Staffing LLC', vendorContact: 'Daniel Ortiz · d.ortiz@coralstaffing.com',
     role: 'QA Engineer', email: 'rinaldo.silva@coralstaffing.com', phone: '(512) 555-0163',
-    client: 'Apex Systems', rate: '72.00', location: 'Remote', start: '2026-09-14', end: '2027-03-12',
+    client: 'Citus Tech', rate: '72.00', location: 'Remote', start: '2026-09-14', end: '2027-03-12',
     term: 'Net 10', status: 'Active', am: 'Benjamin Cole',
     docs: [
       ['Resume', 'Rinaldo_Silva_Resume.pdf', 'Sep 1, 2026', '—', 'Valid'],
       ['Work authorization (Green Card)', 'Silva_GC.pdf', 'Sep 1, 2026', 'Aug 14, 2033', 'Valid'],
-      ['I-9 audit report', 'Silva_I9_Audit.pdf', 'Sep 10, 2026', '—', 'Valid'],
+      ['I-9 audit report', 'Silva_I9_Audit_Sep-Dec26.pdf', 'Sep 15, 2026', 'Dec 13, 2026', 'Valid', 'Sep 14 – Dec 13, 2026 (3 months)', 0],
       ['E-Verify document', 'Silva_EVerify.pdf', 'Sep 10, 2026', '—', 'Valid']
     ]
   },
   'Kevin Singh': {
     type: 'Consultant', vendor: 'Summit IT Solutions', vendorContact: 'Ravi Menon · ravi@summitits.com',
     role: 'Java Developer', email: 'kevin.singh@summitits.com', phone: '(732) 555-0119',
-    client: 'Blue Harbor Health', rate: '85.00', location: 'Hybrid', start: '2026-04-01', end: '2027-03-31',
+    client: 'Persistent', rate: '85.00', location: 'Boston, MA', start: '2026-04-01', end: '2027-03-31',
     term: 'Net 10', status: 'Active', am: 'Alicia Ross',
     docs: [
       ['Resume', 'Kevin_Singh_Resume.pdf', 'Mar 20, 2026', '—', 'Valid'],
       ['Work authorization (EAD)', 'Singh_EAD.pdf', 'Mar 20, 2026', 'Jun 30, 2027', 'Valid'],
-      ['I-9 audit report', 'Singh_I9_Audit.pdf', 'Mar 28, 2026', '—', 'Valid'],
+      ['I-9 audit report', 'Singh_I9_Audit_Q4-26.pdf', 'Oct 2, 2026', 'Dec 31, 2026', 'Valid', 'Oct 1 – Dec 31, 2026 (3 months)', 2],
       ['E-Verify document', 'Singh_EVerify.pdf', 'Mar 28, 2026', '—', 'Valid']
     ]
   },
   'Omar Haddad': {
     type: 'Consultant', vendor: 'Coral Staffing LLC', vendorContact: 'Daniel Ortiz · d.ortiz@coralstaffing.com',
     role: 'DevOps Engineer', email: 'omar.haddad@coralstaffing.com', phone: '(512) 555-0152',
-    client: 'Blue Harbor Health', rate: '84.00', location: 'Onsite', start: '2026-02-02', end: '2027-01-29',
+    client: 'Persistent', rate: '84.00', location: 'Chicago, IL', start: '2026-02-02', end: '2027-01-29',
     term: 'Net 10', status: 'Active', am: 'Alicia Ross',
     docs: [
       ['Resume', 'Omar_Haddad_Resume.pdf', 'Jan 20, 2026', '—', 'Valid'],
       ['Work authorization (Green Card)', 'Haddad_GC.pdf', 'Jan 20, 2026', 'Mar 3, 2034', 'Valid'],
-      ['I-9 audit report', 'Haddad_I9_Audit.pdf', 'Jan 28, 2026', '—', 'Valid'],
+      ['I-9 audit report', 'Haddad_I9_Audit_Aug26-Jan27.pdf', 'Aug 3, 2026', 'Jan 31, 2027', 'Valid', 'Aug 1, 2026 – Jan 31, 2027 (6 months)', 1],
       ['E-Verify document', 'Haddad_EVerify.pdf', 'Jan 28, 2026', '—', 'Valid']
     ]
   },
   'Sofia Marin': {
     type: 'Consultant', vendor: 'Coral Staffing LLC', vendorContact: 'Daniel Ortiz · d.ortiz@coralstaffing.com',
     role: 'Scrum Master', email: 'sofia.marin@coralstaffing.com', phone: '(512) 555-0188',
-    client: 'Meridian Retail Group', rate: '76.00', location: 'Remote', start: '2026-05-04', end: '2026-11-27',
+    client: 'Citus Tech', rate: '76.00', location: 'Remote', start: '2026-05-04', end: '2026-11-27',
     term: 'Net 10', status: 'Active', am: 'Alicia Ross',
     docs: [
       ['Resume', 'Sofia_Marin_Resume.pdf', 'Apr 22, 2026', '—', 'Valid'],
       ['Work authorization (TN)', 'Marin_TN_Approval.pdf', 'Apr 22, 2026', 'Apr 30, 2029', 'Valid'],
-      ['I-9 audit report', 'Marin_I9_Audit.pdf', 'Apr 30, 2026', '—', 'Valid'],
+      ['I-9 audit report', 'Marin_I9_Audit_Nov26-Jan27.pdf', 'Nov 2, 2026', 'Jan 31, 2027', 'Valid', 'Nov 1, 2026 – Jan 31, 2027 (3 months)', 2],
       ['E-Verify document', null, '—', '—', 'Incomplete']
     ]
   },
   'Priya Shah': {
     type: 'Consultant', vendor: 'Coral Staffing LLC', vendorContact: 'Daniel Ortiz · d.ortiz@coralstaffing.com',
     role: 'Data Engineer', email: 'priya.shah@coralstaffing.com', phone: '(512) 555-0174',
-    client: 'Meridian Retail Group', rate: '88.00', location: 'Remote', start: '2026-11-16', end: '2027-05-14',
+    client: 'Citus Tech', rate: '88.00', location: 'Remote', start: '2026-11-16', end: '2027-05-14',
     term: 'Net 10', status: 'Onboarding', am: 'Alicia Ross',
     docs: [
       ['Resume', 'Priya_Shah_Resume.pdf', 'Nov 9, 2026', '—', 'Valid'],
@@ -363,8 +287,24 @@ const TEAM_MEMBERS = {
       ['I-9 audit report', null, '—', '—', 'Incomplete'],
       ['E-Verify document', null, '—', '—', 'Incomplete']
     ]
+  },
+  // Just added by the vendor: no client yet. The account manager maps the client from Edit.
+  'Marcus Lee': {
+    type: 'Consultant', vendor: 'Coral Staffing LLC', vendorContact: 'Daniel Ortiz · d.ortiz@coralstaffing.com',
+    role: 'Salesforce Developer', email: 'marcus.lee@coralstaffing.com', phone: '(512) 555-0193',
+    client: '', rate: '92.00', location: 'San Francisco, CA', start: '2026-12-07', end: '2027-06-04',
+    term: 'Net 10', status: 'Onboarding', am: 'Alicia Ross',
+    docs: [
+      ['Resume', 'Marcus_Lee_Resume.pdf', 'Nov 12, 2026', '—', 'Valid'],
+      ['I-9', null, '—', '—', 'Incomplete'],
+      ['E-Verify document', null, '—', '—', 'Incomplete'],
+      ['I-9 audit report', null, '—', '—', 'Incomplete']
+    ]
   }
 };
+
+// Client cell for a consultant the account manager has not mapped to a client yet.
+const NOT_MAPPED = '<span class="person-sub inline">Not mapped</span>';
 
 let selectedMember = 'Maya Reed';
 
@@ -382,31 +322,29 @@ function memberAction(name, withSubmissions) {
 // invoice / timesheet: file name, null = not uploaded (admin can upload), 'na' = not applicable (W-2 has no invoice)
 const MEMBER_SUBMISSIONS = {
   'Maya Reed': [
-    { period: 'Nov 2026', client: 'Northwind Labs', ref: '—', hours: '—', amount: '—', invoice: 'na', timesheet: null, status: 'Due' },
-    { period: 'Oct 2026', client: 'Northwind Labs', ref: 'TS-2026-10-0093', hours: '168', amount: '—', invoice: 'na', timesheet: 'Reed_Oct26.pdf', status: 'Approved' },
-    { period: 'Oct 2026', client: 'Meridian Retail Group', ref: 'TS-2026-10-0101', hours: '40', amount: '—', invoice: 'na', timesheet: 'Reed_Meridian_Oct26.pdf', status: 'Awaiting Client Invoice' },
-    { period: 'Sep 2026', client: 'Northwind Labs', ref: 'TS-2026-09-0071', hours: '160', amount: '—', invoice: 'na', timesheet: 'Reed_Sep26_v2.pdf', status: 'Approved' }
+    { period: 'Nov 2026', client: 'HTC', ref: '—', hours: '—', amount: '—', invoice: 'na', timesheet: null, status: 'Due' },
+    { period: 'Oct 2026', client: 'HTC', ref: 'TS-2026-10-0093', hours: '168', amount: '—', invoice: 'na', timesheet: 'Reed_Oct26.pdf', status: 'Approved' },
+    { period: 'Sep 2026', client: 'HTC', ref: 'TS-2026-09-0071', hours: '160', amount: '—', invoice: 'na', timesheet: 'Reed_Sep26_v2.pdf', status: 'Approved' }
   ],
   'Jordan Blake': [
-    { period: 'Oct 2026', client: 'Northwind Labs', ref: 'INV-2026-10-0151', hours: '152', amount: '$13,680.00', invoice: 'BlakeUX-0046.pdf', timesheet: 'Blake_Northwind_Oct26.pdf', status: 'Awaiting Client Invoice' },
-    { period: 'Oct 2026', client: 'Apex Systems', ref: 'INV-2026-10-0164', hours: '102', amount: '$8,364.00', invoice: 'BlakeUX-0045.pdf', timesheet: 'Blake_Apex_Oct26.pdf', status: 'Approved' },
-    { period: 'Sep 2026', client: 'Apex Systems', ref: 'INV-2026-09-0388', hours: '108', amount: '$8,856.00', invoice: 'BlakeUX-0039.pdf', timesheet: 'Blake_Apex_Sep26.pdf', status: 'Rejected' },
-    { period: 'Sep 2026', client: 'Northwind Labs', ref: 'INV-2026-09-0352', hours: '160', amount: '$14,400.00', invoice: 'BlakeUX-0038.pdf', timesheet: 'Blake_Northwind_Sep26.pdf', status: 'Approved' }
+    { period: 'Oct 2026', client: 'HTC', ref: 'INV-2026-10-0151', hours: '152', amount: '$13,680.00', invoice: 'BlakeUX-0046.pdf', timesheet: 'Blake_HTC_Oct26.pdf', status: 'Awaiting Client Invoice' },
+    { period: 'Sep 2026', client: 'HTC', ref: 'INV-2026-09-0388', hours: '160', amount: '$14,400.00', invoice: 'BlakeUX-0039.pdf', timesheet: 'Blake_HTC_Sep26.pdf', status: 'Rejected' },
+    { period: 'Aug 2026', client: 'HTC', ref: 'INV-2026-08-0301', hours: '168', amount: '$15,120.00', invoice: 'BlakeUX-0035.pdf', timesheet: 'Blake_HTC_Aug26.pdf', status: 'Approved' }
   ],
   'Deepa Kumar': [
-    { period: 'Oct 2026', client: 'Blue Harbor Health', ref: 'INV-2026-10-0203', hours: '160', amount: '$12,800.00', invoice: 'CS-INV-10477.pdf', timesheet: 'Kumar_Oct26_timesheet.pdf', status: 'Rejected' },
-    { period: 'Sep 2026', client: 'Blue Harbor Health', ref: 'INV-2026-09-0145', hours: '168', amount: '$13,440.00', invoice: 'CS-INV-10391.pdf', timesheet: 'Kumar_Sep26_timesheet.pdf', status: 'Approved' }
+    { period: 'Oct 2026', client: 'Persistent', ref: 'INV-2026-10-0203', hours: '160', amount: '$12,800.00', invoice: 'CS-INV-10477.pdf', timesheet: 'Kumar_Oct26_timesheet.pdf', status: 'Rejected' },
+    { period: 'Sep 2026', client: 'Persistent', ref: 'INV-2026-09-0145', hours: '168', amount: '$13,440.00', invoice: 'CS-INV-10391.pdf', timesheet: 'Kumar_Sep26_timesheet.pdf', status: 'Approved' }
   ],
   'Rinaldo Silva': [
-    { period: 'Oct 2026', client: 'Apex Systems', ref: 'INV-2026-10-0142', hours: '168', amount: '$12,096.00', invoice: 'CS-INV-10482.pdf', timesheet: 'Silva_Oct26_timesheet.pdf', status: 'Approved' },
-    { period: 'Sep 2026', client: 'Apex Systems', ref: 'INV-2026-09-0133', hours: '96', amount: '$6,912.00', invoice: 'CS-INV-10388.pdf', timesheet: null, status: 'In Progress' }
+    { period: 'Oct 2026', client: 'Citus Tech', ref: 'INV-2026-10-0142', hours: '168', amount: '$12,096.00', invoice: 'CS-INV-10482.pdf', timesheet: 'Silva_Oct26_timesheet.pdf', status: 'Approved' },
+    { period: 'Sep 2026', client: 'Citus Tech', ref: 'INV-2026-09-0133', hours: '96', amount: '$6,912.00', invoice: 'CS-INV-10388.pdf', timesheet: null, status: 'In Progress' }
   ],
   'Kevin Singh': [
-    { period: 'Oct 2026', client: 'Blue Harbor Health', ref: 'INV-2026-10-0187', hours: '160', amount: '$13,600.00', invoice: 'SIT-INV-2210.pdf', timesheet: 'Singh_Oct26_timesheet.pdf', status: 'Rejected' },
-    { period: 'Sep 2026', client: 'Blue Harbor Health', ref: 'INV-2026-09-0129', hours: '168', amount: '$14,280.00', invoice: null, timesheet: 'Singh_Sep26_timesheet.pdf', status: 'In Progress' }
+    { period: 'Oct 2026', client: 'Persistent', ref: 'INV-2026-10-0187', hours: '160', amount: '$13,600.00', invoice: 'SIT-INV-2210.pdf', timesheet: 'Singh_Oct26_timesheet.pdf', status: 'Rejected' },
+    { period: 'Sep 2026', client: 'Persistent', ref: 'INV-2026-09-0129', hours: '168', amount: '$14,280.00', invoice: null, timesheet: 'Singh_Sep26_timesheet.pdf', status: 'In Progress' }
   ],
   'Priya Shah': [
-    { period: 'Nov 2026', client: 'Meridian Retail Group', ref: '—', hours: '—', amount: '—', invoice: null, timesheet: null, status: 'Not Started' }
+    { period: 'Nov 2026', client: 'Citus Tech', ref: '—', hours: '—', amount: '—', invoice: null, timesheet: null, status: 'Not Started' }
   ]
 };
 
@@ -429,7 +367,7 @@ function memberSubmissionsScreen(screen, name) {
       : `${m.type === 'Consultant' ? `Normally submitted by ${m.vendor}. ` : ''}You can submit an invoice and timesheet on their behalf, or upload a missing document.`,
     actions: [
       { label: 'View Profile', target: 'memberDetail' },
-      { label: m.type === 'W-2' ? 'Submit Timesheet' : 'Submit Invoice', target: 'submitOnBehalf', primary: true }
+      { label: m.type === 'W-2' ? 'Upload Timesheet' : 'Upload Invoice', target: 'submitOnBehalf', primary: true }
     ],
     table: {
       title: 'Submissions',
@@ -455,7 +393,7 @@ function submitOnBehalfScreen(screen, name) {
   const me = currentPersona().user.name;
   return {
     ...screen,
-    title: w2 ? `Submit Timesheet for ${name}` : `Submit Invoice for ${name}`,
+    title: w2 ? `Upload Timesheet for ${name}` : `Upload Invoice for ${name}`,
     description: `${w2 ? 'Timesheet' : 'Invoice and timesheet'} submitted by you on ${name}’s behalf${m.type === 'Consultant' ? ` (vendor: ${m.vendor})` : ''}. Reconciliation runs automatically on submit.`,
     form: {
       sections: [
@@ -506,16 +444,14 @@ const ACCOUNT_MANAGERS = [
 let selectedAm = 0;
 let flashMessage = null; // one-time success banner shown on the next screen
 
+// The only clients in the prototype.
+const CLIENT_NAMES = ['Persistent', 'HTC', 'Citus Tech'];
+
 // A client has one or more account managers (PRD CL-8). [] = none yet.
 const CLIENT_AM = {
-  'Northwind Labs': ['Alicia Ross'],
-  'Blue Harbor Health': ['Alicia Ross', 'Priya Natarajan'],
-  'Meridian Retail Group': ['Alicia Ross'],
-  'Lumen Logistics': ['Alicia Ross'],
-  'Apex Systems': ['Benjamin Cole'],
-  'Helix Biotech': ['Benjamin Cole'],
-  'GlobalCare Insurance': ['Priya Natarajan'],
-  'Lakeshore Financial': []
+  'Persistent': ['Alicia Ross', 'Priya Natarajan'],
+  'HTC': ['Alicia Ross'],
+  'Citus Tech': ['Benjamin Cole', 'Alicia Ross']
 };
 
 // Client options for the Account Manager forms: hint shows who else manages each client.
@@ -673,10 +609,9 @@ function showFieldError(form, label, message) {
 /* ---------- 1099 invoice view ---------- */
 
 const RESOURCE_INVOICES = {
-  'INV-2026-10-0151': { client: 'Northwind Labs', period: 'October 2026', hours: '152', rate: '$90.00', amount: '$13,680.00', term: 'Net 10', submitted: 'Nov 2, 2026', status: 'Awaiting Client Invoice', invoice: ['BlakeUX-0046.pdf', '148 KB'], timesheet: ['Blake_Northwind_Oct26.pdf', '92 KB'] },
-  'INV-2026-10-0164': { client: 'Apex Systems', period: 'October 2026', hours: '102', rate: '$82.00', amount: '$8,364.00', term: 'Net 10', submitted: 'Nov 3, 2026', status: 'Approved', invoice: ['BlakeUX-0045.pdf', '151 KB'], timesheet: ['Blake_Apex_Oct26.pdf', '88 KB'] },
-  'INV-2026-09-0388': { client: 'Apex Systems', period: 'September 2026', hours: '108', rate: '$82.00', amount: '$8,856.00', term: 'Net 10', submitted: 'Oct 4, 2026', status: 'Rejected', reason: 'Billing period did not match the client invoice.', invoice: ['BlakeUX-0039.pdf', '146 KB'], timesheet: ['Blake_Apex_Sep26.pdf', '90 KB'] },
-  'INV-2026-09-0352': { client: 'Northwind Labs', period: 'September 2026', hours: '160', rate: '$90.00', amount: '$14,400.00', term: 'Net 10', submitted: 'Oct 2, 2026', status: 'Approved', invoice: ['BlakeUX-0038.pdf', '150 KB'], timesheet: ['Blake_Northwind_Sep26.pdf', '94 KB'] }
+  'INV-2026-10-0151': { client: 'HTC', period: 'October 2026', hours: '152', rate: '$90.00', amount: '$13,680.00', term: 'Net 10', submitted: 'Nov 2, 2026', status: 'Awaiting Client Invoice', invoice: ['BlakeUX-0046.pdf', '148 KB'], timesheet: ['Blake_HTC_Oct26.pdf', '92 KB'] },
+  'INV-2026-09-0388': { client: 'HTC', period: 'September 2026', hours: '160', rate: '$90.00', amount: '$14,400.00', term: 'Net 10', submitted: 'Oct 4, 2026', status: 'Rejected', reason: 'Billing period did not match the client invoice.', invoice: ['BlakeUX-0039.pdf', '146 KB'], timesheet: ['Blake_HTC_Sep26.pdf', '90 KB'] },
+  'INV-2026-08-0301': { client: 'HTC', period: 'August 2026', hours: '168', rate: '$90.00', amount: '$15,120.00', term: 'Net 10', submitted: 'Sep 2, 2026', status: 'Approved', invoice: ['BlakeUX-0035.pdf', '149 KB'], timesheet: ['Blake_HTC_Aug26.pdf', '93 KB'] }
 };
 
 let selectedInvoice = 'INV-2026-10-0151';
@@ -721,20 +656,18 @@ function invoiceViewScreen(screen, id) {
 
 // versions: oldest first; the last one is current. Each: [version, file, uploaded, uploaded by, valid until]
 const DOCUMENTS = {
-  'msa-northwind': { name: 'MSA', owner: 'Northwind Labs', type: 'Client', status: 'Valid', versions: [
-    ['v1', 'Northwind_MSA_2021.pdf', 'Feb 12, 2021', 'Arun Krishnan', 'Feb 11, 2023'],
-    ['v2', 'Northwind_MSA_2023.pdf', 'Feb 10, 2023', 'Alicia Ross', 'Feb 11, 2025'],
-    ['v3', 'Northwind_MSA_2025.pdf', 'Feb 7, 2025', 'Alicia Ross', 'Feb 12, 2027']] },
+  'msa-northwind': { name: 'MSA', owner: 'HTC', type: 'Client', status: 'Valid', versions: [
+    ['v1', 'HTC_MSA_2021.pdf', 'Feb 12, 2021', 'Arun Krishnan', 'Feb 11, 2023'],
+    ['v2', 'HTC_MSA_2023.pdf', 'Feb 10, 2023', 'Alicia Ross', 'Feb 11, 2025'],
+    ['v3', 'HTC_MSA_2025.pdf', 'Feb 7, 2025', 'Alicia Ross', 'Feb 12, 2027']] },
   'coi-coral': { name: 'COI', owner: 'Coral Staffing LLC', type: 'Vendor', status: 'Expiring Soon', versions: [
     ['v1', 'Coral_COI_2024.pdf', 'Nov 20, 2024', 'Daniel Ortiz', 'Nov 25, 2025'],
     ['v2', 'Coral_COI_2025.pdf', 'Nov 18, 2025', 'Daniel Ortiz', 'Nov 25, 2026']] },
   'wa-kumar': { name: 'Work authorization (H-1B)', owner: 'Deepa Kumar', type: 'Consultant', status: 'Expiring Soon', versions: [
     ['v1', 'Kumar_H1B_Approval.pdf', 'Dec 1, 2025', 'Daniel Ortiz', 'Nov 30, 2026']] },
-  'msa-helix': { name: 'MSA', owner: 'Helix Biotech', type: 'Client', status: 'Expired', versions: [
-    ['v1', 'Helix_MSA_2024.pdf', 'Oct 30, 2024', 'Benjamin Cole', 'Oct 31, 2026']] },
   'i9-reed': { name: 'I-9', owner: 'Maya Reed', type: 'W-2 Resource', status: 'Incomplete', versions: [] },
   'everify-torres': { name: 'E-Verify', owner: 'Ana Torres', type: 'Consultant', status: 'Not Applicable', versions: [] },
-  'msa-blueharbor': { name: 'MSA', owner: 'Blue Harbor Health', type: 'Client', status: 'Expiring Soon', versions: [
+  'msa-blueharbor': { name: 'MSA', owner: 'Persistent', type: 'Client', status: 'Expiring Soon', versions: [
     ['v1', 'BlueHarbor_MSA_2022.pdf', 'Dec 5, 2022', 'Arun Krishnan', 'Dec 09, 2024'],
     ['v2', 'BlueHarbor_MSA_2024.pdf', 'Dec 4, 2024', 'Alicia Ross', 'Dec 09, 2026']] },
   'ach-ridgeline': { name: 'ACH form', owner: 'Ridgeline Talent Group', type: 'Vendor', status: 'Incomplete', versions: [] },
@@ -744,7 +677,7 @@ const DOCUMENTS = {
 };
 
 const TRACKER_DOC_IDS = {
-  superadmin: ['msa-northwind', 'coi-coral', 'wa-kumar', 'msa-helix', 'i9-reed', 'everify-torres'],
+  superadmin: ['msa-northwind', 'coi-coral', 'wa-kumar', 'i9-reed', 'everify-torres'],
   accountmanager: ['coi-coral', 'wa-kumar', 'msa-blueharbor', 'ach-ridgeline', 'w9-summit']
 };
 
@@ -827,21 +760,159 @@ function docDetailScreen(screen, id) {
 // invoice / timesheet: file name, null = not uploaded, 'na' = not applicable (W-2 has no invoice).
 // clientHours: hours on the client invoice, or null while it has not been uploaded.
 const INVOICES = {
-  'INV-2026-10-0142': { person: 'Rinaldo Silva', sub: 'Coral Staffing', vendor: 'Coral Staffing LLC', client: 'Apex Systems', period: 'October 2026', hours: 168, clientHours: 168, rate: 72, term: 'Net 10', submitted: 'Nov 4 (v2)', status: 'Approved', invoice: 'CS-INV-10482.pdf', timesheet: 'Silva_Oct26_timesheet.pdf' },
-  'INV-2026-10-0151': { person: 'Jordan Blake', sub: '1099', client: 'Northwind Labs', period: 'October 2026', hours: 152, clientHours: null, rate: 90, term: 'Net 10', submitted: 'Nov 2', status: 'In Progress', invoice: 'BlakeUX-0046.pdf', timesheet: 'Blake_Northwind_Oct26.pdf' },
-  'INV-2026-10-0187': { person: 'Kevin Singh', sub: 'Summit IT', vendor: 'Summit IT Solutions', client: 'Blue Harbor Health', period: 'October 2026', hours: 160, clientHours: 152, rate: 85, term: 'Net 10', submitted: 'Nov 3', status: 'Rejected', invoice: 'SIT-INV-2210.pdf', timesheet: 'Singh_Oct26_timesheet.pdf' },
-  'TS-2026-10-0093': { person: 'Maya Reed', sub: 'W-2 · timesheet', w2: true, client: 'Northwind Labs', period: 'October 2026', hours: 168, clientHours: 168, rate: 62, term: 'Net 10', submitted: 'Nov 2', status: 'Approved', invoice: 'na', timesheet: 'Reed_Oct26.pdf' },
-  'INV-2026-10-0203': { person: 'Deepa Kumar', sub: 'Coral Staffing', vendor: 'Coral Staffing LLC', client: 'Blue Harbor Health', period: 'October 2026', hours: 160, clientHours: 168, rate: 80, term: 'Net 10', submitted: 'Nov 3', status: 'Rejected', invoice: 'CS-INV-10477.pdf', timesheet: 'Kumar_Oct26_timesheet.pdf' },
-  'INV-2026-10-0211': { person: 'Ana Torres', sub: 'BluePeak Consulting', vendor: 'BluePeak Consulting Inc.', client: 'GlobalCare Insurance', period: 'October 2026', hours: 176, clientHours: 176, rate: 88, term: 'Net 10', submitted: 'Nov 4', status: 'Approved', invoice: 'BP-INV-5521.pdf', timesheet: 'Torres_Oct26_timesheet.pdf' },
-  'INV-2026-10-0198': { person: 'Omar Haddad', sub: 'Coral Staffing', vendor: 'Coral Staffing LLC', client: 'Blue Harbor Health', period: 'October 2026', hours: 144, clientHours: null, rate: 84, term: 'Net 10', submitted: 'Nov 3', status: 'In Progress', invoice: 'CS-INV-10479.pdf', timesheet: null },
-  'INV-2026-10-0176': { person: 'Sofia Marin', sub: 'Coral Staffing', vendor: 'Coral Staffing LLC', client: 'Meridian Retail Group', period: 'October 2026', hours: 168, clientHours: null, rate: 76, term: 'Net 10', submitted: 'Nov 2', status: 'In Progress', invoice: 'CS-INV-10471.pdf', timesheet: 'Marin_Oct26_timesheet.pdf' },
-  'NS-ELENA': { person: 'Elena Petrova', sub: 'Coral Staffing', vendor: 'Coral Staffing LLC', client: 'Apex Systems', period: 'October 2026', hours: null, clientHours: 160, rate: 78, term: 'Net 10', submitted: '—', status: 'Not Submitted', invoice: null, timesheet: null },
-  'NS-LENA': { person: 'Lena Fischer', sub: 'Summit IT', vendor: 'Summit IT Solutions', client: 'Blue Harbor Health', period: 'October 2026', hours: null, clientHours: 168, rate: 82, term: 'Net 10', submitted: '—', status: 'Not Submitted', invoice: null, timesheet: null },
-  'NS-AVA': { person: 'Ava Chen', sub: '1099', client: 'Northwind Labs', period: 'October 2026', hours: null, clientHours: 160, rate: 86, term: 'Net 10', submitted: '—', status: 'Not Submitted', invoice: null, timesheet: null }
+  'INV-2026-10-0142': { person: 'Rinaldo Silva', sub: 'Coral Staffing', vendor: 'Coral Staffing LLC', client: 'Citus Tech', period: 'October 2026', hours: 168, clientHours: 168, rate: 72, term: 'Net 10', submitted: 'Nov 4 (v2)', status: 'Approved', invoice: 'CS-INV-10482.pdf', timesheet: 'Silva_Oct26_timesheet.pdf' },
+  'INV-2026-10-0151': { person: 'Jordan Blake', sub: '1099', client: 'HTC', period: 'October 2026', hours: 152, clientHours: null, rate: 90, term: 'Net 10', submitted: 'Nov 2', status: 'In Progress', invoice: 'BlakeUX-0046.pdf', timesheet: 'Blake_HTC_Oct26.pdf' },
+  'INV-2026-10-0187': { person: 'Kevin Singh', sub: 'Summit IT', vendor: 'Summit IT Solutions', client: 'Persistent', period: 'October 2026', hours: 160, clientHours: 152, rate: 85, term: 'Net 10', submitted: 'Nov 3', status: 'Rejected', invoice: 'SIT-INV-2210.pdf', timesheet: 'Singh_Oct26_timesheet.pdf' },
+  'TS-2026-10-0093': { person: 'Maya Reed', sub: 'W-2 · timesheet', w2: true, client: 'HTC', period: 'October 2026', hours: 168, clientHours: 168, rate: 62, term: 'Net 10', submitted: 'Nov 2', status: 'Approved', invoice: 'na', timesheet: 'Reed_Oct26.pdf' },
+  'INV-2026-10-0203': { person: 'Deepa Kumar', sub: 'Coral Staffing', vendor: 'Coral Staffing LLC', client: 'Persistent', period: 'October 2026', hours: 160, clientHours: 168, rate: 80, term: 'Net 10', submitted: 'Nov 3', status: 'Rejected', invoice: 'CS-INV-10477.pdf', timesheet: 'Kumar_Oct26_timesheet.pdf' },
+  'INV-2026-10-0211': { person: 'Ana Torres', sub: 'BluePeak Consulting', vendor: 'BluePeak Consulting Inc.', client: 'Persistent', period: 'October 2026', hours: 176, clientHours: 176, rate: 88, term: 'Net 10', submitted: 'Nov 4', status: 'Approved', invoice: 'BP-INV-5521.pdf', timesheet: 'Torres_Oct26_timesheet.pdf' },
+  'INV-2026-10-0198': { person: 'Omar Haddad', sub: 'Coral Staffing', vendor: 'Coral Staffing LLC', client: 'Persistent', period: 'October 2026', hours: 144, clientHours: null, rate: 84, term: 'Net 10', submitted: 'Nov 3', status: 'In Progress', invoice: 'CS-INV-10479.pdf', timesheet: null },
+  'INV-2026-10-0176': { person: 'Sofia Marin', sub: 'Coral Staffing', vendor: 'Coral Staffing LLC', client: 'Citus Tech', period: 'October 2026', hours: 168, clientHours: null, rate: 76, term: 'Net 10', submitted: 'Nov 2', status: 'In Progress', invoice: 'CS-INV-10471.pdf', timesheet: 'Marin_Oct26_timesheet.pdf' },
+  'NS-ELENA': { person: 'Elena Petrova', sub: 'Coral Staffing', vendor: 'Coral Staffing LLC', client: 'Citus Tech', period: 'October 2026', hours: null, clientHours: 160, rate: 78, term: 'Net 10', submitted: '—', status: 'Not Submitted', invoice: null, timesheet: null },
+  'NS-LENA': { person: 'Lena Fischer', sub: 'Summit IT', vendor: 'Summit IT Solutions', client: 'Persistent', period: 'October 2026', hours: null, clientHours: 168, rate: 82, term: 'Net 10', submitted: '—', status: 'Not Submitted', invoice: null, timesheet: null },
+  'NS-AVA': { person: 'Ava Chen', sub: '1099', client: 'HTC', period: 'October 2026', hours: null, clientHours: 160, rate: 86, term: 'Net 10', submitted: '—', status: 'Not Submitted', invoice: null, timesheet: null }
 };
 
 const AUDIT_INVOICE_IDS = ['INV-2026-10-0142', 'INV-2026-10-0151', 'INV-2026-10-0187', 'TS-2026-10-0093', 'INV-2026-10-0203', 'INV-2026-10-0211', 'NS-LENA', 'NS-AVA'];
 const VENDOR_INVOICE_IDS = ['INV-2026-10-0203', 'INV-2026-10-0142', 'INV-2026-10-0198', 'INV-2026-10-0176', 'NS-ELENA'];
+
+/* ---------- Invoice Management (Super Admin / Account Manager): manual review per person ----------
+   One record per person for the billing period. clientInvoice / doc: file, null = not uploaded yet.
+   doc is the vendor invoice (consultant), the resource invoice (1099) or the timesheet (W-2).
+   review: 'Approved' | 'Rejected' | null (not reviewed yet). inv links the shared invoice record, if any. */
+const IM_PERIOD = 'October 2026';
+const IM_RECORDS = {
+  'im-kumar': { person: 'Deepa Kumar', type: 'Consultant', vendor: 'Coral Staffing LLC', client: 'Persistent', clientInvoice: 'PER-Oct26-Kumar.pdf', clientHours: 168, doc: 'CS-INV-10477.pdf', docHours: 160, review: 'Rejected', reason: 'Vendor billed 160 h; the client invoice shows 168 h. Please correct the hours and resubmit.', inv: 'INV-2026-10-0203' },
+  'im-singh': { person: 'Kevin Singh', type: 'Consultant', vendor: 'Summit IT Solutions', client: 'Persistent', clientInvoice: 'PER-Oct26-Singh.pdf', clientHours: 152, doc: 'SIT-INV-2210.pdf', docHours: 160, review: 'Rejected', reason: 'Client approved 152 h for October; vendor invoice shows 160 h.', inv: 'INV-2026-10-0187' },
+  'im-silva': { person: 'Rinaldo Silva', type: 'Consultant', vendor: 'Coral Staffing LLC', client: 'Citus Tech', clientInvoice: 'CT-Oct26-Silva.pdf', clientHours: 168, doc: 'CS-INV-10482.pdf', docHours: 168, review: 'Approved', inv: 'INV-2026-10-0142' },
+  'im-torres': { person: 'Ana Torres', type: 'Consultant', vendor: 'BluePeak Consulting Inc.', client: 'Persistent', clientInvoice: 'PER-Oct26-Torres.pdf', clientHours: 176, doc: 'BP-INV-5521.pdf', docHours: 176, review: 'Approved', inv: 'INV-2026-10-0211' },
+  'im-menon': { person: 'Ravi Menon', type: 'Consultant', vendor: 'Cascade Data Partners', client: 'HTC', clientInvoice: 'HTC-Oct26-Menon.pdf', clientHours: 144, doc: 'CD-INV-0912.pdf', docHours: 144, review: null },
+  'im-haddad': { person: 'Omar Haddad', type: 'Consultant', vendor: 'Coral Staffing LLC', client: 'Persistent', clientInvoice: null, clientHours: null, doc: 'CS-INV-10479.pdf', docHours: 144, review: null, inv: 'INV-2026-10-0198' },
+  'im-marin': { person: 'Sofia Marin', type: 'Consultant', vendor: 'Coral Staffing LLC', client: 'Citus Tech', clientInvoice: null, clientHours: null, doc: 'CS-INV-10471.pdf', docHours: 168, review: null, inv: 'INV-2026-10-0176' },
+  'im-fischer': { person: 'Lena Fischer', type: 'Consultant', vendor: 'Summit IT Solutions', client: 'Persistent', clientInvoice: 'PER-Oct26-Fischer.pdf', clientHours: 168, doc: null, docHours: null, review: null, inv: 'NS-LENA' },
+  'im-petrova': { person: 'Elena Petrova', type: 'Consultant', vendor: 'Coral Staffing LLC', client: 'Citus Tech', clientInvoice: 'CT-Oct26-Petrova.pdf', clientHours: 160, doc: null, docHours: null, review: null, inv: 'NS-ELENA' },
+  'im-reed': { person: 'Maya Reed', type: 'W-2', client: 'HTC', clientInvoice: 'HTC-Oct26-Maya.pdf', clientHours: 168, doc: 'Reed_Oct26.pdf', docHours: 168, review: 'Approved', inv: 'TS-2026-10-0093' },
+  'im-morgan': { person: 'Alex Morgan', type: 'W-2', client: 'HTC', clientInvoice: 'HTC-Oct26-Morgan.pdf', clientHours: 160, doc: 'Morgan_Oct26.pdf', docHours: 160, review: null },
+  'im-liu': { person: 'Grace Liu', type: 'W-2', client: 'Persistent', clientInvoice: null, clientHours: null, doc: 'Liu_Oct26.pdf', docHours: 168, review: null },
+  'im-blake': { person: 'Jordan Blake', type: '1099', client: 'HTC', clientInvoice: null, clientHours: null, doc: 'BlakeUX-0046.pdf', docHours: 152, review: null, inv: 'INV-2026-10-0151' },
+  'im-chen': { person: 'Ava Chen', type: '1099', client: 'HTC', clientInvoice: 'HTC-Oct26-Chen.pdf', clientHours: 160, doc: null, docHours: null, review: null, inv: 'NS-AVA' },
+  'im-patel': { person: 'Noah Patel', type: '1099', client: 'Citus Tech', clientInvoice: 'CT-Oct26-Patel.pdf', clientHours: 128, doc: 'Patel-INV-031.pdf', docHours: 120, review: 'Rejected', reason: 'Invoice shows 120 h; the client invoice shows 128 h for October.' }
+};
+const IM_TABS = ['Vendor Consultants', 'W-2', '1099'];
+const IM_TAB_TYPES = ['Consultant', 'W-2', '1099'];
+let selectedRec = 'im-menon';
+let imStatusFilter = 'All statuses';
+let imRejecting = false; // Reject clicked in the review pop-up: show the reason box
+
+// "In Progress" while either document is missing, or while both are in but not yet reviewed.
+function imStatus(r) {
+  if (!r.clientInvoice || !r.doc) return 'In Progress';
+  return r.review || 'In Progress';
+}
+function imDocLabel(r) {
+  return r.type === 'Consultant' ? 'Vendor invoice' : r.type === 'W-2' ? 'Timesheet' : 'Resource invoice';
+}
+function imStatusNote(r) {
+  if (!r.clientInvoice && !r.doc) return 'Waiting for both documents';
+  if (!r.clientInvoice) return 'Waiting for client invoice';
+  if (!r.doc) return `Waiting for ${imDocLabel(r).toLowerCase()}`;
+  if (!r.review) return 'Ready for review';
+  return '';
+}
+
+function invoiceManagementScreen(screen) {
+  const type = IM_TAB_TYPES[activeTab] || 'Consultant';
+  const client = CLIENT_NAMES.includes(selectedClientInvoiceClient) ? selectedClientInvoiceClient : 'All clients';
+  const ofType = Object.entries(IM_RECORDS).filter(([, r]) => r.type === type);
+  const rows = ofType.filter(([, r]) => (client === 'All clients' || r.client === client)
+    && (imStatusFilter === 'All statuses' || imStatus(r) === imStatusFilter));
+  const hours = (h, other) => (h == null ? '—' : other != null && h !== other ? diff(String(h)) : String(h));
+  const who = type === 'Consultant' ? 'Consultant' : 'Resource';
+  const docHoursHead = type === 'Consultant' ? 'Vendor Hours' : 'Resource Hours';
+  return {
+    ...screen,
+    tabs: IM_TABS.map((t, i) => `${t} (${Object.values(IM_RECORDS).filter((r) => r.type === IM_TAB_TYPES[i]).length})`),
+    filters: [
+      { label: 'Client', options: ['All clients', ...CLIENT_NAMES], selected: client },
+      { label: 'Status', options: ['All statuses', 'Approved', 'Rejected', 'In Progress'], selected: imStatusFilter },
+      { label: 'Billing period', options: [IM_PERIOD], selected: IM_PERIOD }
+    ],
+    table: {
+      title: `${IM_TABS[activeTab] || IM_TABS[0]} · ${IM_PERIOD}`,
+      chip: `${rows.length} ${rows.length === 1 ? 'person' : 'people'}`,
+      noSearch: true,
+      headers: [who, 'Client', 'Client Hours', docHoursHead, 'Status', 'Actions'],
+      rows: rows.length
+        ? rows.map(([id, r]) => {
+          const note = imStatusNote(r);
+          return [
+            `<button type="button" class="link-btn person-link" data-target="invoiceReview" data-rec="${id}">${person(r.person, r.vendor || r.type)}</button>`,
+            r.client,
+            hours(r.clientHours, r.docHours),
+            hours(r.docHours, r.clientHours),
+            `${b(imStatus(r))}${note ? `<span class="person-sub">${note}</span>` : ''}`,
+            `<button type="button" class="link-btn" data-target="invoiceReview" data-rec="${id}">Review</button>`
+          ];
+        })
+        : [['<span class="person-sub inline">No one matches these filters.</span>', '', '', '', '', '']]
+    }
+  };
+}
+
+function imDocPanel(title, file, missingText, uploadable) {
+  return `<div class="review-doc">
+      <div class="review-doc-title">${title}</div>
+      ${file
+        ? `<div class="review-paper"><span class="doc-badge">${file.split('.').pop().toUpperCase()}</span><div class="review-paper-name">${file}</div>
+            <div class="review-lines"><i></i><i></i><i></i><i></i><i></i></div></div>
+           <div class="row-actions"><button type="button" class="link-btn" data-preview="${file}">View</button><button type="button" class="link-btn" data-download>Download</button></div>`
+        : `<div class="review-missing">${missingText}</div>
+           ${uploadable ? createField({ type: 'upload' }) : ''}`}
+    </div>`;
+}
+
+function invoiceReviewScreen(screen, id) {
+  const r = IM_RECORDS[id] || IM_RECORDS['im-menon'];
+  const docLabel = imDocLabel(r);
+  const hoursLabel = r.type === 'Consultant' ? 'Vendor billable hours' : 'Resource billable hours';
+  const both = !!(r.clientInvoice && r.doc);
+  const status = imStatus(r);
+  const match = both && r.clientHours === r.docHours;
+  const custom = `
+    <div class="review-summary">
+      <div><span class="person-sub">${r.type === 'Consultant' ? 'Consultant' : `${r.type} resource`}</span><b>${r.person}</b></div>
+      ${r.vendor ? `<div><span class="person-sub">Vendor</span><b>${r.vendor}</b></div>` : ''}
+      <div><span class="person-sub">Client</span><b>${r.client}</b></div>
+      <div><span class="person-sub">Billing period</span><b>${IM_PERIOD}</b></div>
+      <div><span class="person-sub">Status</span>${b(status)}</div>
+    </div>
+    ${r.review === 'Rejected' && r.reason ? `<div class="review-reason"><b>Rejection reason:</b> ${r.reason}<br><span class="person-sub">Waiting for the ${r.type === 'Consultant' ? 'vendor' : 'resource'} to resubmit.</span></div>` : ''}
+    <div class="review-grid">
+      ${imDocPanel('Client invoice', r.clientInvoice, 'The client invoice is not uploaded yet. Upload it here.', true)}
+      ${imDocPanel(docLabel, r.doc, `The ${r.type === 'Consultant' ? 'vendor' : 'resource'} has not submitted the ${docLabel.toLowerCase()} yet.`, false)}
+    </div>
+    <div class="review-grid">
+      <div class="field"><label>Client billable hours</label><input class="rv-client-hours" inputmode="decimal" value="${r.clientHours ?? ''}" placeholder="Enter hours" /></div>
+      <div class="field"><label>${hoursLabel}</label><input class="rv-doc-hours readonly" value="${r.docHours ?? ''}" placeholder="Not submitted" readonly /></div>
+    </div>
+    <div class="review-match ${both ? (match ? 'ok' : 'bad') : ''}" data-match>${both
+      ? (match ? `Hours match: ${r.clientHours} h on both.` : `Hours do not match: client ${r.clientHours} h, ${r.type === 'Consultant' ? 'vendor' : 'resource'} ${r.docHours} h.`)
+      : 'Both documents are needed before this can be reviewed. Status stays In Progress.'}</div>
+    <div class="review-actions">
+      ${!r.clientInvoice ? '<button type="button" class="btn btn-secondary" data-rv="save-client">Save client invoice</button>' : ''}
+      ${both ? `<button type="button" class="btn btn-reject" data-rv="reject">Reject</button><button type="button" class="btn btn-primary" data-rv="approve">Approve</button>` : ''}
+    </div>
+    <div class="review-reject" ${imRejecting && both ? '' : 'hidden'}>
+      <div class="field"><label>Reason for rejection<span class="req">*</span></label><textarea class="rv-reason" placeholder="Explain what the ${r.type === 'Consultant' ? 'vendor' : 'resource'} must correct"></textarea></div>
+      <div class="review-actions"><button type="button" class="btn btn-secondary" data-rv="cancel-reject">Cancel</button><button type="button" class="btn btn-primary" data-rv="submit-reject">Submit rejection</button></div>
+    </div>`;
+  return {
+    ...screen,
+    title: `Review · ${r.person}`,
+    description: `Compare the client invoice with the ${docLabel.toLowerCase()} and approve or reject.`,
+    custom
+  };
+}
 
 let selectedInv = 'INV-2026-10-0142';
 const INVOICE_ALIASES = {}; // placeholder id (NS-…) → real invoice number once submitted
@@ -863,9 +934,9 @@ function invoiceActions(id) {
   if (inv.status === 'Not Submitted') {
     return canManageInvoices() ? `<div class="row-actions">${link('Upload', 'invoiceUpdate')}</div>` : '<span class="person-sub inline">Due Nov 15</span>';
   }
+  // A submitted invoice / timesheet can't be edited by anyone; only a rejected one can be corrected.
   const parts = [link('View', 'invoiceDetail')];
   if (inv.status === 'Rejected' && canManageInvoices()) parts.push(link('Upload corrected', 'invoiceUpdate'));
-  else if (activePersona === 'superadmin') parts.push(link('Edit', 'invoiceUpdate'));
   return `<div class="row-actions">${parts.join('')}</div>`;
 }
 
@@ -878,16 +949,6 @@ function invoiceFileCell(id, kind) {
   if (inv.status === 'Not Submitted' || !canManageInvoices()) return '<span class="person-sub inline">Not uploaded</span>';
   return `<span class="cell-upload-wrap"><button type="button" class="upload-mini inv-upload" data-inv="${id}" data-kind="${kind}">Upload ${kind}</button>
     <input type="file" class="upload-input" accept=".pdf,.docx,.jpg,.jpeg,.png" hidden /></span>`;
-}
-
-function auditInvoicesTable(table) {
-  return {
-    ...table,
-    rows: AUDIT_INVOICE_IDS.map((id) => {
-      const inv = INVOICES[id];
-      return [mono(invRef(id)), person(inv.person, inv.sub), inv.client, inv.period.replace('October', 'Oct'), invHours(inv), invAmount(inv), b(inv.status), invoiceActions(id)];
-    })
-  };
 }
 
 function vendorInvoicesTable(table) {
@@ -910,8 +971,6 @@ function invoiceDetailScreen(screen, id) {
     actions.push(manage ? { label: 'Upload Corrected Invoice', target: 'invoiceUpdate', primary: true } : { label: 'Correct Invoice', target: 'rejectedInvoice', primary: true });
   } else if (inv.status === 'Not Submitted' && manage) {
     actions.push({ label: inv.w2 ? 'Upload Timesheet' : 'Upload Invoice & Timesheet', target: 'invoiceUpdate', primary: true });
-  } else if (activePersona === 'superadmin') {
-    actions.push({ label: 'Edit', target: 'invoiceUpdate', primary: true });
   }
   const fileRow = (label, kind) => {
     const file = inv[kind];
@@ -1022,6 +1081,28 @@ function withCurrent(value, options) {
   return [value, ...options.filter((o) => o !== value)];
 }
 
+// Documents a vendor uploads for its consultant: Resume, I-9, E-Verify and any other named document,
+// each with a start and end date. The I-9 audit report is uploaded only by the account manager;
+// the vendor can view and download it but not edit or delete it.
+// `files` maps document name → [file, size]; `extra` lists other documents already on file.
+function vendorConsultantDocFields(files = {}, extra = [], auditPeriod = '') {
+  const doc = (label) => {
+    const [file, size] = files[label] || [];
+    return { label, type: 'upload', validity: true, file, size };
+  };
+  const [auditFile, auditSize] = files['I-9 audit report'] || [];
+  // The account manager uploads a new audit report every 3 or 6 months; only the latest is shown.
+  const auditNote = auditPeriod ? `Latest report · covers ${auditPeriod}` : 'A new report is uploaded for each 3- or 6-month period; only the latest is shown.';
+  return [
+    doc('Resume'),
+    doc('I-9'),
+    doc('E-Verify document'),
+    ...extra.map(doc),
+    { type: 'addDocument', full: true },
+    { label: 'I-9 audit report', type: 'upload', amOnly: true, readonly: true, lock: 'Uploaded by account manager', file: auditFile, size: auditSize, note: auditNote }
+  ];
+}
+
 function memberDetailScreen(screen, name) {
   const m = TEAM_MEMBERS[name] || TEAM_MEMBERS['Maya Reed'];
   const personal = [
@@ -1034,7 +1115,7 @@ function memberDetailScreen(screen, name) {
       : [{ label: 'SSN', value: m.ssn }, { label: 'Address', value: m.address, full: true }])
   ];
   const engagement = [
-    { label: 'Client', value: m.client },
+    { label: 'Client', value: m.client || 'Not mapped — the account manager maps the client' },
     { label: 'Role', value: m.role },
     { label: 'Hourly rate', value: `$${m.rate}` },
     { label: 'Work location', value: m.location },
@@ -1048,7 +1129,7 @@ function memberDetailScreen(screen, name) {
   return {
     ...screen,
     title: name,
-    description: `${typeLabel(m)} · ${m.role} at ${m.client}. Full profile and documents on file.`,
+    description: `${typeLabel(m)} · ${m.role}${m.client ? ` at ${m.client}` : ' · client not mapped'}. Full profile and documents on file.`,
     detail: {
       sections: [
         { title: 'Personal details', items: personal },
@@ -1058,13 +1139,16 @@ function memberDetailScreen(screen, name) {
         title: 'Documents',
         hint: missing ? `${missing} document${missing > 1 ? 's' : ''} missing — shown as Incomplete in the Document Tracker.` : 'All onboarding documents on file.',
         headers: ['Document', 'File', 'Last Updated', 'Expires', 'Status', 'Actions'],
-        rows: m.docs.map(([doc, file, updated, expires, status]) => [
-          doc,
+        // A periodic audit report shows only the latest one, with the period it covers; earlier ones stay in history.
+        rows: m.docs.map(([doc, file, updated, expires, status, period, earlier]) => [
+          period ? sub(doc, `Latest · covers ${period}${earlier ? ` · ${earlier} earlier in history` : ''}`) : doc,
           file ? fileChip(file) : '<span class="person-sub inline">Not uploaded</span>',
           updated,
           expires,
           b(status),
-          file ? '<div class="row-actions"><button type="button" class="link-btn" data-preview>View</button><button type="button" class="link-btn" data-download>Download</button></div>' : `<button type="button" class="link-btn doc-notify" data-kind="request" data-owner="${name}" data-docname="${doc}">Request</button>`
+          file ? '<div class="row-actions"><button type="button" class="link-btn" data-preview>View</button><button type="button" class="link-btn" data-download>Download</button></div>'
+            : activePersona === 'vendor' && doc === 'I-9 audit report' ? '<span class="person-sub inline">Uploaded by account manager</span>'
+            : `<button type="button" class="link-btn doc-notify" data-kind="request" data-owner="${name}" data-docname="${doc}">Request</button>`
         ])
       }
     }
@@ -1088,11 +1172,13 @@ function memberEditScreen(screen, name) {
           { label: 'Address', value: m.address, full: true }
         ])
   ];
+  // A vendor never picks the client for its consultant; the account manager maps it.
+  const vendorEditing = activePersona === 'vendor';
   const engagement = [
-    { label: 'Client', type: 'select', options: withCurrent(m.client, ['Northwind Labs', 'Blue Harbor Health', 'Apex Systems', 'Meridian Retail Group', 'Lumen Logistics']), required: true },
+    ...(vendorEditing ? [] : [{ label: 'Client', type: 'select', options: withCurrent(m.client || 'Select client to map…', CLIENT_NAMES), required: true }]),
     { label: 'Role', value: m.role, required: true },
     { label: 'Hourly rate (USD)', value: m.rate, required: true },
-    { label: 'Work location', type: 'select', options: withCurrent(m.location, ['Remote', 'Hybrid', 'Onsite']) },
+    { label: 'Work location', type: 'select', options: withCurrent(m.location, ['Remote', 'Location']), addOption: { trigger: 'Location', placeholder: 'Enter location name, e.g. San Francisco, CA' } },
     { label: 'Start date', type: 'date', value: m.start },
     { label: 'End date', type: 'date', value: m.end },
     { label: 'Payment term', type: 'select', options: withCurrent(m.term, ['Net 10', 'Net 7', 'Net 15', 'Net 30', 'Net 45', 'Net 60', 'Immediate', 'Custom']), customInput: true },
@@ -1101,11 +1187,21 @@ function memberEditScreen(screen, name) {
       : { label: 'Account manager', value: m.am, readonly: true, lock: 'Assigned by Super Admin' },
     { label: 'Status', type: 'select', options: withCurrent(m.status, ['Active', 'Onboarding', 'Inactive', 'Ended']) }
   ];
-  const documents = m.docs.map(([doc, file, , expires]) => ({
-    label: expires !== '—' ? `${doc} (expires ${expires})` : doc,
-    type: 'upload',
-    file: file || undefined
-  }));
+  const vendorDocNames = ['Resume', 'I-9', 'E-Verify document', 'I-9 audit report'];
+  const documents = vendorEditing && m.type === 'Consultant'
+    ? vendorConsultantDocFields(
+        Object.fromEntries(m.docs.filter(([, file]) => file).map(([doc, file]) => [doc, [file]])),
+        m.docs.filter(([doc]) => !vendorDocNames.includes(doc)).map(([doc]) => doc),
+        (m.docs.find(([doc]) => doc === 'I-9 audit report') || [])[5]
+      )
+    : m.docs.map(([doc, file, , expires, , period]) => (/audit report/i.test(doc)
+      // Account manager / Super Admin: upload the next periodic audit report (3 or 6 months).
+      ? { label: doc, type: 'upload', file: file || undefined, auditPeriod: true, note: period ? `Latest report · covers ${period}` : '' }
+      : {
+          label: expires !== '—' ? `${doc} (expires ${expires})` : doc,
+          type: 'upload',
+          file: file || undefined
+        }));
   return {
     ...screen,
     title: `Edit ${name}`,
@@ -1113,7 +1209,7 @@ function memberEditScreen(screen, name) {
     form: {
       sections: [
         { title: 'Personal details', fields: personal },
-        { title: 'Engagement', fields: engagement },
+        { title: 'Engagement', ...(vendorEditing ? { hint: 'The client is mapped by your account manager.' } : {}), fields: engagement },
         { title: 'Documents', hint: 'PDF, DOCX, JPG or PNG · max 5 MB each. Replacing a file keeps the previous version.', fields: documents }
       ],
       submit: { label: 'Save Changes', target: 'memberDetail' },
@@ -1149,10 +1245,11 @@ const personaConfig = {
       { label: 'Clients', target: 'clients' },
       { label: 'Vendors', target: 'vendors' },
       { label: 'Team Members', target: 'teamMembers' },
-      { label: 'Invoices', target: 'invoiceAudit' },
+      { label: 'Invoice Management', target: 'invoiceUpload' },
       { label: 'Document Tracker', target: 'documentTracker' },
-      { label: 'Audit Log', target: 'audit' },
-      { label: 'Admin User Management', target: 'adminUsers' }
+      // Grouped under a collapsible "Settings" item in the left menu.
+      { label: 'User Account Management', target: 'adminUsers', group: 'Settings' },
+      { label: 'Audit Log', target: 'audit', group: 'Settings' }
     ],
     screens: [
       {
@@ -1160,7 +1257,7 @@ const personaConfig = {
         title: 'Dashboard',
         description: 'Platform-wide view of clients, vendors, people and the October 2026 billing cycle.',
         kpis: [
-          { label: 'Active clients', value: '128', trend: '+4 this quarter', tone: 'up' },
+          { label: 'Active clients', value: '3', trend: 'Persistent · HTC · Citus Tech', tone: 'neutral' },
           { label: 'Active vendors', value: '84', trend: '+3 this quarter', tone: 'up' },
           { label: 'Vendor consultants', value: '492', trend: '+27 this quarter', tone: 'up' },
           { label: 'W-2 / 1099 resources', value: '215', trend: '142 W-2 · 73 1099', tone: 'neutral' }
@@ -1170,10 +1267,9 @@ const personaConfig = {
             title: 'Invoices by status — Oct 2026',
             chip: '707 total',
             bars: [
-              { label: 'Approved', value: 512, pct: 72, tone: 'approved', target: 'invoiceAudit', tab: 1 },
-              { label: 'In Progress (awaiting client invoice)', value: 141, pct: 20, tone: 'progress', target: 'invoiceAudit', tab: 2 },
-              { label: 'Rejected', value: 38, pct: 5, tone: 'rejected', target: 'invoiceAudit', tab: 3 },
-              { label: 'Not yet submitted', value: 16, pct: 3, tone: 'neutral', target: 'invoiceAudit', tab: 4 }
+              { label: 'Approved', value: 512, pct: 72, tone: 'approved', target: 'invoiceUpload', status: 'Approved' },
+              { label: 'In Progress (a document missing or awaiting review)', value: 157, pct: 23, tone: 'progress', target: 'invoiceUpload', status: 'In Progress' },
+              { label: 'Rejected', value: 38, pct: 5, tone: 'rejected', target: 'invoiceUpload', status: 'Rejected' }
             ]
           },
           {
@@ -1182,17 +1278,17 @@ const personaConfig = {
             items: [
               { label: sub('COI — Coral Staffing LLC', 'Vendor document'), value: b('Expiring Soon'), meta: 'Nov 25' },
               { label: sub('Work authorization — Deepa Kumar', 'Consultant · Coral Staffing'), value: b('Expiring Soon'), meta: 'Nov 30' },
-              { label: sub('MSA — Blue Harbor Health', 'Client document'), value: b('Expiring Soon'), meta: 'Dec 09' },
+              { label: sub('MSA — Persistent', 'Client document'), value: b('Expiring Soon'), meta: 'Dec 09' },
               { label: sub('PO — Summit IT Solutions', 'Vendor document'), value: b('Expiring Soon'), meta: 'Dec 04' }
             ]
           }
         ],
         activity: [
-          { who: 'Alicia Ross', what: 'uploaded Oct 2026 client invoices for <b>Blue Harbor Health</b> (2 of 5 people)', when: '12 min ago' },
-          { who: 'System', what: 'auto-rejected <b>INV-2026-10-0187</b> (Kevin Singh) — hours mismatch', when: '12 min ago' },
+          { who: 'Alicia Ross', what: 'uploaded Oct 2026 client invoices for <b>Persistent</b> (2 of 5 people)', when: '12 min ago' },
+          { who: 'Alicia Ross', what: 'rejected <b>INV-2026-10-0187</b> (Kevin Singh) — hours mismatch', when: '12 min ago' },
           { who: 'Daniel Ortiz', what: 'added consultant <b>Priya Shah</b> to Coral Staffing LLC', when: '39 min ago' },
           { who: 'Benjamin Cole', what: 'onboarded vendor <b>Keystone Tech Partners</b>', when: '2 hrs ago' },
-          { who: 'Arun Krishnan', what: 'renewed MSA for <b>Apex Systems</b> through Jan 30, 2028', when: 'Yesterday' }
+          { who: 'Arun Krishnan', what: 'renewed MSA for <b>Citus Tech</b> through Jan 30, 2028', when: 'Yesterday' }
         ]
       },
       {
@@ -1202,15 +1298,12 @@ const personaConfig = {
         actions: [{ label: 'Add Client', target: 'clientAdd', primary: true }],
         table: {
           title: 'All clients',
-          total: 128,
+          total: 3,
           headers: ['Client', 'Region', 'Account Manager', 'MSA Expiry', 'Client invoice status', 'Actions'],
           rows: [
-            [sub('Northwind Labs', 'USD · America/New_York'), 'US-East', 'Alicia Ross', 'Feb 12, 2027', b('Uploaded'), `<div class="row-actions"><button class="link-btn" data-target="clientEdit">View / Edit</button><button class="link-btn" data-target="clientHolidayCalendar">Holiday Calendar</button>${clientInvoiceAction('Northwind Labs')}</div>`],
-            [sub('Apex Systems', 'USD · America/Los_Angeles'), 'US-West', 'Benjamin Cole', 'Jan 30, 2028', b('Uploaded'), `<div class="row-actions"><button class="link-btn" data-target="clientEdit">View / Edit</button><button class="link-btn" data-target="clientHolidayCalendar">Holiday Calendar</button>${clientInvoiceAction('Apex Systems')}</div>`],
-            [sub('Blue Harbor Health', 'USD · America/Chicago'), 'Central', 'Alicia Ross', `Dec 09, 2026 ${b('Expiring Soon')}`, `${b('In Progress')} <span class="person-sub inline">2 of 5</span>`, `<div class="row-actions"><button class="link-btn" data-target="clientEdit">View / Edit</button><button class="link-btn" data-target="clientHolidayCalendar">Holiday Calendar</button>${clientInvoiceAction('Blue Harbor Health')}</div>`],
-            [sub('GlobalCare Insurance', 'USD · America/New_York'), 'US-East', 'Priya Natarajan', 'Jun 30, 2027', b('Pending'), `<div class="row-actions"><button class="link-btn" data-target="clientEdit">View / Edit</button><button class="link-btn" data-target="clientHolidayCalendar">Holiday Calendar</button>${clientInvoiceAction('GlobalCare Insurance')}</div>`],
-            [sub('Meridian Retail Group', 'CAD · America/Toronto'), 'Canada', 'Alicia Ross', 'Mar 31, 2027', b('Pending'), `<div class="row-actions"><button class="link-btn" data-target="clientEdit">View / Edit</button><button class="link-btn" data-target="clientHolidayCalendar">Holiday Calendar</button>${clientInvoiceAction('Meridian Retail Group')}</div>`],
-            [sub('Helix Biotech', 'USD · America/Denver'), 'Mountain', 'Benjamin Cole', `Oct 31, 2026 ${b('Expired')}`, b('Missing'), `<div class="row-actions"><button class="link-btn" data-target="clientEdit">View / Edit</button><button class="link-btn" data-target="clientHolidayCalendar">Holiday Calendar</button>${clientInvoiceAction('Helix Biotech')}</div>`]
+            [sub('Persistent', 'USD · America/Chicago'), 'Central', 'Alicia Ross, Priya Natarajan', `Dec 09, 2026 ${b('Expiring Soon')}`, `${b('In Progress')} <span class="person-sub inline">2 of 5</span>`, `<div class="row-actions"><button class="link-btn" data-target="clientEdit">View / Edit</button>${clientInvoiceAction('Persistent')}</div>`],
+            [sub('HTC', 'USD · America/New_York'), 'US-East', 'Alicia Ross', 'Feb 12, 2027', b('Uploaded'), `<div class="row-actions"><button class="link-btn" data-target="clientEdit">View / Edit</button>${clientInvoiceAction('HTC')}</div>`],
+            [sub('Citus Tech', 'USD · America/Los_Angeles'), 'US-West', 'Benjamin Cole, Alicia Ross', 'Jan 30, 2028', b('Pending'), `<div class="row-actions"><button class="link-btn" data-target="clientEdit">View / Edit</button>${clientInvoiceAction('Citus Tech')}</div>`]
           ]
         }
       },
@@ -1224,27 +1317,20 @@ const personaConfig = {
             {
               title: 'Client details',
               fields: [
-                { label: 'Client name', value: 'Lakeshore Financial', required: true },
-                { label: 'Billing email', value: 'ap@lakeshorefinancial.com', required: true },
-                { label: 'Address', value: '200 N LaSalle St, Suite 1400, Chicago, IL 60601', full: true },
+                { label: 'Client name', placeholder: 'Enter client name', required: true },
+                { label: 'Billing email', placeholder: 'name@company.com', required: true },
+                { label: 'Address', placeholder: 'Street, city, state, ZIP', full: true },
                 { label: 'Currency', type: 'select', options: ['USD — US Dollar', 'CAD — Canadian Dollar'] },
                 { label: 'Time zone', type: 'select', options: ['America/Chicago (CST)', 'America/New_York (EST)', 'America/Los_Angeles (PST)'] },
                 { label: 'Account manager', type: 'select', options: ['Alicia Ross', 'Benjamin Cole', 'Priya Natarajan'], required: true }
               ]
             },
             {
-              title: 'Holiday calendar',
-              hint: 'Select up to 10 holidays. 7 of 10 selected.',
-              fields: [
-                { type: 'chips', full: true, options: ['Jan 1 · New Year’s Day', 'May 25 · Memorial Day', 'Jul 3 · Independence Day (obs.)', 'Sep 7 · Labor Day', 'Nov 26 · Thanksgiving', 'Nov 27 · Day after Thanksgiving', 'Dec 25 · Christmas Day'] }
-              ]
-            },
-            {
               title: 'Master Services Agreement',
               fields: [
-                { label: 'MSA start date', type: 'date', value: '2026-12-01', required: true },
-                { label: 'MSA end date', type: 'date', value: '2028-11-30', required: true },
-                { label: 'MSA document', type: 'upload', full: true, file: 'Lakeshore_MSA_signed.pdf', size: '1.8 MB' }
+                { label: 'MSA start date', type: 'date', required: true },
+                { label: 'MSA end date', type: 'date', required: true },
+                { label: 'MSA document', type: 'upload', full: true }
               ]
             }
           ],
@@ -1256,14 +1342,14 @@ const personaConfig = {
         id: 'clientEdit',
         parent: 'clients',
         title: 'Edit Client',
-        description: 'Review and update the client profile, account assignment and holiday schedule.',
+        description: 'Review and update the client profile, account assignment and MSA.',
         form: {
           sections: [
             {
               title: 'Client details',
               fields: [
-                { label: 'Client name', value: 'Lakeshore Financial', required: true },
-                { label: 'Billing email', value: 'ap@lakeshorefinancial.com', required: true },
+                { label: 'Client name', value: 'Persistent', required: true },
+                { label: 'Billing email', value: 'accounts.payable@persistent.example', required: true },
                 { label: 'Address', value: '200 N LaSalle St, Suite 1400, Chicago, IL 60601', full: true },
                 { label: 'Currency', type: 'select', options: ['USD — US Dollar', 'CAD — Canadian Dollar'] },
                 { label: 'Time zone', type: 'select', options: ['America/Chicago (CST)', 'America/New_York (EST)', 'America/Los_Angeles (PST)'] },
@@ -1271,18 +1357,11 @@ const personaConfig = {
               ]
             },
             {
-              title: 'Holiday calendar',
-              hint: 'Select up to 10 holidays. 7 of 10 selected.',
-              fields: [
-                { type: 'chips', full: true, options: ['Jan 1 · New Year’s Day', 'May 25 · Memorial Day', 'Jul 3 · Independence Day (obs.)', 'Sep 7 · Labor Day', 'Nov 26 · Thanksgiving', 'Nov 27 · Day after Thanksgiving', 'Dec 25 · Christmas Day'] }
-              ]
-            },
-            {
               title: 'Master Services Agreement',
               fields: [
                 { label: 'MSA start date', type: 'date', value: '2026-12-01', required: true },
                 { label: 'MSA end date', type: 'date', value: '2028-11-30', required: true },
-                { label: 'MSA document', type: 'upload', full: true, file: 'Lakeshore_MSA_signed.pdf', size: '1.8 MB' }
+                { label: 'MSA document', type: 'upload', full: true, file: 'Persistent_MSA_signed.pdf', size: '1.8 MB' }
               ]
             }
           ],
@@ -1292,50 +1371,12 @@ const personaConfig = {
         }
       },
       {
-        id: 'clientHolidayCalendar',
-        parent: 'clients',
-        title: 'Holiday Calendar',
-        description: 'Holidays mapped for Lakeshore Financial. These are used to calculate project working days and client-specific availability.',
-        table: {
-          title: 'Lakeshore Financial · Holiday list',
-          total: 7,
-          headers: ['Holiday', 'Date', 'Type', 'Status'],
-          rows: [
-            ['New Year’s Day', 'Jan 1, 2027', 'Observed holiday', b('Active')],
-            ['Memorial Day', 'May 25, 2027', 'Federal holiday', b('Active')],
-            ['Independence Day', 'Jul 3, 2027', 'Observed holiday', b('Active')],
-            ['Labor Day', 'Sep 7, 2027', 'Federal holiday', b('Active')],
-            ['Thanksgiving', 'Nov 26, 2027', 'Client holiday', b('Active')],
-            ['Day after Thanksgiving', 'Nov 27, 2027', 'Client holiday', b('Active')],
-            ['Christmas Day', 'Dec 25, 2027', 'Federal holiday', b('Active')]
-          ]
-        }
-      },
-      {
         id: 'invoiceUpload',
         title: 'Invoice Management',
-        description: 'Upload each client’s monthly invoice and billable hours per person. Saving triggers reconciliation automatically.',
-        filters: [
-          { label: 'Client', options: ['Blue Harbor Health', 'Northwind Labs', 'Meridian Retail Group', 'Lumen Logistics'] },
-          { label: 'Billing period', options: ['October 2026', 'September 2026', 'August 2026'] }
-        ],
-        table: {
-          title: 'Blue Harbor Health · October 2026',
-          chip: '5 people · 3 awaiting client invoice',
-          noSearch: true,
-          headers: ['Person', 'Type', 'Submitted Hours', 'Client Invoice', 'Client Billable Hours', 'Submission'],
-          rows: [
-            [person('Deepa Kumar', 'Coral Staffing'), 'Consultant', '160', fileChip('BH-Oct26-Kumar.pdf', '420 KB'), '<input class="cell-input" value="168" />', b('Rejected')],
-            [person('Kevin Singh', 'Summit IT'), 'Consultant', '160', fileChip('BH-Oct26-Singh.pdf', '418 KB'), '<input class="cell-input" value="152" />', b('Rejected')],
-            [person('Lena Fischer', 'Summit IT'), 'Consultant', '168', '<button class="upload-mini">Upload</button>', '<input class="cell-input" placeholder="0" />', b('Awaiting Client Invoice')],
-            [person('Omar Haddad', 'Coral Staffing'), 'Consultant', '144', '<button class="upload-mini">Upload</button>', '<input class="cell-input" placeholder="0" />', b('Awaiting Client Invoice')],
-            [person('Grace Liu', 'W-2'), 'W-2', '168', '<button class="upload-mini">Upload</button>', '<input class="cell-input" placeholder="0" />', b('Awaiting Client Invoice')]
-          ]
-        },
-        footerActions: [
-          { label: 'Save & Reconcile', action: 'ci-reconcile', primary: true },
-          { label: 'Save Draft', action: 'ci-draft' }
-        ]
+        description: 'Review each person’s client invoice against the vendor invoice, resource invoice or timesheet, then approve or reject. A record stays In Progress while either document is missing.',
+        // Tabs, filters and rows are built by invoiceManagementScreen().
+        typeTabs: true,
+        table: { title: 'Vendor Consultants', headers: [], rows: [] }
       },
       {
         id: 'vendors',
@@ -1397,10 +1438,10 @@ const personaConfig = {
           total: 12,
           headers: ['Invoice #', 'Consultant', 'Client', 'Hours', 'Amount', 'Submitted', 'Status', 'Actions'],
           rows: [
-            [mono('INV-2026-10-0203'), person('Deepa Kumar'), 'Blue Harbor Health', '160', '$12,800.00', 'Nov 3', b('Rejected'), '<div class="row-actions"><button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0203">View</button><button class="link-btn" data-target="rejectedInvoice">Correct</button></div>'],
-            [mono('INV-2026-10-0142'), person('Rinaldo Silva'), 'Apex Systems', '168', '$12,096.00', 'Nov 4 (v2)', b('Approved'), '<button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0142">View</button>'],
-            [mono('INV-2026-10-0198'), person('Omar Haddad'), 'Blue Harbor Health', '144', '$12,096.00', 'Nov 3', b('In Progress'), '<button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0198">View</button>'],
-            [mono('INV-2026-10-0176'), person('Sofia Marin'), 'Meridian Retail Group', '168', '$12,768.00', 'Nov 2', b('In Progress'), '<button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0176">View</button>']
+            [mono('INV-2026-10-0203'), person('Deepa Kumar'), 'Persistent', '160', '$12,800.00', 'Nov 3', b('Rejected'), '<div class="row-actions"><button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0203">View</button><button class="link-btn" data-target="rejectedInvoice">Correct</button></div>'],
+            [mono('INV-2026-10-0142'), person('Rinaldo Silva'), 'Citus Tech', '168', '$12,096.00', 'Nov 4 (v2)', b('Approved'), '<button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0142">View</button>'],
+            [mono('INV-2026-10-0198'), person('Omar Haddad'), 'Persistent', '144', '$12,096.00', 'Nov 3', b('In Progress'), '<button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0198">View</button>'],
+            [mono('INV-2026-10-0176'), person('Sofia Marin'), 'Citus Tech', '168', '$12,768.00', 'Nov 2', b('In Progress'), '<button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0176">View</button>']
           ]
         }
       },
@@ -1414,11 +1455,12 @@ const personaConfig = {
           total: 12,
           headers: ['Consultant', 'Client', 'Hourly Rate', 'Engagement', 'Location', 'Status', 'Actions'],
           rows: [
-            [person('Deepa Kumar', 'Business Analyst'), 'Blue Harbor Health', '$80.00', 'Jan 12 – Dec 31, 2026', 'Hybrid', b('Active'), consultantActions('Deepa Kumar')],
-            [person('Rinaldo Silva', 'QA Engineer'), 'Apex Systems', '$72.00', 'Sep 14, 2026 – Mar 12, 2027', 'Remote', b('Active'), consultantActions('Rinaldo Silva')],
-            [person('Omar Haddad', 'DevOps Engineer'), 'Blue Harbor Health', '$84.00', 'Feb 2, 2026 – Jan 29, 2027', 'Onsite', b('Active'), consultantActions('Omar Haddad')],
-            [person('Sofia Marin', 'Scrum Master'), 'Meridian Retail Group', '$76.00', 'May 4, 2026 – Nov 27, 2026', 'Remote', b('Active'), consultantActions('Sofia Marin')],
-            [person('Priya Shah', 'Data Engineer'), 'Meridian Retail Group', '$88.00', 'Nov 16, 2026 – May 14, 2027', 'Remote', b('Onboarding'), consultantActions('Priya Shah')]
+            [person('Deepa Kumar', 'Business Analyst'), 'Persistent', '$80.00', 'Jan 12 – Dec 31, 2026', 'Boston, MA', b('Active'), consultantActions('Deepa Kumar')],
+            [person('Rinaldo Silva', 'QA Engineer'), 'Citus Tech', '$72.00', 'Sep 14, 2026 – Mar 12, 2027', 'Remote', b('Active'), consultantActions('Rinaldo Silva')],
+            [person('Omar Haddad', 'DevOps Engineer'), 'Persistent', '$84.00', 'Feb 2, 2026 – Jan 29, 2027', 'Chicago, IL', b('Active'), consultantActions('Omar Haddad')],
+            [person('Sofia Marin', 'Scrum Master'), 'Citus Tech', '$76.00', 'May 4, 2026 – Nov 27, 2026', 'Remote', b('Active'), consultantActions('Sofia Marin')],
+            [person('Priya Shah', 'Data Engineer'), 'Citus Tech', '$88.00', 'Nov 16, 2026 – May 14, 2027', 'Remote', b('Onboarding'), consultantActions('Priya Shah')],
+            [person('Marcus Lee', 'Salesforce Developer'), NOT_MAPPED, '$92.00', 'Dec 7, 2026 – Jun 4, 2027', 'San Francisco, CA', b('Onboarding'), consultantActions('Marcus Lee')]
           ]
         }
       },
@@ -1430,33 +1472,33 @@ const personaConfig = {
         form: {
           sections: [
             {
-              title: 'Company',
+              title: 'Vendor details',
               fields: [
-                { label: 'Vendor name', value: 'Harborview Staffing LLC', required: true },
-                { label: 'Federal ID (EIN)', value: '47-2810356', required: true },
+                { label: 'Name', value: 'Harborview Staffing LLC', required: true },
+                { label: 'Address', value: '75 State St, Floor 9, Boston, MA 02109', full: true, required: true },
                 { label: 'Email', value: 'contracts@harborviewstaffing.com', required: true },
-                { label: 'Phone', value: '(617) 555-0142' },
-                { label: 'Address', value: '75 State St, Floor 9, Boston, MA 02109', full: true },
-                { label: 'State of incorporation', type: 'select', options: ['Massachusetts', 'Delaware', 'New York'] },
+                { label: 'Federal ID (EIN)', value: '47-2810356', required: true },
+                { label: 'Phone', value: '(617) 555-0142', required: true },
+                { label: 'State of incorporation', type: 'select', options: ['Massachusetts', 'Delaware', 'New York'], required: true },
+                { label: 'Authorized signatory name', value: 'Rachel Moreno', required: true },
                 { label: 'Account manager', type: 'select', options: ['Alicia Ross', 'Benjamin Cole', 'Priya Natarajan'], required: true }
               ]
             },
             {
-              title: 'Authorized signatory',
+              title: 'Documents uploaded by the account manager',
+              hint: 'PDF, DOCX, JPG or PNG · max 5 MB. Enter the start and end date of each. Documents not uploaded now are marked Incomplete in the Document Tracker.',
               fields: [
-                { label: 'Name', value: 'Rachel Moreno' },
-                { label: 'Phone', value: '(617) 555-0198' }
+                { label: 'MSA', type: 'upload', validity: true, start: '2026-11-15', end: '2028-11-14', file: 'Harborview_MSA.pdf', size: '2.1 MB' },
+                { label: 'PO', type: 'upload', validity: true, start: '2026-11-15', end: '2027-05-14', file: 'PO-44120.pdf', size: '340 KB' }
               ]
             },
             {
-              title: 'Onboarding documents',
-              hint: 'Documents not uploaded now are marked Incomplete in the Document Tracker.',
+              title: 'Documents uploaded by the vendor',
+              hint: 'The vendor uploads these after signing in with the magic link. Until then they show as Incomplete.',
               fields: [
-                { label: 'MSA (Nov 15, 2026 – Nov 14, 2028)', type: 'upload', file: 'Harborview_MSA.pdf', size: '2.1 MB' },
-                { label: 'PO (Nov 15, 2026 – May 14, 2027)', type: 'upload', file: 'PO-44120.pdf', size: '340 KB' },
-                { label: 'W-9', type: 'upload', file: 'Harborview_W9_2026.pdf', size: '210 KB' },
-                { label: 'COI', type: 'upload' },
-                { label: 'ACH form', type: 'upload' }
+                { label: 'W-9 (start / end date)', type: 'upload', byOther: 'Uploaded by the vendor, with start and end date.', readonly: true, lock: 'Vendor uploads' },
+                { label: 'COI (start / end date)', type: 'upload', byOther: 'Uploaded by the vendor, with start and end date.', readonly: true, lock: 'Vendor uploads' },
+                { label: 'ACH form', type: 'upload', byOther: 'Uploaded by the vendor.', readonly: true, lock: 'Vendor uploads' }
               ]
             }
           ],
@@ -1467,19 +1509,20 @@ const personaConfig = {
       {
         id: 'teamMembers',
         title: 'Team Members',
-        description: 'Vendor consultants plus in-house W-2 and 1099 resources, per client engagement.',
+        description: 'Vendor consultants plus in-house W-2 and 1099 resources. Each person works for one client and submits one invoice or timesheet per month.',
         actions: [{ label: 'Add Resource', target: 'resourceAdd', primary: true }],
         table: {
           title: 'All team members',
           total: 707,
           headers: ['Name', 'Type', 'Client', 'Hourly Rate', 'Engagement', 'Status', 'Actions'],
           rows: [
-            [person('Maya Reed', 'Data Analyst'), 'W-2', 'Northwind Labs', '$62.00', 'Mar 2, 2026 – Feb 26, 2027', b('Active'), memberAction('Maya Reed', true)],
-            [person('Jordan Blake', 'UX Consultant'), '1099', 'Northwind Labs', '$90.00', 'Jul 6, 2026 – Jan 8, 2027', b('Active'), memberAction('Jordan Blake', true)],
-            [person('Deepa Kumar', 'Business Analyst · Coral Staffing'), 'Consultant', 'Blue Harbor Health', '$80.00', 'Jan 12, 2026 – Dec 31, 2026', b('Active'), memberAction('Deepa Kumar', true)],
-            [person('Rinaldo Silva', 'QA Engineer · Coral Staffing'), 'Consultant', 'Apex Systems', '$72.00', 'Sep 14, 2026 – Mar 12, 2027', b('Active'), memberAction('Rinaldo Silva', true)],
-            [person('Kevin Singh', 'Java Developer · Summit IT'), 'Consultant', 'Blue Harbor Health', '$85.00', 'Apr 1, 2026 – Mar 31, 2027', b('Active'), memberAction('Kevin Singh', true)],
-            [person('Priya Shah', 'Data Engineer · Coral Staffing'), 'Consultant', 'Meridian Retail Group', '$88.00', 'Nov 16, 2026 – May 14, 2027', b('Onboarding'), memberAction('Priya Shah', true)]
+            [person('Maya Reed', 'Data Analyst'), 'W-2', 'HTC', '$62.00', 'Mar 2, 2026 – Feb 26, 2027', b('Active'), memberAction('Maya Reed', true)],
+            [person('Jordan Blake', 'UX Consultant'), '1099', 'HTC', '$90.00', 'Jul 6, 2026 – Jan 8, 2027', b('Active'), memberAction('Jordan Blake', true)],
+            [person('Deepa Kumar', 'Business Analyst · Coral Staffing'), 'Consultant', 'Persistent', '$80.00', 'Jan 12, 2026 – Dec 31, 2026', b('Active'), memberAction('Deepa Kumar', true)],
+            [person('Rinaldo Silva', 'QA Engineer · Coral Staffing'), 'Consultant', 'Citus Tech', '$72.00', 'Sep 14, 2026 – Mar 12, 2027', b('Active'), memberAction('Rinaldo Silva', true)],
+            [person('Kevin Singh', 'Java Developer · Summit IT'), 'Consultant', 'Persistent', '$85.00', 'Apr 1, 2026 – Mar 31, 2027', b('Active'), memberAction('Kevin Singh', true)],
+            [person('Priya Shah', 'Data Engineer · Coral Staffing'), 'Consultant', 'Citus Tech', '$88.00', 'Nov 16, 2026 – May 14, 2027', b('Onboarding'), memberAction('Priya Shah', true)],
+            [person('Marcus Lee', 'Salesforce Developer · Coral Staffing'), 'Consultant', NOT_MAPPED, '$92.00', 'Dec 7, 2026 – Jun 4, 2027', b('Onboarding'), memberAction('Marcus Lee', false)]
           ]
         }
       },
@@ -1507,69 +1550,64 @@ const personaConfig = {
             {
               title: 'Engagement',
               fields: [
-                { label: 'Client', type: 'select', options: ['Blue Harbor Health', 'Northwind Labs', 'Apex Systems'] },
+                { label: 'Client', type: 'select', options: CLIENT_NAMES },
                 { label: 'Role', value: 'Cloud Engineer' },
                 { label: 'Hourly rate (USD)', value: '68.00' },
                 { label: 'Work location', type: 'select', options: ['Hybrid — Chicago, IL', 'Remote', 'Onsite'] },
                 { label: 'Start date', type: 'date', value: '2026-12-01' },
                 { label: 'End date', type: 'date', value: '2027-11-30' },
                 { label: 'Payment term', type: 'select', options: ['Net 10', 'Net 7', 'Net 15', 'Net 30', 'Net 45', 'Net 60', 'Immediate', 'Custom'], customInput: true },
-                { label: 'Duration', value: '12 months', readonly: true }
+                // Duration is typed in, not auto-filled (W-2 and 1099 alike).
+                { label: 'Duration', placeholder: 'e.g. 12 months' }
               ]
             },
             {
-              title: 'W-2 documents',
+              title: 'W-2 documents uploaded by the account manager',
               showFor: 'W-2 Employee',
-              hint: 'Payslips accepts several files. Anything not uploaded now is marked Incomplete in the Document Tracker.',
+              hint: 'Payslips accepts several files. Every document except ACH, audit report and payslips has a start and end date. Anything not uploaded now is marked Incomplete in the Document Tracker.',
               fields: [
-                { label: 'W-4', type: 'upload' },
-                { label: 'I-9', type: 'upload' },
-                { label: 'Employment contract', type: 'upload', expiry: true },
-                { label: 'W-2 (year end)', type: 'upload' },
-                { label: 'Legal document (work authorization)', type: 'upload' },
-                { label: 'ACH form', type: 'upload' },
-                { label: 'Audit report', type: 'upload' },
-                { label: 'Payslips', type: 'upload', multiple: true }
+                { label: 'Employment contract', type: 'upload', validity: true },
+                { label: 'W-2 (year end)', type: 'upload', validity: true },
+                { label: 'Payslips', type: 'upload', multiple: true },
+                { label: 'Audit report', type: 'upload', byOther: 'Uploaded later by the account manager, not during onboarding. A new report is uploaded for each 3- or 6-month period; only the latest is shown.', readonly: true, lock: 'Later' },
+                { label: 'Other documents', type: 'extraDocs', full: true, validity: true }
               ]
             },
             {
-              title: '1099 documents',
-              showFor: '1099 Contractor',
-              hint: 'Anything not uploaded now is marked Incomplete in the Document Tracker.',
+              title: 'W-2 documents uploaded by the resource',
+              showFor: 'W-2 Employee',
+              hint: 'The resource uploads these after signing in. Until then they show as Incomplete.',
               fields: [
-                { label: '1099 contract', type: 'upload', expiry: true },
-                { label: 'W-9', type: 'upload' },
-                { label: 'Legal document (work authorization)', type: 'upload' },
-                { label: 'ACH form', type: 'upload' },
-                { label: 'Audit report', type: 'upload' },
-                { label: '1099 (year end)', type: 'upload' }
+                { label: 'W-4', type: 'upload', byOther: 'Uploaded by the W-2 resource, with start and end date.', readonly: true, lock: 'Resource uploads' },
+                { label: 'I-9', type: 'upload', byOther: 'Uploaded by the W-2 resource, with start and end date.', readonly: true, lock: 'Resource uploads' },
+                { label: 'ACH form', type: 'upload', byOther: 'Uploaded by the W-2 resource.', readonly: true, lock: 'Resource uploads' }
+              ]
+            },
+            // 1099 mirrors the W-2 layout: 1099 contract ↔ employment contract, 1099 year end ↔ payslips, W-9 ↔ W-4.
+            {
+              title: '1099 documents uploaded by the account manager',
+              showFor: '1099 Contractor',
+              hint: 'Every document except ACH and audit report has a start and end date. Anything not uploaded now is marked Incomplete in the Document Tracker.',
+              fields: [
+                { label: '1099 contract', type: 'upload', validity: true },
+                { label: '1099 (year end)', type: 'upload', validity: true },
+                { label: 'Audit report', type: 'upload', byOther: 'Uploaded later by the account manager, not during onboarding. A new report is uploaded for each 3- or 6-month period; only the latest is shown.', readonly: true, lock: 'Later' },
+                { label: 'Other documents', type: 'extraDocs', full: true, validity: true }
+              ]
+            },
+            {
+              title: '1099 documents uploaded by the resource',
+              showFor: '1099 Contractor',
+              hint: 'The resource uploads these after signing in. Until then they show as Incomplete.',
+              fields: [
+                { label: 'W-9', type: 'upload', byOther: 'Uploaded by the 1099 resource, with start and end date.', readonly: true, lock: 'Resource uploads' },
+                { label: 'I-9', type: 'upload', byOther: 'Uploaded by the 1099 resource, with start and end date.', readonly: true, lock: 'Resource uploads' },
+                { label: 'ACH form', type: 'upload', byOther: 'Uploaded by the 1099 resource.', readonly: true, lock: 'Resource uploads' }
               ]
             }
           ],
           submit: { label: 'Save & Send Invite', target: 'teamMembers' },
           cancel: { label: 'Cancel', target: 'teamMembers' }
-        }
-      },
-      {
-        id: 'invoiceAudit',
-        title: 'Invoices',
-        description: 'All vendor and resource submissions with their reconciliation result. Super Admin can edit any invoice.',
-        actions: [{ label: 'Export CSV', target: 'invoiceAudit' }],
-        tabs: ['All (707)', 'Approved (512)', 'In Progress (141)', 'Rejected (38)', 'Not Submitted (16)'],
-        table: {
-          title: 'October 2026 submissions',
-          total: 707,
-          headers: ['Invoice #', 'Submitted by', 'Client', 'Period', 'Hours (sub / client)', 'Amount', 'Status', 'Actions'],
-          rows: [
-            [mono('INV-2026-10-0142'), person('Rinaldo Silva', 'Coral Staffing'), 'Apex Systems', 'Oct 2026', '168 / 168', '$12,096.00', b('Approved'), acts('View', 'Edit')],
-            [mono('INV-2026-10-0151'), person('Jordan Blake', '1099'), 'Northwind Labs', 'Oct 2026', '152 / —', '$13,680.00', b('In Progress'), acts('View', 'Edit')],
-            [mono('INV-2026-10-0187'), person('Kevin Singh', 'Summit IT'), 'Blue Harbor Health', 'Oct 2026', `${diff('160')} / 152`, '$13,600.00', b('Rejected'), acts('View', 'Edit')],
-            [mono('TS-2026-10-0093'), person('Maya Reed', 'W-2 · timesheet'), 'Northwind Labs', 'Oct 2026', '168 / 168', '—', b('Approved'), acts('View')],
-            [mono('INV-2026-10-0203'), person('Deepa Kumar', 'Coral Staffing'), 'Blue Harbor Health', 'Oct 2026', `${diff('160')} / 168`, '$12,800.00', b('Rejected'), acts('View', 'Edit')],
-            [mono('INV-2026-10-0211'), person('Ana Torres', 'BluePeak Consulting'), 'GlobalCare Insurance', 'Oct 2026', '176 / 176', '$15,488.00', b('Approved'), acts('View', 'Edit')],
-            ['—', person('Lena Fischer', 'Summit IT'), 'Blue Harbor Health', 'Oct 2026', '— / 168', '—', b('Not Submitted'), '<span class="person-sub inline">Due Nov 15</span>'],
-            ['—', person('Ava Chen', '1099'), 'Northwind Labs', 'Oct 2026', '— / 160', '—', b('Not Submitted'), '<span class="person-sub inline">Due Nov 15</span>']
-          ]
         }
       },
       {
@@ -1582,10 +1620,9 @@ const personaConfig = {
           total: 2184,
           headers: ['Document', 'Owner', 'Owner Type', 'Version', 'Expires', 'Status', 'Actions'],
           rows: [
-            ['MSA', 'Northwind Labs', 'Client', 'v3', 'Feb 12, 2027', b('Valid'), acts('View')],
+            ['MSA', 'HTC', 'Client', 'v3', 'Feb 12, 2027', b('Valid'), acts('View')],
             ['COI', 'Coral Staffing LLC', 'Vendor', 'v2', 'Nov 25, 2026', b('Expiring Soon'), acts('View', 'Remind')],
             ['Work authorization (H-1B)', 'Deepa Kumar', 'Consultant', 'v1', 'Nov 30, 2026', b('Expiring Soon'), acts('View', 'Remind')],
-            ['MSA', 'Helix Biotech', 'Client', 'v1', 'Oct 31, 2026', b('Expired'), acts('View', 'Remind')],
             ['I-9', 'Maya Reed', 'W-2 Resource', '—', '—', b('Incomplete'), acts('Request')],
             ['E-Verify', 'Ana Torres', 'Consultant', '—', '—', b('Not Applicable'), acts('View')]
           ]
@@ -1601,8 +1638,8 @@ const personaConfig = {
           total: 1316,
           headers: ['Time', 'User', 'Action', 'Record', 'Before → After'],
           rows: [
-            ['10:12 AM', person('Arun Krishnan', 'Super Admin'), 'Updated client', 'Apex Systems', `MSA end: Jan 30, 2027 → <b>Jan 30, 2028</b>`],
-            ['09:58 AM', person('Alicia Ross', 'Account Manager'), 'Uploaded client invoice', 'Blue Harbor Health · Oct 2026', '— → BH-Oct26-Singh.pdf, BH-Oct26-Kumar.pdf'],
+            ['10:12 AM', person('Arun Krishnan', 'Super Admin'), 'Updated client', 'Citus Tech', `MSA end: Jan 30, 2027 → <b>Jan 30, 2028</b>`],
+            ['09:58 AM', person('Alicia Ross', 'Account Manager'), 'Uploaded client invoice', 'Persistent · Oct 2026', '— → PER-Oct26-Singh.pdf, PER-Oct26-Kumar.pdf'],
             ['09:58 AM', person('System', 'Reconciliation'), 'Status change', 'INV-2026-10-0187', `In Progress → ${b('Rejected')}`],
             ['09:31 AM', person('Daniel Ortiz', 'Vendor · Coral Staffing'), 'Created consultant', 'Priya Shah', '— → Data Engineer, $88.00/hr'],
             ['09:05 AM', person('Priya Natarajan', 'Account Manager'), 'Changed vendor status', 'Orbit Systems Group', `${b('Active')} → ${b('Inactive')}`],
@@ -1624,7 +1661,6 @@ const personaConfig = {
       { label: 'My Vendors', target: 'vendorList' },
       { label: 'Team Members', target: 'teamMembers' },
       { label: 'Invoice Management', target: 'invoiceUpload' },
-      { label: 'Reconciliation', target: 'reconciliation' },
       { label: 'Document Tracker', target: 'docs' },
       { label: 'Audit Log', target: 'auditLog' }
     ],
@@ -1632,11 +1668,11 @@ const personaConfig = {
       {
         id: 'dashboard',
         title: 'Dashboard',
-        description: 'Your 12 clients and 18 vendors. October 2026 billing closes Nov 15.',
+        description: 'Your 3 clients and 18 vendors. October 2026 billing closes Nov 15.',
         kpis: [
-          { label: 'Assigned clients', value: '12', trend: '+1 this quarter', tone: 'up' },
+          { label: 'Assigned clients', value: '3', trend: 'Persistent · HTC · Citus Tech', tone: 'neutral' },
           { label: 'Vendors in scope', value: '18', trend: '2 onboarding', tone: 'neutral' },
-          { label: 'Awaiting client invoice', value: '9', trend: '3 clients outstanding', tone: 'warn' },
+          { label: 'Awaiting client invoice', value: '9', trend: '2 clients outstanding', tone: 'warn' },
           { label: 'Rejected this cycle', value: '4', trend: '−3 vs. September', tone: 'up' }
         ],
         panels: [
@@ -1644,24 +1680,24 @@ const personaConfig = {
             title: 'Needs your attention',
             chip: '3 tasks',
             items: [
-              { label: sub('Finish Oct client invoices — Blue Harbor Health', '3 of 5 people still waiting'), value: b('Due'), meta: 'Nov 12' },
-              { label: sub('Upload Oct client invoice — Meridian Retail Group', '4 submissions waiting on it'), value: b('Due'), meta: 'Nov 12' },
+              { label: sub('Finish Oct client invoices — Persistent', '3 of 5 people still waiting'), value: b('Due'), meta: 'Nov 12' },
+              { label: sub('Upload Oct client invoice — Citus Tech', '4 submissions waiting on it'), value: b('Due'), meta: 'Nov 12' },
               { label: sub('COI expiring — Coral Staffing LLC', 'Vendor notified Oct 26'), value: b('Expiring Soon'), meta: 'Nov 25' }
             ]
           },
           {
-            title: 'October reconciliation',
+            title: 'October invoice review',
             chip: '64 submissions',
             bars: [
-              { label: 'Approved', value: 51, pct: 80, tone: 'approved', target: 'reconciliation', tab: 1 },
-              { label: 'Awaiting client invoice', value: 9, pct: 14, tone: 'progress', target: 'reconciliation', tab: 2 },
-              { label: 'Rejected', value: 4, pct: 6, tone: 'rejected', target: 'reconciliation', tab: 3 }
+              { label: 'Approved', value: 51, pct: 80, tone: 'approved', target: 'invoiceUpload', status: 'Approved' },
+              { label: 'In Progress (a document missing or awaiting review)', value: 9, pct: 14, tone: 'progress', target: 'invoiceUpload', status: 'In Progress' },
+              { label: 'Rejected', value: 4, pct: 6, tone: 'rejected', target: 'invoiceUpload', status: 'Rejected' }
             ]
           }
         ],
         activity: [
-          { who: 'System', what: 'rejected <b>INV-2026-10-0187</b> (Kevin Singh, Blue Harbor) — 160 h submitted vs. 152 h on client invoice', when: '12 min ago' },
-          { who: 'Alicia Ross', what: 'uploaded Blue Harbor Health client invoices for Kevin Singh and Deepa Kumar', when: '12 min ago' },
+          { who: 'Alicia Ross', what: 'rejected <b>INV-2026-10-0187</b> (Kevin Singh, Persistent) — 160 h submitted vs. 152 h on client invoice', when: '12 min ago' },
+          { who: 'Alicia Ross', what: 'uploaded Persistent client invoices for Kevin Singh and Deepa Kumar', when: '12 min ago' },
           { who: 'Daniel Ortiz', what: 'resubmitted <b>INV-2026-10-0142</b> (Rinaldo Silva) — now Approved', when: '1 hr ago' },
           { who: 'Maya Reed', what: 'submitted October timesheet (168 h)', when: 'Yesterday' }
         ]
@@ -1672,13 +1708,12 @@ const personaConfig = {
         description: 'Clients assigned to you and the people working on each.',
         table: {
           title: 'Assigned clients',
-          total: 12,
+          total: 3,
           headers: ['Client', 'Region', 'Vendors', 'People', 'MSA Expiry', 'Client invoice status', 'Actions'],
           rows: [
-            [sub('Northwind Labs', 'America/New_York'), 'US-East', '3', '9', 'Feb 12, 2027', b('Uploaded'), `<div class="row-actions"><button class="link-btn" data-target="clientEdit">Open</button><button class="link-btn" data-target="clientHolidayCalendar">Holidays</button>${clientInvoiceAction('Northwind Labs')}</div>`],
-            [sub('Blue Harbor Health', 'America/Chicago'), 'Central', '2', '5', `Dec 09, 2026 ${b('Expiring Soon')}`, `${b('In Progress')} <span class="person-sub inline">2 of 5</span>`, `<div class="row-actions"><button class="link-btn" data-target="clientEdit">Open</button><button class="link-btn" data-target="clientHolidayCalendar">Holidays</button>${clientInvoiceAction('Blue Harbor Health')}</div>`],
-            [sub('Meridian Retail Group', 'America/Toronto'), 'Canada', '2', '4', 'Mar 31, 2027', b('Pending'), `<div class="row-actions"><button class="link-btn" data-target="clientEdit">Open</button><button class="link-btn" data-target="clientHolidayCalendar">Holidays</button>${clientInvoiceAction('Meridian Retail Group')}</div>`],
-            [sub('Lumen Logistics', 'America/New_York'), 'US-East', '1', '3', 'Aug 15, 2027', b('Uploaded'), `<div class="row-actions"><button class="link-btn" data-target="clientEdit">Open</button><button class="link-btn" data-target="clientHolidayCalendar">Holidays</button>${clientInvoiceAction('Lumen Logistics')}</div>`]
+            [sub('Persistent', 'America/Chicago'), 'Central', '2', '5', `Dec 09, 2026 ${b('Expiring Soon')}`, `${b('In Progress')} <span class="person-sub inline">2 of 5</span>`, `<div class="row-actions"><button class="link-btn" data-target="clientEdit">Open</button>${clientInvoiceAction('Persistent')}</div>`],
+            [sub('HTC', 'America/New_York'), 'US-East', '3', '5', 'Feb 12, 2027', b('Uploaded'), `<div class="row-actions"><button class="link-btn" data-target="clientEdit">Open</button>${clientInvoiceAction('HTC')}</div>`],
+            [sub('Citus Tech', 'America/Los_Angeles'), 'US-West', '1', '2', 'Jan 30, 2028', b('Pending'), `<div class="row-actions"><button class="link-btn" data-target="clientEdit">Open</button>${clientInvoiceAction('Citus Tech')}</div>`]
           ]
         }
       },
@@ -1692,10 +1727,10 @@ const personaConfig = {
           total: 18,
           headers: ['Vendor', 'Primary Contact', 'Consultants', 'Clients', 'Status', 'Actions'],
           rows: [
-            [sub('Coral Staffing LLC', 'Austin, TX'), sub('Daniel Ortiz', 'd.ortiz@coralstaffing.com'), '12', 'Blue Harbor, Apex, Meridian', b('Active'), `<div class="row-actions"><button class="link-btn" data-target="vendorEdit">View / Edit</button><button class="link-btn" data-target="vendorInvoices">Vendor Invoice</button><button class="link-btn" data-target="vendorConsultants">Consultants</button></div>`],
-            [sub('Summit IT Solutions', 'Edison, NJ'), sub('Ravi Menon', 'ravi@summitits.com'), '19', 'Blue Harbor, Northwind', b('Active'), `<div class="row-actions"><button class="link-btn" data-target="vendorEdit">View / Edit</button><button class="link-btn" data-target="vendorInvoices">Vendor Invoice</button><button class="link-btn" data-target="vendorConsultants">Consultants</button></div>`],
-            [sub('Ridgeline Talent Group', 'Charlotte, NC'), sub('Megan Price', 'mprice@ridgelinetalent.com'), '4', 'Northwind Labs', b('Onboarding'), `<div class="row-actions"><button class="link-btn" data-target="vendorEdit">View / Edit</button><button class="link-btn" data-target="vendorInvoices">Vendor Invoice</button><button class="link-btn" data-target="vendorConsultants">Consultants</button></div>`],
-            [sub('Cascade Data Partners', 'Seattle, WA'), sub('Tom Hughes', 'tom@cascadedata.io'), '2', 'Lumen Logistics', b('Active'), `<div class="row-actions"><button class="link-btn" data-target="vendorEdit">View / Edit</button><button class="link-btn" data-target="vendorInvoices">Vendor Invoice</button><button class="link-btn" data-target="vendorConsultants">Consultants</button></div>`]
+            [sub('Coral Staffing LLC', 'Austin, TX'), sub('Daniel Ortiz', 'd.ortiz@coralstaffing.com'), '12', 'Persistent, Citus Tech', b('Active'), `<div class="row-actions"><button class="link-btn" data-target="vendorEdit">View / Edit</button><button class="link-btn" data-target="vendorInvoices">Vendor Invoice</button><button class="link-btn" data-target="vendorConsultants">Consultants</button></div>`],
+            [sub('Summit IT Solutions', 'Edison, NJ'), sub('Ravi Menon', 'ravi@summitits.com'), '19', 'Persistent, HTC', b('Active'), `<div class="row-actions"><button class="link-btn" data-target="vendorEdit">View / Edit</button><button class="link-btn" data-target="vendorInvoices">Vendor Invoice</button><button class="link-btn" data-target="vendorConsultants">Consultants</button></div>`],
+            [sub('Ridgeline Talent Group', 'Charlotte, NC'), sub('Megan Price', 'mprice@ridgelinetalent.com'), '4', 'HTC', b('Onboarding'), `<div class="row-actions"><button class="link-btn" data-target="vendorEdit">View / Edit</button><button class="link-btn" data-target="vendorInvoices">Vendor Invoice</button><button class="link-btn" data-target="vendorConsultants">Consultants</button></div>`],
+            [sub('Cascade Data Partners', 'Seattle, WA'), sub('Tom Hughes', 'tom@cascadedata.io'), '2', 'HTC', b('Active'), `<div class="row-actions"><button class="link-btn" data-target="vendorEdit">View / Edit</button><button class="link-btn" data-target="vendorInvoices">Vendor Invoice</button><button class="link-btn" data-target="vendorConsultants">Consultants</button></div>`]
           ]
         }
       },
@@ -1740,10 +1775,10 @@ const personaConfig = {
           total: 12,
           headers: ['Invoice #', 'Consultant', 'Client', 'Hours', 'Amount', 'Submitted', 'Status', 'Actions'],
           rows: [
-            [mono('INV-2026-10-0203'), person('Deepa Kumar'), 'Blue Harbor Health', '160', '$12,800.00', 'Nov 3', b('Rejected'), '<div class="row-actions"><button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0203">View</button><button class="link-btn" data-target="rejectedInvoice">Correct</button></div>'],
-            [mono('INV-2026-10-0142'), person('Rinaldo Silva'), 'Apex Systems', '168', '$12,096.00', 'Nov 4 (v2)', b('Approved'), '<button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0142">View</button>'],
-            [mono('INV-2026-10-0198'), person('Omar Haddad'), 'Blue Harbor Health', '144', '$12,096.00', 'Nov 3', b('In Progress'), '<button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0198">View</button>'],
-            [mono('INV-2026-10-0176'), person('Sofia Marin'), 'Meridian Retail Group', '168', '$12,768.00', 'Nov 2', b('In Progress'), '<button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0176">View</button>']
+            [mono('INV-2026-10-0203'), person('Deepa Kumar'), 'Persistent', '160', '$12,800.00', 'Nov 3', b('Rejected'), '<div class="row-actions"><button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0203">View</button><button class="link-btn" data-target="rejectedInvoice">Correct</button></div>'],
+            [mono('INV-2026-10-0142'), person('Rinaldo Silva'), 'Citus Tech', '168', '$12,096.00', 'Nov 4 (v2)', b('Approved'), '<button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0142">View</button>'],
+            [mono('INV-2026-10-0198'), person('Omar Haddad'), 'Persistent', '144', '$12,096.00', 'Nov 3', b('In Progress'), '<button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0198">View</button>'],
+            [mono('INV-2026-10-0176'), person('Sofia Marin'), 'Citus Tech', '168', '$12,768.00', 'Nov 2', b('In Progress'), '<button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0176">View</button>']
           ]
         }
       },
@@ -1758,11 +1793,12 @@ const personaConfig = {
           total: 12,
           headers: ['Consultant', 'Client', 'Hourly Rate', 'Engagement', 'Location', 'Status', 'Actions'],
           rows: [
-            [person('Deepa Kumar', 'Business Analyst'), 'Blue Harbor Health', '$80.00', 'Jan 12 – Dec 31, 2026', 'Hybrid', b('Active'), consultantActions('Deepa Kumar')],
-            [person('Rinaldo Silva', 'QA Engineer'), 'Apex Systems', '$72.00', 'Sep 14, 2026 – Mar 12, 2027', 'Remote', b('Active'), consultantActions('Rinaldo Silva')],
-            [person('Omar Haddad', 'DevOps Engineer'), 'Blue Harbor Health', '$84.00', 'Feb 2, 2026 – Jan 29, 2027', 'Onsite', b('Active'), consultantActions('Omar Haddad')],
-            [person('Sofia Marin', 'Scrum Master'), 'Meridian Retail Group', '$76.00', 'May 4, 2026 – Nov 27, 2026', 'Remote', b('Active'), consultantActions('Sofia Marin')],
-            [person('Priya Shah', 'Data Engineer'), 'Meridian Retail Group', '$88.00', 'Nov 16, 2026 – May 14, 2027', 'Remote', b('Onboarding'), consultantActions('Priya Shah')]
+            [person('Deepa Kumar', 'Business Analyst'), 'Persistent', '$80.00', 'Jan 12 – Dec 31, 2026', 'Boston, MA', b('Active'), consultantActions('Deepa Kumar')],
+            [person('Rinaldo Silva', 'QA Engineer'), 'Citus Tech', '$72.00', 'Sep 14, 2026 – Mar 12, 2027', 'Remote', b('Active'), consultantActions('Rinaldo Silva')],
+            [person('Omar Haddad', 'DevOps Engineer'), 'Persistent', '$84.00', 'Feb 2, 2026 – Jan 29, 2027', 'Chicago, IL', b('Active'), consultantActions('Omar Haddad')],
+            [person('Sofia Marin', 'Scrum Master'), 'Citus Tech', '$76.00', 'May 4, 2026 – Nov 27, 2026', 'Remote', b('Active'), consultantActions('Sofia Marin')],
+            [person('Priya Shah', 'Data Engineer'), 'Citus Tech', '$88.00', 'Nov 16, 2026 – May 14, 2027', 'Remote', b('Onboarding'), consultantActions('Priya Shah')],
+            [person('Marcus Lee', 'Salesforce Developer'), NOT_MAPPED, '$92.00', 'Dec 7, 2026 – Jun 4, 2027', 'San Francisco, CA', b('Onboarding'), consultantActions('Marcus Lee')]
           ]
         }
       },
@@ -1778,12 +1814,12 @@ const personaConfig = {
               fields: [
                 { label: 'Consultant name', value: 'Marcus Lee', required: true },
                 { label: 'Role', value: 'Salesforce Developer', required: true },
-                { label: 'Client', type: 'select', options: ['Apex Systems', 'Blue Harbor Health', 'Meridian Retail Group'], required: true },
+                { label: 'Client', type: 'select', options: CLIENT_NAMES, required: true },
                 { label: 'Hourly rate (USD)', value: '92.00', required: true },
                 { label: 'Start date', type: 'date', value: '2026-12-07' },
                 { label: 'End date', type: 'date', value: '2027-06-04' },
                 { label: 'Duration', value: '26 weeks', readonly: true },
-                { label: 'Work location', type: 'select', options: ['Remote', 'Hybrid — San Francisco, CA', 'Onsite'] }
+                { label: 'Work location', type: 'select', options: ['Remote', 'Location'], addOption: { trigger: 'Location', placeholder: 'Enter location name, e.g. San Francisco, CA' } }
               ]
             },
             {
@@ -1792,7 +1828,7 @@ const personaConfig = {
               fields: [
                 { label: 'Resume', type: 'upload', file: 'Marcus_Lee_Resume.pdf', size: '186 KB' },
                 { label: 'Work authorization (start / end date)', type: 'upload', file: 'Lee_EAD_2026.pdf', size: '1.2 MB' },
-                { label: 'I-9 audit report', type: 'upload' },
+                { label: 'I-9 audit report', type: 'upload', auditPeriod: true },
                 { label: 'E-Verify document', type: 'upload' }
               ]
             }
@@ -1811,57 +1847,23 @@ const personaConfig = {
           total: 23,
           headers: ['Name', 'Type', 'Client', 'Hourly Rate', 'Oct Submission', 'Status', 'Actions'],
           rows: [
-            [person('Maya Reed', 'Data Analyst'), 'W-2', 'Northwind Labs', '$62.00', b('Approved'), b('Active'), memberAction('Maya Reed', true)],
-            [person('Jordan Blake', 'UX Consultant'), '1099', 'Northwind Labs', '$90.00', b('In Progress'), b('Active'), memberAction('Jordan Blake', true)],
-            [person('Deepa Kumar', 'Business Analyst · Coral Staffing'), 'Consultant', 'Blue Harbor Health', '$80.00', b('Rejected'), b('Active'), memberAction('Deepa Kumar', true)],
-            [person('Kevin Singh', 'Java Developer · Summit IT'), 'Consultant', 'Blue Harbor Health', '$85.00', b('Rejected'), b('Active'), memberAction('Kevin Singh', true)],
-            [person('Priya Shah', 'Data Engineer · Coral Staffing'), 'Consultant', 'Meridian Retail Group', '$88.00', b('Not Started'), b('Onboarding'), memberAction('Priya Shah', true)]
+            [person('Maya Reed', 'Data Analyst'), 'W-2', 'HTC', '$62.00', b('Approved'), b('Active'), memberAction('Maya Reed', true)],
+            [person('Jordan Blake', 'UX Consultant'), '1099', 'HTC', '$90.00', b('In Progress'), b('Active'), memberAction('Jordan Blake', true)],
+            [person('Deepa Kumar', 'Business Analyst · Coral Staffing'), 'Consultant', 'Persistent', '$80.00', b('Rejected'), b('Active'), memberAction('Deepa Kumar', true)],
+            [person('Kevin Singh', 'Java Developer · Summit IT'), 'Consultant', 'Persistent', '$85.00', b('Rejected'), b('Active'), memberAction('Kevin Singh', true)],
+            [person('Priya Shah', 'Data Engineer · Coral Staffing'), 'Consultant', 'Citus Tech', '$88.00', b('Not Started'), b('Onboarding'), memberAction('Priya Shah', true)],
+            // Added by the vendor; this account manager has not mapped a client yet.
+            [person('Marcus Lee', 'Salesforce Developer · Coral Staffing'), 'Consultant', NOT_MAPPED, '$92.00', b('Not Started'), b('Onboarding'), memberAction('Marcus Lee', false)]
           ]
         }
       },
       {
         id: 'invoiceUpload',
         title: 'Invoice Management',
-        description: 'Upload each client’s monthly invoice and billable hours per person. Saving triggers reconciliation automatically.',
-        filters: [
-          { label: 'Client', options: ['Blue Harbor Health', 'Northwind Labs', 'Meridian Retail Group', 'Lumen Logistics'] },
-          { label: 'Billing period', options: ['October 2026', 'September 2026', 'August 2026'] }
-        ],
-        table: {
-          title: 'Blue Harbor Health · October 2026',
-          chip: '5 people · 3 awaiting client invoice',
-          noSearch: true,
-          headers: ['Person', 'Type', 'Submitted Hours', 'Client Invoice', 'Client Billable Hours', 'Submission'],
-          rows: [
-            [person('Deepa Kumar', 'Coral Staffing'), 'Consultant', '160', fileChip('BH-Oct26-Kumar.pdf', '420 KB'), '<input class="cell-input" value="168" />', b('Rejected')],
-            [person('Kevin Singh', 'Summit IT'), 'Consultant', '160', fileChip('BH-Oct26-Singh.pdf', '418 KB'), '<input class="cell-input" value="152" />', b('Rejected')],
-            [person('Lena Fischer', 'Summit IT'), 'Consultant', '168', '<button class="upload-mini">Upload</button>', '<input class="cell-input" placeholder="0" />', b('Awaiting Client Invoice')],
-            [person('Omar Haddad', 'Coral Staffing'), 'Consultant', '144', '<button class="upload-mini">Upload</button>', '<input class="cell-input" placeholder="0" />', b('Awaiting Client Invoice')],
-            [person('Grace Liu', 'W-2'), 'W-2', '168', '<button class="upload-mini">Upload</button>', '<input class="cell-input" placeholder="0" />', b('Awaiting Client Invoice')]
-          ]
-        },
-        footerActions: [
-          { label: 'Save & Reconcile', action: 'ci-reconcile', primary: true },
-          { label: 'Save Draft', action: 'ci-draft' }
-        ]
-      },
-      {
-        id: 'reconciliation',
-        title: 'Reconciliation',
-        description: 'Automatic match of each submission against the client invoice on billing period and total hours.',
-        tabs: ['All (64)', 'Approved (51)', 'Awaiting Client Invoice (9)', 'Rejected (4)'],
-        table: {
-          title: 'October 2026',
-          total: 64,
-          headers: ['Person', 'Client', 'Period', 'Submitted', 'Client Invoice', 'Result', 'Reason'],
-          rows: [
-            [person('Maya Reed', 'W-2'), 'Northwind Labs', 'Oct 2026', '168 h', '168 h', b('Approved'), '—'],
-            [person('Rinaldo Silva', 'Coral Staffing'), 'Apex Systems', 'Oct 2026', '168 h', '168 h', b('Approved'), 'Matched on resubmission (v2)'],
-            [person('Jordan Blake', '1099'), 'Northwind Labs', 'Oct 2026', '152 h', '—', b('Awaiting Client Invoice'), '—'],
-            [person('Kevin Singh', 'Summit IT'), 'Blue Harbor Health', 'Oct 2026', diff('160 h'), '152 h', b('Rejected'), 'Total hours: expected 152, submitted 160'],
-            [person('Deepa Kumar', 'Coral Staffing'), 'Blue Harbor Health', 'Oct 2026', diff('160 h'), '168 h', b('Rejected'), 'Total hours: expected 168, submitted 160']
-          ]
-        }
+        description: 'Review each person’s client invoice against the vendor invoice, resource invoice or timesheet, then approve or reject. A record stays In Progress while either document is missing.',
+        // Tabs, filters and rows are built by invoiceManagementScreen().
+        typeTabs: true,
+        table: { title: 'Vendor Consultants', headers: [], rows: [] }
       },
       {
         id: 'docs',
@@ -1875,7 +1877,7 @@ const personaConfig = {
           rows: [
             ['COI', 'Coral Staffing LLC', 'Vendor', 'Nov 25, 2026', b('Expiring Soon'), acts('View', 'Remind')],
             ['Work authorization (H-1B)', 'Deepa Kumar', 'Consultant', 'Nov 30, 2026', b('Expiring Soon'), acts('View', 'Remind')],
-            ['MSA', 'Blue Harbor Health', 'Client', 'Dec 09, 2026', b('Expiring Soon'), acts('View')],
+            ['MSA', 'Persistent', 'Client', 'Dec 09, 2026', b('Expiring Soon'), acts('View')],
             ['ACH form', 'Ridgeline Talent Group', 'Vendor', '—', b('Incomplete'), acts('Request')],
             ['W-9', 'Summit IT Solutions', 'Vendor', 'Jul 01, 2027', b('Valid'), acts('View')]
           ]
@@ -1890,7 +1892,7 @@ const personaConfig = {
           total: 142,
           headers: ['Time', 'User', 'Action', 'Record', 'Before → After'],
           rows: [
-            ['09:58 AM', person('Alicia Ross', 'Account Manager'), 'Uploaded client invoice', 'Blue Harbor Health · Oct 2026', '— → BH-Oct26-Singh.pdf, BH-Oct26-Kumar.pdf'],
+            ['09:58 AM', person('Alicia Ross', 'Account Manager'), 'Uploaded client invoice', 'Persistent · Oct 2026', '— → PER-Oct26-Singh.pdf, PER-Oct26-Kumar.pdf'],
             ['09:58 AM', person('System', 'Reconciliation'), 'Status change', 'INV-2026-10-0187', `In Progress → ${b('Rejected')}`],
             ['09:31 AM', person('Daniel Ortiz', 'Vendor · Coral Staffing'), 'Created consultant', 'Priya Shah', '— → Data Engineer, $88.00/hr'],
             ['08:56 AM', person('Daniel Ortiz', 'Vendor · Coral Staffing'), 'Resubmitted invoice', 'INV-2026-10-0142 (v2)', 'Hours: 160 → <b>168</b>']
@@ -1920,7 +1922,7 @@ const personaConfig = {
         alert: {
           tone: 'danger',
           title: '1 invoice was rejected and needs correction',
-          text: 'INV-2026-10-0203 · Deepa Kumar · Blue Harbor Health — total hours do not match the client invoice.',
+          text: 'INV-2026-10-0203 · Deepa Kumar · Persistent — total hours do not match the client invoice.',
           action: { label: 'Fix now', target: 'rejectedInvoice' }
         },
         kpis: [
@@ -1951,26 +1953,28 @@ const personaConfig = {
           }
         ],
         activity: [
-          { who: 'System', what: 'rejected <b>INV-2026-10-0203</b> (Deepa Kumar) — 160 h submitted vs. 168 h on client invoice', when: '12 min ago' },
+          { who: 'Alicia Ross', what: 'rejected <b>INV-2026-10-0203</b> (Deepa Kumar) — 160 h submitted vs. 168 h on client invoice', when: '12 min ago' },
           { who: 'Daniel Ortiz', what: 'added consultant <b>Priya Shah</b>', when: '39 min ago' },
-          { who: 'System', what: 'approved <b>INV-2026-10-0142</b> (Rinaldo Silva) after resubmission', when: '1 hr ago' }
+          { who: 'Alicia Ross', what: 'approved <b>INV-2026-10-0142</b> (Rinaldo Silva) after resubmission', when: '1 hr ago' }
         ]
       },
       {
         id: 'consultants',
         title: 'Consultants',
-        description: 'Your consultants and their client engagements.',
+        description: 'Your consultants. Clients are mapped by your account manager.',
         actions: [{ label: 'Add Consultant', target: 'consultantAdd', primary: true }],
         table: {
           title: 'Coral Staffing consultants',
           total: 12,
-          headers: ['Consultant', 'Client', 'Hourly Rate', 'Engagement', 'Location', 'Status', 'Actions'],
+          // No Client column: the vendor does not choose or manage the client (the account manager maps it).
+          headers: ['Consultant', 'Hourly Rate', 'Engagement', 'Location', 'Status', 'Actions'],
           rows: [
-            [person('Deepa Kumar', 'Business Analyst'), 'Blue Harbor Health', '$80.00', 'Jan 12 – Dec 31, 2026', 'Hybrid', b('Active'), consultantActions('Deepa Kumar')],
-            [person('Rinaldo Silva', 'QA Engineer'), 'Apex Systems', '$72.00', 'Sep 14, 2026 – Mar 12, 2027', 'Remote', b('Active'), consultantActions('Rinaldo Silva')],
-            [person('Omar Haddad', 'DevOps Engineer'), 'Blue Harbor Health', '$84.00', 'Feb 2, 2026 – Jan 29, 2027', 'Onsite', b('Active'), consultantActions('Omar Haddad')],
-            [person('Sofia Marin', 'Scrum Master'), 'Meridian Retail Group', '$76.00', 'May 4, 2026 – Nov 27, 2026', 'Remote', b('Active'), consultantActions('Sofia Marin')],
-            [person('Priya Shah', 'Data Engineer'), 'Meridian Retail Group', '$88.00', 'Nov 16, 2026 – May 14, 2027', 'Remote', b('Onboarding'), consultantActions('Priya Shah')]
+            [person('Deepa Kumar', 'Business Analyst'), '$80.00', 'Jan 12 – Dec 31, 2026', 'Boston, MA', b('Active'), consultantActions('Deepa Kumar')],
+            [person('Rinaldo Silva', 'QA Engineer'), '$72.00', 'Sep 14, 2026 – Mar 12, 2027', 'Remote', b('Active'), consultantActions('Rinaldo Silva')],
+            [person('Omar Haddad', 'DevOps Engineer'), '$84.00', 'Feb 2, 2026 – Jan 29, 2027', 'Chicago, IL', b('Active'), consultantActions('Omar Haddad')],
+            [person('Sofia Marin', 'Scrum Master'), '$76.00', 'May 4, 2026 – Nov 27, 2026', 'Remote', b('Active'), consultantActions('Sofia Marin')],
+            [person('Priya Shah', 'Data Engineer'), '$88.00', 'Nov 16, 2026 – May 14, 2027', 'Remote', b('Onboarding'), consultantActions('Priya Shah')],
+            [person('Marcus Lee', 'Salesforce Developer'), '$92.00', 'Dec 7, 2026 – Jun 4, 2027', 'San Francisco, CA', b('Onboarding'), consultantActions('Marcus Lee')]
           ]
         }
       },
@@ -1978,31 +1982,26 @@ const personaConfig = {
         id: 'consultantAdd',
         parent: 'consultants',
         title: 'Add Consultant',
-        description: 'Add a consultant and their first client engagement.',
+        description: 'Add a consultant. Your account manager maps them to a client after you save.',
         form: {
           sections: [
             {
               title: 'Consultant & engagement',
+              hint: 'The client is not selected here. Your account manager maps the consultant to a client.',
               fields: [
                 { label: 'Consultant name', value: 'Marcus Lee', required: true },
                 { label: 'Role', value: 'Salesforce Developer', required: true },
-                { label: 'Client', type: 'select', options: ['Apex Systems', 'Blue Harbor Health', 'Meridian Retail Group'], required: true },
                 { label: 'Hourly rate (USD)', value: '92.00', required: true },
                 { label: 'Start date', type: 'date', value: '2026-12-07' },
                 { label: 'End date', type: 'date', value: '2027-06-04' },
                 { label: 'Duration', value: '26 weeks', readonly: true },
-                { label: 'Work location', type: 'select', options: ['Remote', 'Hybrid — San Francisco, CA', 'Onsite'] }
+                { label: 'Work location', type: 'select', options: ['Remote', 'Location'], addOption: { trigger: 'Location', placeholder: 'Enter location name, e.g. San Francisco, CA' } }
               ]
             },
             {
               title: 'Documents',
-              hint: 'PDF, DOCX, JPG or PNG · max 5 MB each. Missing documents can be added later.',
-              fields: [
-                { label: 'Resume', type: 'upload', file: 'Marcus_Lee_Resume.pdf', size: '186 KB' },
-                { label: 'Work authorization (start / end date)', type: 'upload', file: 'Lee_EAD_2026.pdf', size: '1.2 MB' },
-                { label: 'I-9 audit report', type: 'upload' },
-                { label: 'E-Verify document', type: 'upload' }
-              ]
+              hint: 'PDF, DOCX, JPG or PNG · max 5 MB each. Enter a start and end date for each document. Missing documents can be added later.',
+              fields: vendorConsultantDocFields({ 'Resume': ['Marcus_Lee_Resume.pdf', '186 KB'] })
             }
           ],
           submit: { label: 'Save Consultant', target: 'consultants' },
@@ -2013,32 +2012,32 @@ const personaConfig = {
         id: 'invoices',
         title: 'Invoices',
         description: 'Every invoice you have submitted, with its reconciliation result.',
-        actions: [{ label: 'Submit Invoice', target: 'invoiceSubmit', primary: true }],
+        actions: [{ label: 'Upload Invoice', target: 'invoiceSubmit', primary: true }],
         tabs: ['All (12)', 'Approved (8)', 'In Progress (3)', 'Rejected (1)'],
         table: {
           title: 'October 2026',
           total: 12,
           headers: ['Invoice #', 'Consultant', 'Client', 'Hours', 'Amount', 'Submitted', 'Status', 'Actions'],
           rows: [
-            [mono('INV-2026-10-0203'), person('Deepa Kumar'), 'Blue Harbor Health', '160', '$12,800.00', 'Nov 3', b('Rejected'), '<div class="row-actions"><button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0203">View</button><button class="link-btn" data-target="rejectedInvoice">Correct</button></div>'],
-            [mono('INV-2026-10-0142'), person('Rinaldo Silva'), 'Apex Systems', '168', '$12,096.00', 'Nov 4 (v2)', b('Approved'), '<button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0142">View</button>'],
-            [mono('INV-2026-10-0198'), person('Omar Haddad'), 'Blue Harbor Health', '144', '$12,096.00', 'Nov 3', b('In Progress'), '<button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0198">View</button>'],
-            [mono('INV-2026-10-0176'), person('Sofia Marin'), 'Meridian Retail Group', '168', '$12,768.00', 'Nov 2', b('In Progress'), '<button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0176">View</button>']
+            [mono('INV-2026-10-0203'), person('Deepa Kumar'), 'Persistent', '160', '$12,800.00', 'Nov 3', b('Rejected'), '<div class="row-actions"><button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0203">View</button><button class="link-btn" data-target="rejectedInvoice">Correct</button></div>'],
+            [mono('INV-2026-10-0142'), person('Rinaldo Silva'), 'Citus Tech', '168', '$12,096.00', 'Nov 4 (v2)', b('Approved'), '<button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0142">View</button>'],
+            [mono('INV-2026-10-0198'), person('Omar Haddad'), 'Persistent', '144', '$12,096.00', 'Nov 3', b('In Progress'), '<button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0198">View</button>'],
+            [mono('INV-2026-10-0176'), person('Sofia Marin'), 'Citus Tech', '168', '$12,768.00', 'Nov 2', b('In Progress'), '<button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0176">View</button>']
           ]
         }
       },
       {
         id: 'invoiceSubmit',
         parent: 'invoices',
-        title: 'Submit Invoice',
-        description: 'One invoice per consultant, client and billing period, with its timesheet.',
+        title: 'Upload Invoice',
+        description: 'One invoice per consultant per month, with its timesheet. Months already submitted for that consultant are not offered.',
         form: {
           sections: [
             {
               title: 'Engagement',
               fields: [
-                { label: 'Consultant', type: 'select', options: ['Omar Haddad — Blue Harbor Health', 'Sofia Marin — Meridian Retail Group'], required: true },
-                { label: 'Billing period', type: 'select', options: ['October 2026', 'September 2026'], required: true },
+                { label: 'Consultant', type: 'select', options: ['Omar Haddad — Persistent', 'Sofia Marin — Citus Tech'], required: true },
+                { label: 'Billing period', type: 'select', options: ['November 2026'], required: true },
                 { label: 'Total billed hours', value: '144', required: true },
                 { label: 'Hourly rate', value: '$84.00', readonly: true },
                 { label: 'Invoice amount (USD)', value: '$12,096.00', readonly: true },
@@ -2062,7 +2061,7 @@ const personaConfig = {
         id: 'rejectedInvoice',
         parent: 'invoices',
         title: 'Correct Rejected Invoice',
-        description: 'INV-2026-10-0203 · Deepa Kumar · Blue Harbor Health · October 2026',
+        description: 'INV-2026-10-0203 · Deepa Kumar · Persistent · October 2026',
         alert: {
           tone: 'danger',
           title: 'Rejected on Nov 10, 2026 at 9:58 AM',
@@ -2097,17 +2096,17 @@ const personaConfig = {
       {
         id: 'docs',
         title: 'Documents',
-        description: 'Company documents. Replacing a document keeps the earlier version in history.',
+        description: 'Company documents. You upload W-9, COI and ACH; MSA and PO are uploaded by your account manager (view and download only). Replacing a document keeps the earlier version in history.',
         table: {
           title: 'Coral Staffing LLC',
           total: 5,
           headers: ['Document', 'Validity', 'Version', 'Last Updated', 'Status', 'Actions'],
           rows: [
-            ['MSA', 'Jan 1, 2026 – Dec 31, 2027', 'v2', 'Jan 3, 2026', b('Valid'), acts('Download', 'Replace')],
-            ['PO #PO-38817', 'Jan 1 – Dec 31, 2026', 'v1', 'Jan 3, 2026', b('Valid'), acts('Download', 'Replace')],
-            ['W-9', 'Tax year 2026', 'v3', 'Feb 11, 2026', b('Valid'), acts('Download', 'Replace')],
-            ['COI', 'Nov 26, 2025 – Nov 25, 2026', 'v2', 'Nov 20, 2025', b('Expiring Soon'), acts('Download', 'Replace')],
-            ['ACH form', '—', 'v1', 'Jan 3, 2026', b('Valid'), acts('Download', 'Replace')]
+            ['MSA', 'Jan 1, 2026 – Dec 31, 2027', 'v2', 'Jan 3, 2026', b('Valid'), '<div class="row-actions"><button type="button" class="link-btn" data-preview>View</button><button type="button" class="link-btn" data-download>Download</button><span class="lock">Uploaded by account manager</span></div>'],
+            ['PO #PO-38817', 'Jan 1 – Dec 31, 2026', 'v1', 'Jan 3, 2026', b('Valid'), '<div class="row-actions"><button type="button" class="link-btn" data-preview>View</button><button type="button" class="link-btn" data-download>Download</button><span class="lock">Uploaded by account manager</span></div>'],
+            ['W-9', 'Jan 1 – Dec 31, 2026', 'v3', 'Feb 11, 2026', b('Valid'), acts('View', 'Download', 'Replace')],
+            ['COI', 'Nov 26, 2025 – Nov 25, 2026', 'v2', 'Nov 20, 2025', b('Expiring Soon'), acts('View', 'Download', 'Replace')],
+            ['ACH form', '—', 'v1', 'Jan 3, 2026', b('Valid'), acts('View', 'Download', 'Replace')]
           ]
         }
       },
@@ -2151,7 +2150,6 @@ const personaConfig = {
     notifications: 1,
     nav: [
       { label: 'Dashboard', target: 'dashboard' },
-      { label: 'My Engagements', target: 'engagements' },
       { label: 'Timesheets', target: 'status' },
       { label: 'My Documents', target: 'docs' }
     ],
@@ -2167,80 +2165,64 @@ const personaConfig = {
           action: { label: 'Upload', target: 'docs' }
         },
         kpis: [
-          { label: 'Active engagements', value: '2', trend: 'Northwind · Meridian', tone: 'neutral' },
-          { label: 'October timesheets', value: '2 of 2', trend: 'Submitted', tone: 'up' },
+          { label: 'October timesheet', value: 'Submitted', trend: 'Approved · 168 h', tone: 'up' },
           { label: 'Approved this year', value: '17', trend: 'No open rejections', tone: 'up' },
           { label: 'Documents to action', value: '1', trend: 'I-9 incomplete', tone: 'warn' }
         ],
         panels: [
           {
-            title: 'Current engagements',
-            chip: '2 active',
+            title: 'Current engagement',
+            chip: '1 active',
             items: [
-              { label: sub('Northwind Labs', 'Data Analyst · Remote · through Feb 26, 2027'), value: b('Active'), meta: '' },
-              { label: sub('Meridian Retail Group', 'Reporting Analyst · part-time · through Dec 18, 2026'), value: b('Active'), meta: '' }
+              { label: sub('HTC', 'Data Analyst · Remote · through Feb 26, 2027'), value: b('Active'), meta: '' }
             ]
           },
           {
             title: 'Submission status by month',
             chip: 'Last 3 months',
             items: [
-              { label: sub('October 2026', 'Northwind 168 h · Meridian 40 h'), value: b('In Progress'), meta: '' },
-              { label: sub('September 2026', 'Northwind 160 h · Meridian 40 h'), value: b('Approved'), meta: '' },
-              { label: sub('August 2026', 'Northwind 168 h · Meridian 36 h'), value: b('Approved'), meta: '' }
+              { label: sub('October 2026', 'HTC · 168 h'), value: b('Approved'), meta: '' },
+              { label: sub('September 2026', 'HTC · 160 h'), value: b('Approved'), meta: '' },
+              { label: sub('August 2026', 'HTC · 168 h'), value: b('Approved'), meta: '' }
             ]
           }
         ]
       },
       {
-        id: 'engagements',
-        title: 'My Engagements',
-        description: 'Your active client engagements.',
-        table: {
-          title: 'Engagements',
-          total: 2,
-          headers: ['Client', 'Role', 'Location', 'Start', 'End', 'Payment Term', 'Status'],
-          rows: [
-            ['Northwind Labs', 'Data Analyst', 'Remote', 'Mar 2, 2026', 'Feb 26, 2027', 'Net 10', b('Active')],
-            ['Meridian Retail Group', 'Reporting Analyst (part-time)', 'Remote', 'Sep 8, 2026', 'Dec 18, 2026', 'Net 10', b('Active')]
-          ]
-        }
-      },
-      {
         id: 'status',
         title: 'Timesheets',
         description: 'Each timesheet is matched against the client invoice hours.',
-        actions: [{ label: 'Submit Timesheet', target: 'timesheet', primary: true }],
+        actions: [{ label: 'Upload Timesheet', target: 'timesheet', primary: true }],
         table: {
           title: 'Submission history',
-          total: 6,
-          headers: ['Period', 'Client', 'Hours', 'Timesheet', 'Submitted', 'Status'],
+          total: 8,
+          // No Client column: a resource works for one client only.
+          headers: ['Period', 'Hours', 'Timesheet', 'Submitted', 'Status'],
           rows: [
-            ['October 2026', 'Northwind Labs', '168', fileChip('Reed_Oct26.pdf'), 'Nov 2', b('Approved')],
-            ['October 2026', 'Meridian Retail Group', '40', fileChip('Reed_Meridian_Oct26.pdf'), 'Nov 2', b('Awaiting Client Invoice')],
-            ['September 2026', 'Northwind Labs', '160', fileChip('Reed_Sep26_v2.pdf'), 'Oct 6 (v2)', b('Approved')],
-            ['September 2026', 'Meridian Retail Group', '40', fileChip('Reed_Meridian_Sep26.pdf'), 'Oct 2', b('Approved')]
+            ['October 2026', '168', fileChip('Reed_Oct26.pdf'), 'Nov 2', b('Approved')],
+            ['September 2026', '160', fileChip('Reed_Sep26_v2.pdf'), 'Oct 6 (v2)', b('Approved')],
+            ['August 2026', '168', fileChip('Reed_Aug26.pdf'), 'Sep 2', b('Approved')]
           ]
         }
       },
       {
         id: 'timesheet',
         parent: 'status',
-        title: 'Submit Timesheet',
-        description: 'One timesheet per client engagement and month.',
+        title: 'Upload Timesheet',
+        description: 'One timesheet per month. Months already submitted are not offered.',
         form: {
           sections: [
             {
               title: 'Timesheet',
               fields: [
-                { label: 'Engagement', type: 'select', options: ['Meridian Retail Group — Reporting Analyst', 'Northwind Labs — Data Analyst'], required: true },
-                { label: 'Billing period', type: 'select', options: ['November 2026', 'October 2026'], required: true },
-                { label: 'Total hours', value: '40', required: true },
-                { label: 'Timesheet', type: 'upload', file: 'Reed_Meridian_Nov26.pdf', size: '88 KB' }
+                { label: 'Engagement', value: 'HTC — Data Analyst', readonly: true, lock: 'One client' },
+                { label: 'Billing period', type: 'select', options: ['November 2026'], required: true },
+                { label: 'Total hours', value: '160', required: true },
+                { label: 'Timesheet', type: 'upload', file: 'Reed_Nov26.pdf', size: '88 KB' }
               ]
             }
           ],
-          submit: { label: 'Submit Timesheet', target: 'status' },
+          submit: { label: 'Upload Timesheet', target: 'status' },
           cancel: { label: 'Cancel', target: 'status' }
         }
       },
@@ -2272,7 +2254,6 @@ const personaConfig = {
     notifications: 2,
     nav: [
       { label: 'Dashboard', target: 'dashboard' },
-      { label: 'My Engagements', target: 'engagements' },
       { label: 'Invoices', target: 'status' },
       { label: 'My Documents', target: 'docs' }
     ],
@@ -2283,13 +2264,12 @@ const personaConfig = {
         description: '1099 contractors submit a monthly invoice and timesheet.',
         alert: {
           tone: 'danger',
-          title: 'Your September invoice for Apex Systems was rejected',
+          title: 'Your September invoice for HTC was rejected',
           text: 'INV-2026-09-0388 — billing period did not match the client invoice.',
           action: { label: 'Correct invoice', target: 'correction' }
         },
         kpis: [
-          { label: 'Active engagements', value: '2', trend: 'Northwind · Apex', tone: 'neutral' },
-          { label: 'Billed in October', value: '$22,044', trend: '152 h + 102 h', tone: 'neutral' },
+          { label: 'Billed in October', value: '$13,680', trend: '152 h · HTC', tone: 'neutral' },
           { label: 'Rejected to fix', value: '1', trend: 'Action needed', tone: 'down' },
           { label: 'Documents', value: 'All valid', trend: '1099 form due Jan 2027', tone: 'up' }
         ],
@@ -2298,64 +2278,49 @@ const personaConfig = {
             title: 'Invoices by month',
             chip: 'Last 3 months',
             items: [
-              { label: sub('October 2026', 'Northwind $13,680.00 · Apex $8,364.00'), value: b('In Progress'), meta: '' },
-              { label: sub('September 2026', 'Northwind $14,400.00 · Apex $8,856.00'), value: b('Rejected'), meta: '' },
-              { label: sub('August 2026', 'Northwind $15,120.00 · Apex $9,184.00'), value: b('Approved'), meta: '' }
+              { label: sub('October 2026', 'HTC · $13,680.00'), value: b('In Progress'), meta: '' },
+              { label: sub('September 2026', 'HTC · $14,400.00'), value: b('Rejected'), meta: '' },
+              { label: sub('August 2026', 'HTC · $15,120.00'), value: b('Approved'), meta: '' }
             ]
           },
           {
-            title: 'Current engagements',
-            chip: '2 active',
+            title: 'Current engagement',
+            chip: '1 active',
             items: [
-              { label: sub('Northwind Labs', 'UX Consultant · $90.00/hr · Net 10'), value: b('Active'), meta: '' },
-              { label: sub('Apex Systems', 'Product Analyst · $82.00/hr · Net 10'), value: b('Active'), meta: '' }
+              { label: sub('HTC', 'UX Consultant · $90.00/hr · Net 10'), value: b('Active'), meta: '' }
             ]
           }
         ]
       },
       {
-        id: 'engagements',
-        title: 'My Engagements',
-        description: 'Your active 1099 engagements.',
-        table: {
-          title: 'Engagements',
-          total: 2,
-          headers: ['Client', 'Job Title', 'Hourly Rate', 'Location', 'Term', 'Payment Term', 'Status'],
-          rows: [
-            ['Northwind Labs', 'UX Consultant', '$90.00', 'Remote', 'Jul 6, 2026 – Jan 8, 2027', 'Net 10', b('Active')],
-            ['Apex Systems', 'Product Analyst', '$82.00', 'Remote', 'Aug 3, 2026 – Feb 5, 2027', 'Net 10', b('Active')]
-          ]
-        }
-      },
-      {
         id: 'status',
         title: 'Invoices',
         description: 'Your submitted invoices and their reconciliation result.',
-        actions: [{ label: 'Submit Invoice', target: 'invoiceSubmit', primary: true }],
+        actions: [{ label: 'Upload Invoice', target: 'invoiceSubmit', primary: true }],
         table: {
           title: 'Invoice history',
           total: 8,
-          headers: ['Invoice #', 'Client', 'Period', 'Hours', 'Amount', 'Status', 'Actions'],
+          // No Client column: a resource works for one client only.
+          headers: ['Invoice #', 'Period', 'Hours', 'Amount', 'Status', 'Actions'],
           rows: [
-            [mono('INV-2026-10-0151'), 'Northwind Labs', 'Oct 2026', '152', '$13,680.00', b('Awaiting Client Invoice'), invoiceViewAction('INV-2026-10-0151')],
-            [mono('INV-2026-10-0164'), 'Apex Systems', 'Oct 2026', '102', '$8,364.00', b('Approved'), invoiceViewAction('INV-2026-10-0164')],
-            [mono('INV-2026-09-0388'), 'Apex Systems', 'Sep 2026', '108', '$8,856.00', b('Rejected'), `<div class="row-actions">${invoiceViewAction('INV-2026-09-0388')}<button class="link-btn" data-target="correction">Correct</button></div>`],
-            [mono('INV-2026-09-0352'), 'Northwind Labs', 'Sep 2026', '160', '$14,400.00', b('Approved'), invoiceViewAction('INV-2026-09-0352')]
+            [mono('INV-2026-10-0151'), 'Oct 2026', '152', '$13,680.00', b('Awaiting Client Invoice'), invoiceViewAction('INV-2026-10-0151')],
+            [mono('INV-2026-09-0388'), 'Sep 2026', '160', '$14,400.00', b('Rejected'), `<div class="row-actions">${invoiceViewAction('INV-2026-09-0388')}<button class="link-btn" data-target="correction">Correct</button></div>`],
+            [mono('INV-2026-08-0301'), 'Aug 2026', '168', '$15,120.00', b('Approved'), invoiceViewAction('INV-2026-08-0301')]
           ]
         }
       },
       {
         id: 'invoiceSubmit',
         parent: 'status',
-        title: 'Submit Invoice',
-        description: 'Invoice and timesheet, per client engagement and month.',
+        title: 'Upload Invoice',
+        description: 'One invoice and timesheet per month. Months already submitted are not offered.',
         form: {
           sections: [
             {
               title: 'Invoice',
               fields: [
-                { label: 'Engagement', type: 'select', options: ['Northwind Labs — UX Consultant', 'Apex Systems — Product Analyst'], required: true },
-                { label: 'Billing period', type: 'select', options: ['November 2026', 'October 2026'], required: true },
+                { label: 'Engagement', value: 'HTC — UX Consultant', readonly: true, lock: 'One client' },
+                { label: 'Billing period', type: 'select', options: ['November 2026'], required: true },
                 { label: 'Total billed hours', value: '136', required: true },
                 { label: 'Hourly rate', value: '$90.00', readonly: true },
                 { label: 'Invoice amount (USD)', value: '$12,240.00', readonly: true },
@@ -2371,7 +2336,7 @@ const personaConfig = {
               ]
             }
           ],
-          submit: { label: 'Submit Invoice', target: 'status' },
+          submit: { label: 'Upload Invoice', target: 'status' },
           cancel: { label: 'Cancel', target: 'status' }
         }
       },
@@ -2379,7 +2344,7 @@ const personaConfig = {
         id: 'correction',
         parent: 'status',
         title: 'Correct Rejected Invoice',
-        description: 'INV-2026-09-0388 · Apex Systems · Product Analyst',
+        description: 'INV-2026-09-0388 · HTC · UX Consultant',
         alert: {
           tone: 'danger',
           title: 'Rejected on Oct 9, 2026',
@@ -2391,7 +2356,7 @@ const personaConfig = {
           headers: ['Field', 'Expected (client invoice)', 'Submitted (v1)', 'Result'],
           rows: [
             ['Billing period', 'September 2026', diff('August 2026'), b('Mismatch')],
-            ['Total hours', '108', '108', b('Matched')]
+            ['Total hours', '160', '160', b('Matched')]
           ]
         },
         form: {
@@ -2400,9 +2365,9 @@ const personaConfig = {
               title: 'Corrected submission (v2)',
               fields: [
                 { label: 'Billing period', type: 'select', options: ['September 2026', 'August 2026'] },
-                { label: 'Total billed hours', value: '108' },
+                { label: 'Total billed hours', value: '160' },
                 { label: 'Corrected invoice', type: 'upload', file: 'BlakeUX-0041-R1.pdf', size: '150 KB' },
-                { label: 'Timesheet', type: 'upload', file: 'Blake_Apex_Sep26.pdf', size: '92 KB' }
+                { label: 'Timesheet', type: 'upload', file: 'Blake_HTC_Sep26.pdf', size: '92 KB' }
               ]
             }
           ],
@@ -2416,11 +2381,10 @@ const personaConfig = {
         description: 'Tax and contract documents. Tax documents are retained for 7 years.',
         table: {
           title: 'Documents',
-          total: 5,
+          total: 4,
           headers: ['Document', 'Last Updated', 'Expires', 'Status', 'Actions'],
           rows: [
-            ['1099 contract — Northwind Labs', 'Jul 1, 2026', 'Jan 8, 2027', b('Signed'), acts('View')],
-            ['1099 contract — Apex Systems', 'Jul 28, 2026', 'Feb 5, 2027', b('Signed'), acts('View')],
+            ['1099 contract — HTC', 'Jul 1, 2026', 'Jan 8, 2027', b('Signed'), acts('View')],
             ['W-9', 'Jun 30, 2026', '—', b('Valid'), acts('View', 'Replace')],
             ['ACH form', 'Jun 30, 2026', '—', b('Valid'), acts('View', 'Replace')],
             ['1099-NEC (2026)', '—', '—', b('Not Applicable'), '<span class="person-sub inline">Issued by Jan 31, 2027</span>']
@@ -2448,8 +2412,8 @@ const personaConfig = {
     am.screens.push(copy);
   });
 
-  // Client edit and holiday calendar for the AM's own clients (PRD: R, U own clients; no delete).
-  ['clientEdit', 'clientHolidayCalendar'].forEach((id) => {
+  // Client edit for the AM's own clients (PRD: R, U own clients; no delete).
+  ['clientEdit'].forEach((id) => {
     const source = personaConfig.superadmin.screens.find((s) => s.id === id);
     if (!source) return;
     const copy = JSON.parse(JSON.stringify(source));
@@ -2487,7 +2451,7 @@ const personaConfig = {
   sa.screens.push(
     {
       id: 'adminUsers',
-      title: 'Admin User Management',
+      title: 'User Account Management',
       description: 'Add, edit or delete account managers. New account managers receive an email invite to set their password.',
       actions: [{ label: 'Add Account Manager', target: 'adminUserAdd', primary: true }]
     },
@@ -2503,8 +2467,10 @@ const personaConfig = {
   // Invoices: View opens the invoice (all three); Super Admin / AM can upload missing or corrected documents.
   ['superadmin', 'accountmanager'].forEach((key) => {
     personaConfig[key].screens.push(
-      { id: 'invoiceDetail', parent: key === 'superadmin' ? 'invoiceAudit' : 'vendorInvoices', title: 'Invoice' },
-      { id: 'invoiceUpdate', parent: key === 'superadmin' ? 'invoiceAudit' : 'vendorInvoices', title: 'Update Invoice' }
+      { id: 'invoiceDetail', parent: 'vendorInvoices', title: 'Invoice' },
+      { id: 'invoiceUpdate', parent: 'vendorInvoices', title: 'Update Invoice' },
+      // Invoice Management: Review opens the client invoice and the person's document side by side.
+      { id: 'invoiceReview', parent: 'invoiceUpload', title: 'Review' }
     );
   });
   personaConfig.vendor.screens.push({ id: 'invoiceDetail', parent: 'invoices', title: 'Invoice' });
@@ -2516,9 +2482,6 @@ const personaConfig = {
   personaConfig.superadmin.screens.push({ id: 'docDetail', parent: 'documentTracker', title: 'Document' });
   personaConfig.accountmanager.screens.push({ id: 'docDetail', parent: 'docs', title: 'Document' });
 
-  // Super Admin opens Invoice Management from Clients → Client invoice, so it sits under Clients (gives it a Back button).
-  sa.screens.find((s) => s.id === 'invoiceUpload').parent = 'clients';
-
   // 1099 resource: View on an invoice shows the invoice and timesheet.
   personaConfig.w9.screens.push({ id: 'invoiceView', parent: 'status', title: 'Invoice' });
 })();
@@ -2526,8 +2489,8 @@ const personaConfig = {
 /* Buttons shared across personas can name a screen another persona owns.
    Send those to the nearest equivalent; ignore anything else unmatched. */
 const TARGET_ALIASES = {
-  superadmin: { reconciliation: 'invoiceAudit', rejectedInvoice: 'invoiceAudit' },
-  accountmanager: { rejectedInvoice: 'reconciliation' }
+  superadmin: { reconciliation: 'invoiceUpload', invoiceAudit: 'invoiceUpload', rejectedInvoice: 'invoiceUpload' },
+  accountmanager: { reconciliation: 'invoiceUpload', invoiceAudit: 'invoiceUpload', rejectedInvoice: 'invoiceUpload' }
 };
 
 function resolveTarget(target) {
@@ -2555,7 +2518,7 @@ const notifCount = document.getElementById('notifCount');
 let activePersona = 'superadmin';
 let activeScreen = 'dashboard';
 let activeTab = 0;
-let selectedClientInvoiceClient = 'Blue Harbor Health';
+let selectedClientInvoiceClient = 'All clients'; // Invoice Management client filter
 
 /* ---------- Sign-in: staff password, or one-time code for vendors / resources ---------- */
 
@@ -2748,10 +2711,10 @@ let replaceNextNav = false;
 const MODAL_SCREENS = new Set([
   'clientAdd', 'clientEdit', 'vendorAdd', 'vendorEdit', 'resourceAdd', 'consultantAdd', 'memberEdit',
   'submitOnBehalf', 'invoiceUpdate', 'adminUserAdd', 'adminUserEdit', 'invoiceSubmit', 'timesheet', 'correction', 'rejectedInvoice',
-  'clientHolidayCalendar', 'memberDetail', 'docDetail', 'invoiceDetail', 'invoiceView'
+  'memberDetail', 'docDetail', 'invoiceDetail', 'invoiceView', 'invoiceReview'
 ]);
 // Read-only pop-ups (View …). A form opened from one of these stacks on top of it.
-const VIEW_MODALS = new Set(['clientHolidayCalendar', 'memberDetail', 'docDetail', 'invoiceDetail', 'invoiceView']);
+const VIEW_MODALS = new Set(['memberDetail', 'docDetail', 'invoiceDetail', 'invoiceView']);
 let modalBase = null; // { screen, tab } behind the open pop-up
 let modalPrev = null; // the View pop-up underneath a stacked form pop-up
 
@@ -2783,8 +2746,14 @@ function navSnapshot() {
   return {
     persona: activePersona, screen: activeScreen, tab: activeTab, member: selectedMember, inv: selectedInv,
     invReturn: invoiceReturn, invoice: selectedInvoice, doc: selectedDoc, am: selectedAm, client: selectedClientInvoiceClient,
-    modalBase, modalPrev
+    rec: selectedRec, imStatus: imStatusFilter, modalBase, modalPrev
   };
+}
+
+// Same screen, changed view (tab or filter): update the current history entry so Back / closing a pop-up keeps it.
+function refreshNavState() {
+  if (restoringNav || !history.state || !history.state.nav) return;
+  history.replaceState({ nav: navSnapshot(), depth: history.state.depth }, '');
 }
 
 function pushNav() {
@@ -2821,6 +2790,7 @@ window.addEventListener('popstate', (event) => {
   activePersona = s.persona; activeScreen = s.screen; activeTab = s.tab || 0;
   selectedMember = s.member; selectedInv = s.inv; invoiceReturn = s.invReturn; selectedInvoice = s.invoice;
   selectedDoc = s.doc; selectedAm = s.am; selectedClientInvoiceClient = s.client;
+  selectedRec = s.rec || selectedRec; imStatusFilter = s.imStatus || 'All statuses'; imRejecting = false;
   modalBase = s.modalBase || null;
   modalPrev = s.modalPrev || null;
   navDepth = state.depth || 0;
@@ -2901,14 +2871,45 @@ function renderLeftNav(screen) {
     s = s.parent ? currentPersona().screens.find((x) => x.id === s.parent) : null;
   }
   leftNav.innerHTML = '';
-  currentPersona().nav.forEach((item) => {
+  const makeButton = (item) => {
     const button = document.createElement('button');
     button.textContent = item.label;
     button.className = item.target === screen.id || item.target === navKey ? 'active' : '';
     button.addEventListener('click', () => { closeMobileMenu(); goToScreen(item.target); });
-    leftNav.appendChild(button);
+    return button;
+  };
+  const groups = {};
+  currentPersona().nav.forEach((item) => {
+    if (!item.group) { leftNav.appendChild(makeButton(item)); return; }
+    // Grouped items (e.g. Settings → User Account Management, Audit Log) sit under a dropdown toggle.
+    let g = groups[item.group];
+    if (!g) {
+      const toggle = document.createElement('button');
+      toggle.className = 'nav-group-toggle';
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.innerHTML = `<span>${item.group}</span><span class="nav-caret" aria-hidden="true">▾</span>`;
+      const list = document.createElement('div');
+      list.className = 'nav-group';
+      list.hidden = true;
+      toggle.addEventListener('click', () => {
+        list.hidden = !list.hidden;
+        openNavGroups[item.group] = !list.hidden;
+        toggle.setAttribute('aria-expanded', String(!list.hidden));
+      });
+      leftNav.append(toggle, list);
+      g = groups[item.group] = { toggle, list };
+    }
+    const button = makeButton(item);
+    g.list.appendChild(button);
+    // Keep the group open while one of its screens is shown, or after the user opened it.
+    if (button.classList.contains('active') || openNavGroups[item.group]) {
+      g.list.hidden = false;
+      g.toggle.setAttribute('aria-expanded', 'true');
+      if (button.classList.contains('active')) g.toggle.classList.add('has-active');
+    }
   });
 }
+const openNavGroups = {};
 
 // "View as" switcher: one dropdown listing every user type (the sample user's name is shown in the header).
 function renderPersonaButtons() {
@@ -2971,7 +2972,7 @@ function createKpiRow(kpis) {
   const targets = DASHBOARD_KPI_TARGETS[activePersona] || ['dashboard', 'dashboard', 'dashboard', 'dashboard'];
 
   return `
-    <div class="kpi-row">
+    <div class="kpi-row" style="--kpi-cols: ${Math.min(kpis.length, 4)}">
       ${kpis.map((kpi, index) => `
         <button type="button" class="kpi-card" data-target="${targets[index] || 'dashboard'}">
           <div class="kpi-label">${kpi.label}</div>
@@ -2991,7 +2992,7 @@ function createPanel(panel) {
           <div class="bar-meta"><span>${bar.label}</span><span class="mini-stat">${bar.value}<span class="bar-go" aria-hidden="true">›</span></span></div>
           <div class="bar-track"><div class="bar-fill fill-${bar.tone}" style="width:${bar.pct}%"></div></div>`;
         return bar.target
-          ? `<button type="button" class="bar-row bar-link" data-target="${bar.target}" data-tab="${bar.tab || 0}" title="View ${bar.label.toLowerCase()} invoices">${inner}</button>`
+          ? `<button type="button" class="bar-row bar-link" data-target="${bar.target}" data-tab="${bar.tab || 0}"${bar.status ? ` data-status="${bar.status}"` : ''} title="View ${bar.label.toLowerCase()} invoices">${inner}</button>`
           : `<div class="bar-row">${inner}</div>`;
       }).join('')}</div>`
     : `<ul class="list-plain">${panel.items.map((item) => `
@@ -3044,7 +3045,7 @@ function createTabs(tabs) {
 
 // Filter a tabbed table to the active tab's status ("Approved (512)" → rows with an Approved badge).
 function applyActiveTab(screen) {
-  if (!screen.tabs || !screen.table) return screen;
+  if (!screen.tabs || !screen.table || screen.typeTabs) return screen;
   if (activeTab >= screen.tabs.length) activeTab = 0;
   if (activeTab === 0) return screen;
   const label = screen.tabs[activeTab];
@@ -3069,7 +3070,7 @@ function createFilters(filters) {
       ${filters.map((f) => `
         <div class="field inline-field">
           <label>${f.label}</label>
-          <select>${f.options.map((o) => `<option ${f.label === 'Client' && o === (selectedClientInvoiceClient || 'Blue Harbor Health') ? 'selected' : ''}>${o}</option>`).join('')}</select>
+          <select data-filter="${f.label}">${f.options.map((o) => `<option ${o === f.selected ? 'selected' : ''}>${o}</option>`).join('')}</select>
         </div>
       `).join('')}
     </div>
@@ -3120,7 +3121,14 @@ function createField(field) {
       const options = field.customInput
         ? [...field.options.filter((o) => o !== 'Custom'), ...customTerms.filter((t) => !field.options.includes(t)), 'Custom']
         : field.options;
-      control = `<select ${field.customInput ? 'data-custom-select' : ''}>${options.map((o) => `<option>${o}</option>`).join('')}</select>`;
+      control = `<select ${field.customInput ? 'data-custom-select' : ''} ${field.addOption ? `data-add-option="${field.addOption.trigger}"` : ''}>${options.map((o) => `<option>${o}</option>`).join('')}</select>`;
+      // Picking the trigger option (e.g. "Location") reveals a field to type a new value and add it.
+      if (field.addOption) {
+        control += `<div class="custom-term-row add-option-row" hidden>
+            <input class="add-option-input" placeholder="${field.addOption.placeholder}" />
+            <button type="button" class="btn btn-secondary btn-sm add-option-btn">Add</button>
+          </div>`;
+      }
       if (field.customInput) {
         control += `<div class="custom-term-row" hidden>
             <input class="custom-term" placeholder="Enter term, e.g. Net 20 or Net 25" />
@@ -3137,6 +3145,14 @@ function createField(field) {
       control = `<textarea>${field.value || ''}</textarea>`;
       break;
     case 'upload':
+      // Uploaded only by the account manager (e.g. a consultant's I-9 audit report): the vendor can view and download, never edit or delete.
+      // `byOther`: the document is uploaded by someone else (e.g. the vendor uploads W-9 / COI / ACH), so this form shows a note.
+      if (field.amOnly || field.byOther) {
+        control = field.file
+          ? `<div class="upload-done">${fileChip(field.file, field.size)}<span class="lock">View / download only</span></div>`
+          : `<div class="upload-locked">${field.byOther || 'Uploaded later by your account manager, then renewed every 3 or 6 months (only the latest is shown). You can view and download it, but not edit or delete it.'}</div>`;
+        break;
+      }
       control = field.file
         ? `<div class="upload-done">${fileChip(field.file, field.size)}<button class="link-btn">Replace</button></div>`
         : `<div class="upload-box" ${field.multiple ? 'data-multiple' : ''}>${field.multiple ? 'Drop files or' : 'Drop file or'} <span class="link-text">browse</span><span class="person-sub">PDF, DOCX, JPG, PNG · max 5 MB${field.multiple ? ' each · multiple files allowed' : ''}</span>
@@ -3145,6 +3161,20 @@ function createField(field) {
           <div class="upload-list"></div>`;
       if (field.expiry) {
         control += '<div class="expiry-row"><span class="expiry-label">Expiry date</span><input type="date" /></div>';
+      }
+      // Periodic audit report: the account manager picks the period it covers (3 or 6 months) and its start.
+      if (field.auditPeriod) {
+        control += `<div class="validity-row">
+            <div class="validity-cell"><span class="expiry-label">Audit period</span><select><option>6 months</option><option>3 months</option></select></div>
+            <div class="validity-cell"><span class="expiry-label">Period start</span><input type="date" /></div>
+          </div>
+          <span class="person-sub">Uploading a new report replaces the one shown; earlier reports stay in version history.</span>`;
+      }
+      if (field.validity) {
+        control += `<div class="validity-row">
+            <div class="validity-cell"><span class="expiry-label">Start date</span><input type="date" value="${field.start || ''}" /></div>
+            <div class="validity-cell"><span class="expiry-label">End date</span><input type="date" value="${field.end || ''}" /></div>
+          </div>`;
       }
       break;
     case 'multiselect': {
@@ -3163,8 +3193,19 @@ function createField(field) {
         </div>`;
       break;
     }
-    case 'chips':
-      control = `<div class="chip-row">${field.options.map((o) => `<span class="chip">${o}<span class="chip-x">×</span></span>`).join('')}<button class="chip chip-add">+ Add holiday</button></div>`;
+    // Other documents: an empty document-name field with its upload; "+ Add" adds another row.
+    case 'extraDocs':
+      control = `<div class="extra-docs">${extraDocRow(false, field.validity)}</div>
+        <button type="button" class="btn btn-secondary btn-sm extra-doc-add" ${field.validity ? 'data-validity' : ''}>+ Add</button>`;
+      break;
+    // "+ Add document": type a document name, click Add, and a new upload field (with start / end date) appears.
+    case 'addDocument':
+      control = `<button type="button" class="btn btn-secondary btn-sm add-doc-btn">+ Add document</button>
+        <div class="custom-term-row add-doc-row" hidden>
+          <input class="add-doc-name" placeholder="Enter document name, e.g. Work authorization" />
+          <button type="button" class="btn btn-primary btn-sm add-doc-confirm">Add</button>
+          <button type="button" class="link-btn add-doc-cancel">Cancel</button>
+        </div>`;
       break;
     case 'segmented':
       control = `<div class="segmented">${field.options.map((o, i) => `<button class="seg ${i === field.selected ? 'active' : ''}">${o}</button>`).join('')}</div>`;
@@ -3173,7 +3214,17 @@ function createField(field) {
       control = `<input value="${field.value || ''}" ${field.placeholder ? `placeholder="${field.placeholder}"` : ''} ${field.readonly ? 'readonly class="readonly"' : ''} />`;
   }
 
-  return `<div class="field ${field.full ? 'full' : ''}">${label}${control}${field.note ? `<span class="person-sub">${field.note}</span>` : ''}</div>`;
+  // A field with showFor (like a section) appears only when that option is picked in the form's segmented control.
+  const showFor = field.showFor ? ` data-show-for="${field.showFor}"${field.startHidden ? ' hidden' : ''}` : '';
+  return `<div class="field ${field.full ? 'full' : ''}"${showFor}>${label}${control}${field.note ? `<span class="person-sub">${field.note}</span>` : ''}</div>`;
+}
+
+// One "other document" row: a document-name field plus its own upload box (and Remove on rows added later).
+function extraDocRow(removable, validity) {
+  return `<div class="extra-doc">
+      <div class="extra-doc-head"><input class="extra-doc-name" placeholder="Enter document name" />${removable ? '<button type="button" class="link-btn extra-doc-remove">Remove</button>' : ''}</div>
+      ${createField({ type: 'upload', validity })}
+    </div>`;
 }
 
 function createForm(form, inModal = false) {
@@ -3189,7 +3240,7 @@ function createForm(form, inModal = false) {
             <div class="section-title">${section.title}</div>
             ${section.hint ? `<div class="section-hint">${section.hint}</div>` : ''}
           </div>
-          <div class="form-grid">${section.fields.map(createField).join('')}</div>
+          <div class="form-grid">${section.fields.map((f) => createField(f.showFor ? { ...f, startHidden: f.showFor !== selected } : f)).join('')}</div>
         </div>
       `).join('')}
       <div class="form-footer">
@@ -3255,24 +3306,15 @@ function resolveScreenState(screen) {
   if (screen.id === 'clients' && activePersona === 'superadmin') return { ...screen, table: clientsTable(screen.table) };
   if (screen.id === 'documentTracker' || (screen.id === 'docs' && activePersona === 'accountmanager')) return { ...screen, table: trackerTable(screen.table) };
   if (screen.id === 'docDetail') return docDetailScreen(screen, selectedDoc);
-  if (screen.id === 'invoiceAudit') return { ...screen, table: auditInvoicesTable(screen.table) };
   if (screen.id === 'vendorInvoices') return { ...screen, table: vendorInvoicesTable(screen.table) };
+  if (screen.id === 'invoiceReview') return invoiceReviewScreen(screen, selectedRec);
   if (screen.id === 'invoiceDetail') return invoiceDetailScreen(screen, selectedInv);
   if (screen.id === 'invoiceUpdate') return invoiceUpdateScreen(screen, selectedInv);
   if (screen.id === 'adminUsers') return adminUsersScreen(screen);
   if (screen.id === 'adminUserAdd') return adminUserAddScreen(screen);
   if (screen.id === 'adminUserEdit') return adminUserEditScreen(screen);
-  if (screen.id !== 'invoiceUpload') return screen;
-
-  const clientName = selectedClientInvoiceClient || 'Blue Harbor Health';
-  return {
-    ...screen,
-    filters: screen.filters.map((filter) => ({
-      ...filter,
-      options: filter.label === 'Client' ? ['Blue Harbor Health', 'Northwind Labs', 'Meridian Retail Group', 'Lumen Logistics'] : filter.options
-    })),
-    table: clientInvoiceTable(screen.table, clientName)
-  };
+  if (screen.id === 'invoiceUpload') return invoiceManagementScreen(screen);
+  return screen;
 }
 
 function screenMarkup(screen) {
@@ -3311,9 +3353,9 @@ function modalMarkup(screen) {
           ${createAlert(screen.alert)}
           ${screen.form
             ? createForm(screen.form, true)
-            : `<div class="modal-content">${createTable(screen.table)}${createDetail(screen.detail)}</div>
+            : `<div class="modal-content">${screen.custom || ''}${createTable(screen.table)}${createDetail(screen.detail)}</div>
                <div class="form-footer modal-footer"><span></span><div class="form-buttons">
-                 <button type="button" class="btn ${screen.actions && screen.actions.length ? 'btn-secondary' : 'btn-primary'}" data-modal-close>Close</button>
+                 <button type="button" class="btn ${(screen.actions && screen.actions.length) || screen.custom ? 'btn-secondary' : 'btn-primary'}" data-modal-close>Close</button>
                  ${actionButtons(screen.actions)}
                </div></div>`}
         </div>
@@ -3498,8 +3540,9 @@ function wireFormControls(root) {
       if (!(hours > 0 && hours <= 744)) { showFieldError(form, hoursLabel, 'Enter the total hours for the month (more than 0).'); ok = false; }
       if (!timesheet) { showFieldError(form, 'Timesheet', 'Upload the timesheet.'); ok = false; }
       if (!w2 && !invoice) { showFieldError(form, 'Invoice', 'Upload the invoice.'); ok = false; }
-      if (rows.some((r) => r.period === period && r.client === m.client && r.ref !== '—' && r.status !== 'Rejected')) {
-        showFieldError(form, 'Billing period', `${selectedMember} already has an active ${w2 ? 'timesheet' : 'invoice'} for ${m.client} in ${periodLong}.`);
+      // One invoice (or, for W-2, one timesheet) per person per month.
+      if (rows.some((r) => r.period === period && r.ref !== '—' && r.status !== 'Rejected')) {
+        showFieldError(form, 'Billing period', `${selectedMember} already has an active ${w2 ? 'timesheet' : 'invoice'} for ${periodLong}. Only one ${w2 ? 'timesheet' : 'invoice'} is allowed per month.`);
         ok = false;
       }
       if (!ok) { event.stopPropagation(); return; }
@@ -3609,78 +3652,83 @@ function wireFormControls(root) {
     });
   });
 
-  // Invoice Management (client invoices): client picker, per-person upload, Save Draft, Save & Reconcile — all stay on this page.
-  if (activeScreen === 'invoiceUpload') {
-    const clientRows = () => CLIENT_INVOICE_DATA[selectedClientInvoiceClient] || [];
-    const clientSelect = [...root.querySelectorAll('.filter-bar .field')].find((f) => f.querySelector('label')?.textContent.trim() === 'Client')?.querySelector('select');
-    clientSelect?.addEventListener('change', () => goToScreen('invoiceUpload', clientSelect.value));
+  // Invoice Management: Client / Status filters re-draw the list (the tab picks Vendor Consultants, W-2 or 1099).
+  if (activeScreen === 'invoiceUpload' || (activeScreen === 'invoiceReview' && modalBase?.screen === 'invoiceUpload')) {
+    root.querySelector('select[data-filter="Client"]')?.addEventListener('change', (e) => { selectedClientInvoiceClient = e.target.value; render(); refreshNavState(); });
+    root.querySelector('select[data-filter="Status"]')?.addEventListener('change', (e) => { imStatusFilter = e.target.value; render(); refreshNavState(); });
+  }
 
-    root.querySelectorAll('.ci-upload').forEach((btn) => {
-      const wrap = btn.parentElement;
-      const input = wrap.querySelector('.upload-input');
-      btn.addEventListener('click', (e) => { e.stopPropagation(); input.click(); });
-      input.addEventListener('change', () => {
-        const file = input.files[0];
-        if (!file) return;
-        const ext = file.name.split('.').pop().toLowerCase();
-        wrap.querySelector('.upload-error')?.remove();
-        if (!UPLOAD_TYPES.includes(ext) || file.size > UPLOAD_MAX_BYTES) {
-          const err = document.createElement('div');
-          err.className = 'upload-error';
-          err.textContent = !UPLOAD_TYPES.includes(ext) ? 'Only PDF, DOCX, JPG, JPEG or PNG.' : 'Max 5 MB per file.';
-          wrap.appendChild(err);
-          input.value = '';
-          return;
-        }
-        const row = clientRows()[Number(btn.dataset.row)];
-        row.file = file.name;
-        row.size = fmtSize(file.size);
-        wrap.outerHTML = `<div class="doc-cell">${fileChip(row.file, row.size)}</div>`; // keep typed hours: no re-render
-      });
+  // Review pop-up: live hours check, save a missing client invoice, Approve, or Reject with a reason.
+  if (activeScreen === 'invoiceReview') {
+    const rec = IM_RECORDS[selectedRec];
+    const modal = root.querySelector('.modal');
+    const clientHoursInput = modal.querySelector('.rv-client-hours');
+    const matchBox = modal.querySelector('[data-match]');
+    clientHoursInput?.addEventListener('input', () => {
+      if (!rec.clientInvoice || !rec.doc) return;
+      const v = Number(clientHoursInput.value);
+      const ok = v === rec.docHours;
+      matchBox.className = `review-match ${ok ? 'ok' : 'bad'}`;
+      matchBox.textContent = ok ? `Hours match: ${v} h on both.` : `Hours do not match: client ${clientHoursInput.value || '—'} h, ${rec.type === 'Consultant' ? 'vendor' : 'resource'} ${rec.docHours} h.`;
     });
-
-    const readHours = () => {
-      root.querySelectorAll('.ci-hours').forEach((input) => {
-        const v = input.value.trim();
-        clientRows()[Number(input.dataset.row)].billable = v === '' ? null : Number(v);
-      });
+    const linked = () => (rec.inv ? INVOICES[rec.inv] : null);
+    const sync = () => {
+      const inv = linked();
+      if (!inv) return;
+      inv.clientHours = rec.clientHours;
+      inv.status = imStatus(rec) === 'In Progress' && inv.status === 'Not Submitted' ? 'Not Submitted' : imStatus(rec);
+      inv.reason = rec.reason;
     };
-
-    root.querySelector('[data-action="ci-draft"]')?.addEventListener('click', () => {
-      readHours();
-      flashMessage = { title: 'Draft saved', text: `Client invoices and billable hours for ${selectedClientInvoiceClient} are saved. Nothing has been reconciled yet.` };
+    const backToList = (message) => {
+      imRejecting = false;
+      flashMessage = message;
+      goToScreen('invoiceUpload', undefined, IM_TAB_TYPES.indexOf(rec.type));
+    };
+    modal.querySelector('[data-rv="save-client"]')?.addEventListener('click', () => {
+      const file = modal.querySelector('.review-doc .upload-done[data-file]')?.dataset.file;
+      const hours = Number(clientHoursInput.value);
+      modal.querySelectorAll('.field-error').forEach((e) => e.remove());
+      const err = (el, text) => el.insertAdjacentHTML('afterend', `<span class="field-note field-error">${text}</span>`);
+      if (!file) err(modal.querySelector('.review-doc .upload-box'), 'Upload the client invoice.');
+      if (!(hours > 0)) err(clientHoursInput, 'Enter the client billable hours.');
+      if (!file || !(hours > 0)) return;
+      rec.clientInvoice = file;
+      rec.clientHours = hours;
+      sync();
+      showToast({ title: 'Client invoice saved', text: rec.doc ? 'Both documents are in. Review the hours and approve or reject.' : `Still waiting for the ${imDocLabel(rec).toLowerCase()}.` });
       render();
     });
-
-    root.querySelector('[data-action="ci-reconcile"]')?.addEventListener('click', () => {
-      readHours();
-      const rows = clientRows();
-      const counts = { Approved: 0, Rejected: 0, 'Awaiting Client Invoice': 0 };
-      const missingFile = [];
-      rows.forEach((r) => {
-        const hasHours = r.billable != null && r.billable > 0;
-        if (!r.file || !hasHours || r.submitted == null) {
-          r.status = 'Awaiting Client Invoice';
-          if (hasHours && !r.file) missingFile.push(r.person);
-        } else {
-          r.status = r.submitted === r.billable ? 'Approved' : 'Rejected';
-        }
-        counts[r.status] += 1;
-        // Keep the shared invoice records in step (Invoices / Vendor Invoices screens).
-        const inv = Object.values(INVOICES).find((x) => x.person === r.person && x.client === selectedClientInvoiceClient && x.period === 'October 2026');
-        if (inv && r.file && hasHours) {
-          inv.clientHours = r.billable;
-          if (inv.hours != null) inv.status = inv.hours === r.billable ? 'Approved' : 'Rejected';
-        }
-      });
-      const parts = [`${counts.Approved} approved`, `${counts.Rejected} rejected`, `${counts['Awaiting Client Invoice']} awaiting client invoice`];
-      flashMessage = {
-        tone: counts.Rejected ? 'warning' : 'success',
-        title: `Reconciled ${selectedClientInvoiceClient} · October 2026`,
-        text: `${parts.join(', ')}. Results are in the Submission column below.${missingFile.length ? ` Upload the client invoice for ${missingFile.join(', ')} to reconcile ${missingFile.length > 1 ? 'them' : 'it'}.` : ''}`,
-        action: activePersona === 'accountmanager' ? { label: 'Open Reconciliation', target: 'reconciliation' } : { label: 'View Invoices', target: 'invoiceAudit' }
-      };
-      render();
+    modal.querySelector('[data-rv="approve"]')?.addEventListener('click', () => {
+      const v = Number(clientHoursInput.value);
+      if (v > 0) rec.clientHours = v;
+      rec.review = 'Approved';
+      rec.reason = '';
+      sync();
+      backToList({ title: `Approved · ${rec.person}`, text: `Client ${rec.clientHours} h and ${rec.type === 'Consultant' ? 'vendor' : 'resource'} ${rec.docHours} h for ${IM_PERIOD}.` });
+    });
+    modal.querySelector('[data-rv="reject"]')?.addEventListener('click', () => {
+      imRejecting = true;
+      modal.querySelector('.review-reject').hidden = false;
+      modal.querySelector('.rv-reason').focus();
+    });
+    modal.querySelector('[data-rv="cancel-reject"]')?.addEventListener('click', () => {
+      imRejecting = false;
+      modal.querySelector('.review-reject').hidden = true;
+    });
+    modal.querySelector('[data-rv="submit-reject"]')?.addEventListener('click', () => {
+      const box = modal.querySelector('.rv-reason');
+      modal.querySelectorAll('.review-reject .field-error').forEach((e) => e.remove());
+      if (!box.value.trim()) {
+        box.insertAdjacentHTML('afterend', '<span class="field-note field-error">Enter the reason for rejection.</span>');
+        box.focus();
+        return;
+      }
+      const v = Number(clientHoursInput.value);
+      if (v > 0) rec.clientHours = v;
+      rec.review = 'Rejected';
+      rec.reason = box.value.trim();
+      sync();
+      backToList({ tone: 'warning', title: `Rejected · ${rec.person}`, text: `The ${rec.type === 'Consultant' ? 'vendor' : 'resource'} has been asked to correct and resubmit. Reason: ${rec.reason}` });
     });
   }
 
@@ -3799,6 +3847,77 @@ function wireFormControls(root) {
     });
   });
 
+  // Select with an "add your own" option (Work location → "Location"): picking it reveals a field;
+  // Add (or Enter) puts the typed value into the dropdown and selects it.
+  root.querySelectorAll('select[data-add-option]').forEach((select) => {
+    const field = select.parentElement;
+    const row = field.querySelector('.add-option-row');
+    const input = row.querySelector('.add-option-input');
+    const trigger = select.dataset.addOption;
+    let previous = select.value;
+    const close = () => { row.hidden = true; input.value = ''; };
+    const save = () => {
+      const value = input.value.trim();
+      if (!value) { input.focus(); return; }
+      let option = [...select.options].find((o) => o.value === value);
+      if (!option) {
+        option = new Option(value, value);
+        select.insertBefore(option, [...select.options].find((o) => o.value === trigger));
+      }
+      select.value = value;
+      previous = value;
+      close();
+    };
+    select.addEventListener('change', () => {
+      if (select.value === trigger) { row.hidden = false; input.focus(); }
+      else { previous = select.value; close(); }
+    });
+    row.querySelector('.add-option-btn').addEventListener('click', save);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); save(); }
+      if (e.key === 'Escape') { close(); select.value = previous; }
+    });
+  });
+
+  // Other documents: "+ Add" appends another name + upload row; Remove deletes an added row.
+  root.querySelectorAll('.extra-doc-add').forEach((btn) => {
+    const list = btn.closest('.field').querySelector('.extra-docs');
+    btn.addEventListener('click', () => {
+      list.insertAdjacentHTML('beforeend', extraDocRow(true, btn.hasAttribute('data-validity')));
+      const row = list.lastElementChild;
+      row.querySelector('.extra-doc-remove').addEventListener('click', () => row.remove());
+      wireFormControls(row);
+      row.querySelector('.extra-doc-name').focus();
+    });
+  });
+
+  // "+ Add document": enter a name, Add creates an upload field for it with start / end dates and a Remove link.
+  root.querySelectorAll('.add-doc-btn').forEach((btn) => {
+    const holder = btn.closest('.field');
+    const row = holder.querySelector('.add-doc-row');
+    const input = row.querySelector('.add-doc-name');
+    const open = () => { btn.hidden = true; row.hidden = false; input.focus(); };
+    const close = () => { row.hidden = true; btn.hidden = false; input.value = ''; };
+    const add = () => {
+      const name = input.value.trim();
+      if (!name) { input.focus(); return; }
+      holder.insertAdjacentHTML('beforebegin', createField({ label: name, type: 'upload', validity: true }));
+      const added = holder.previousElementSibling;
+      added.classList.add('added-doc');
+      added.querySelector('label').insertAdjacentHTML('beforeend', '<button type="button" class="link-btn add-doc-remove">Remove</button>');
+      added.querySelector('.add-doc-remove').addEventListener('click', () => added.remove());
+      wireFormControls(added);
+      close();
+    };
+    btn.addEventListener('click', open);
+    row.querySelector('.add-doc-confirm').addEventListener('click', add);
+    row.querySelector('.add-doc-cancel').addEventListener('click', close);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); add(); }
+      if (e.key === 'Escape') close();
+    });
+  });
+
   // Payment term "Custom" reveals a field for a term such as Net 10. Saving it (Add, Enter, or leaving the
   // field) adds it to the dropdown, selects it, and offers it in every payment-term dropdown afterwards.
   root.querySelectorAll('select[data-custom-select]').forEach((select) => {
@@ -3865,6 +3984,11 @@ function handleTargetClick(event) {
   }
   const docId = trigger.getAttribute('data-doc');
   if (docId) selectedDoc = docId;
+  const recId = trigger.getAttribute('data-rec');
+  if (recId) { selectedRec = recId; imRejecting = false; }
+  // Dashboard bars open Invoice Management filtered to that status.
+  const statusFilter = trigger.getAttribute('data-status');
+  if (statusFilter) { imStatusFilter = statusFilter; selectedClientInvoiceClient = 'All clients'; }
   const amIndex = trigger.getAttribute('data-am');
   if (amIndex !== null) selectedAm = Number(amIndex);
   const resolved = target && resolveTarget(target);
@@ -3910,66 +4034,11 @@ function render() {
   screenContainer.onclick = handleTargetClick;
   wireFormControls(screenContainer);
   screenContainer.querySelectorAll('.tab[data-tab-index]').forEach((tab) => {
-    tab.addEventListener('click', () => { activeTab = Number(tab.dataset.tabIndex); render(); });
+    tab.addEventListener('click', () => { activeTab = Number(tab.dataset.tabIndex); render(); refreshNavState(); });
   });
 
   breadcrumb.onclick = handleTargetClick;
   breadcrumb.querySelector('.back-btn')?.addEventListener('click', (e) => { e.stopPropagation(); goBack(screen); });
-
-  // Inline "Add holiday" input (browser prompt() dialogs are blocked in the hosted viewer).
-  // PRD CL-5: at most 10 holidays per client; an 11th is blocked with a message.
-  screenContainer.querySelectorAll('.chip-add').forEach((button) => {
-    button.addEventListener('click', (event) => {
-      event.stopPropagation();
-      const chipRow = button.closest('.chip-row');
-      const field = chipRow.parentElement;
-      const showLimit = (message) => {
-        let note = field.querySelector('.chip-limit');
-        if (!note) {
-          note = document.createElement('div');
-          note.className = 'chip-limit';
-          field.appendChild(note);
-        }
-        note.textContent = message;
-      };
-      if (chipRow.querySelectorAll('.chip:not(.chip-add)').length >= 10) {
-        showLimit('A client can have up to 10 holidays. Remove one to add another.');
-        return;
-      }
-      if (chipRow.querySelector('.chip-input')) {
-        chipRow.querySelector('.chip-input').focus();
-        return;
-      }
-      const input = document.createElement('input');
-      input.className = 'chip-input';
-      input.id = 'newHolidayInput';
-      input.placeholder = 'e.g. Dec 24 · Christmas Eve';
-      chipRow.insertBefore(input, button);
-      input.focus();
-      const commit = () => {
-        const value = input.value.trim();
-        input.remove();
-        if (!value) return;
-        const chip = document.createElement('span');
-        chip.className = 'chip';
-        chip.textContent = value;
-        const close = document.createElement('span');
-        close.className = 'chip-x';
-        close.textContent = '×';
-        close.addEventListener('click', (e) => { e.stopPropagation(); chip.remove(); });
-        chip.appendChild(close);
-        chipRow.insertBefore(chip, button);
-        const count = chipRow.querySelectorAll('.chip:not(.chip-add)').length;
-        const hint = field.closest('.form-section')?.querySelector('.section-hint');
-        if (hint) hint.textContent = `Select up to 10 holidays. ${count} of 10 selected.`;
-      };
-      input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') commit();
-        if (e.key === 'Escape') { input.value = ''; commit(); }
-      });
-      input.addEventListener('blur', commit);
-    });
-  });
 
   screenContainer.querySelectorAll('.chip-x').forEach((closeBtn) => {
     closeBtn.addEventListener('click', (event) => {
