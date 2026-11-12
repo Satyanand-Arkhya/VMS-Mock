@@ -155,8 +155,9 @@ document.addEventListener('click', (e) => {
   }
 }, true);
 
+// Opens a pop-up with that client's invoices for the billing period (stays on the Clients page).
 function clientInvoiceAction(clientName) {
-  return `<button class="link-btn" data-target="invoiceUpload" data-client="${clientName}">Client invoice</button>`;
+  return `<button class="link-btn" data-target="clientInvoices" data-client="${clientName}">Client invoice</button>`;
 }
 
 const DASHBOARD_KPI_TARGETS = {
@@ -831,6 +832,41 @@ function imStatusNote(r) {
   if (!r.doc) return `Waiting for ${imDocLabel(r).toLowerCase()}`;
   if (!r.review) return 'Ready for review';
   return '';
+}
+
+/* Client invoice pop-up (from a client's row): every person on that client for the billing period, with the
+   client invoice and client billable hours. A missing client invoice can be uploaded here with its hours. */
+let ciClient = 'Persistent';
+const ciPending = {}; // record id -> chosen file name, until "Save client invoices"
+
+function clientInvoicesScreen(screen) {
+  const recs = Object.entries(IM_RECORDS).filter(([, r]) => r.client === ciClient);
+  const missing = recs.filter(([, r]) => !r.clientInvoice).length;
+  const typeLabel = (r) => (r.type === 'Consultant' ? 'Vendor consultant' : `${r.type} resource`);
+  const rows = recs.map(([id, r]) => [
+    person(r.person, r.vendor || r.type),
+    typeLabel(r),
+    r.clientInvoice
+      ? `<div class="doc-cell">${fileChip(r.clientInvoice)}<button type="button" class="link-btn" data-preview="${r.clientInvoice}">View</button></div>`
+      : ciPending[id]
+        ? `<div class="doc-cell">${fileChip(ciPending[id])}</div>`
+        : `<span class="cell-upload-wrap"><button type="button" class="upload-mini ci-up" data-rec="${id}">Upload</button><input type="file" class="upload-input" accept=".pdf,.docx,.jpg,.jpeg,.png" hidden /></span>`,
+    r.clientInvoice ? String(r.clientHours) : `<input class="cell-input ci-h" data-rec="${id}" inputmode="decimal" placeholder="0" />`,
+    `${b(imStatus(r))}${imStatusNote(r) ? `<span class="person-sub">${imStatusNote(r)}</span>` : ''}`
+  ]);
+  const table = createTable({
+    title: `${ciClient} · ${IM_PERIOD}`,
+    chip: missing ? `${missing} client invoice${missing > 1 ? 's' : ''} missing` : 'All client invoices uploaded',
+    noSearch: true,
+    headers: ['Person', 'Type', 'Client Invoice', 'Client Billable Hours', 'Status'],
+    rows: rows.length ? rows : [['<span class="person-sub inline">No one is assigned to this client for this period.</span>', '', '', '', '']]
+  });
+  return {
+    ...screen,
+    title: `Client invoices · ${ciClient}`,
+    description: `Client invoices for ${IM_PERIOD}. Upload a missing client invoice with its billable hours; approving or rejecting is done in Invoice Management.`,
+    custom: `${table}${missing ? '<div class="review-actions"><button type="button" class="btn btn-primary" data-ci="save">Save client invoices</button></div>' : ''}`
+  };
 }
 
 function invoiceManagementScreen(screen) {
@@ -2479,6 +2515,7 @@ const personaConfig = {
       { id: 'invoiceReview', parent: 'invoiceUpload', title: 'Review' },
       // Read-only View pop-ups (separate from Edit).
       { id: 'clientView', parent: 'clients', title: 'Client' },
+      { id: 'clientInvoices', parent: 'clients', title: 'Client invoices' },
       { id: 'vendorView', parent: key === 'superadmin' ? 'vendors' : 'vendorList', title: 'Vendor' }
     );
   });
@@ -2720,7 +2757,7 @@ let replaceNextNav = false;
 const MODAL_SCREENS = new Set([
   'clientAdd', 'clientEdit', 'vendorAdd', 'vendorEdit', 'resourceAdd', 'consultantAdd', 'memberEdit',
   'submitOnBehalf', 'invoiceUpdate', 'adminUserAdd', 'adminUserEdit', 'invoiceSubmit', 'timesheet', 'correction', 'rejectedInvoice',
-  'memberDetail', 'docDetail', 'invoiceDetail', 'invoiceView', 'invoiceReview', 'clientView', 'vendorView'
+  'memberDetail', 'docDetail', 'invoiceDetail', 'invoiceView', 'invoiceReview', 'clientView', 'vendorView', 'clientInvoices'
 ]);
 // Read-only pop-ups (View …). A form opened from one of these stacks on top of it.
 const VIEW_MODALS = new Set(['memberDetail', 'docDetail', 'invoiceDetail', 'invoiceView', 'clientView', 'vendorView']);
@@ -2755,7 +2792,7 @@ function navSnapshot() {
   return {
     persona: activePersona, screen: activeScreen, tab: activeTab, member: selectedMember, inv: selectedInv,
     invReturn: invoiceReturn, invoice: selectedInvoice, doc: selectedDoc, am: selectedAm, client: selectedClientInvoiceClient,
-    rec: selectedRec, imStatus: imStatusFilter, modalBase, modalPrev
+    rec: selectedRec, imStatus: imStatusFilter, ciClient, modalBase, modalPrev
   };
 }
 
@@ -2800,6 +2837,7 @@ window.addEventListener('popstate', (event) => {
   selectedMember = s.member; selectedInv = s.inv; invoiceReturn = s.invReturn; selectedInvoice = s.invoice;
   selectedDoc = s.doc; selectedAm = s.am; selectedClientInvoiceClient = s.client;
   selectedRec = s.rec || selectedRec; imStatusFilter = s.imStatus || 'All statuses'; imRejecting = false;
+  ciClient = s.ciClient || ciClient;
   modalBase = s.modalBase || null;
   modalPrev = s.modalPrev || null;
   navDepth = state.depth || 0;
@@ -2828,6 +2866,7 @@ function goToScreen(screenId, clientName, tab = 0) {
   if (screenId === 'invoiceUpload' && clientName) {
     selectedClientInvoiceClient = clientName;
   }
+  if (screenId === 'clientInvoices' && clientName) ciClient = clientName;
   const fromModal = isModalId(activeScreen);
   const toModal = isModalId(screenId);
   const onOwnEntry = navDepth > 0 && history.state && history.state.nav && history.state.nav.screen === activeScreen;
@@ -3344,6 +3383,7 @@ function resolveScreenState(screen) {
   if (screen.id === 'docDetail') return docDetailScreen(screen, selectedDoc);
   if (screen.id === 'vendorInvoices') return { ...screen, table: vendorInvoicesTable(screen.table) };
   if (screen.id === 'invoiceReview') return invoiceReviewScreen(screen, selectedRec);
+  if (screen.id === 'clientInvoices') return clientInvoicesScreen(screen);
   if (screen.id === 'invoiceDetail') return invoiceDetailScreen(screen, selectedInv);
   if (screen.id === 'invoiceUpdate') return invoiceUpdateScreen(screen, selectedInv);
   if (screen.id === 'adminUsers') return adminUsersScreen(screen);
@@ -3748,6 +3788,52 @@ function wireFormControls(root) {
   if (activeScreen === 'invoiceUpload' || (activeScreen === 'invoiceReview' && modalBase?.screen === 'invoiceUpload')) {
     root.querySelector('select[data-filter="Client"]')?.addEventListener('change', (e) => { selectedClientInvoiceClient = e.target.value; render(); refreshNavState(); });
     root.querySelector('select[data-filter="Status"]')?.addEventListener('change', (e) => { imStatusFilter = e.target.value; render(); refreshNavState(); });
+  }
+
+  // Client invoice pop-up: pick a file per person, enter hours, then "Save client invoices".
+  if (activeScreen === 'clientInvoices') {
+    const modal = root.querySelector('.modal');
+    modal?.querySelectorAll('.ci-up').forEach((btn) => {
+      const wrap = btn.parentElement;
+      const input = wrap.querySelector('.upload-input');
+      btn.addEventListener('click', (e) => { e.stopPropagation(); input.click(); });
+      input.addEventListener('change', () => {
+        const file = input.files[0];
+        if (!file) return;
+        const ext = file.name.split('.').pop().toLowerCase();
+        wrap.querySelector('.upload-error')?.remove();
+        if (!UPLOAD_TYPES.includes(ext) || file.size > UPLOAD_MAX_BYTES) {
+          wrap.insertAdjacentHTML('beforeend', `<div class="upload-error">${!UPLOAD_TYPES.includes(ext) ? 'Only PDF, DOCX, JPG, JPEG or PNG.' : 'Max 5 MB per file.'}</div>`);
+          input.value = '';
+          return;
+        }
+        ciPending[btn.dataset.rec] = file.name;
+        wrap.outerHTML = `<div class="doc-cell">${fileChip(file.name, fmtSize(file.size))}</div>`; // keep typed hours: no re-render
+      });
+    });
+    modal?.querySelector('[data-ci="save"]')?.addEventListener('click', () => {
+      modal.querySelectorAll('.ci-row-error').forEach((e) => e.remove());
+      let saved = 0;
+      let problems = 0;
+      modal.querySelectorAll('.ci-h').forEach((input) => {
+        const id = input.dataset.rec;
+        const rec = IM_RECORDS[id];
+        const hours = Number(input.value);
+        const file = ciPending[id];
+        if (!file && !input.value.trim()) return; // nothing entered for this person
+        const msg = !file ? 'Upload the client invoice.' : !(hours > 0) ? 'Enter the billable hours.' : '';
+        if (msg) { problems++; input.insertAdjacentHTML('afterend', `<span class="field-note ci-row-error">${msg}</span>`); return; }
+        rec.clientInvoice = file;
+        rec.clientHours = hours;
+        delete ciPending[id];
+        if (rec.inv && INVOICES[rec.inv]) INVOICES[rec.inv].clientHours = hours;
+        saved++;
+      });
+      if (problems) return;
+      if (!saved) { showToast({ tone: 'error', title: 'Nothing to save', text: 'Upload a client invoice and enter its billable hours first.' }); return; }
+      showToast({ title: `${saved} client invoice${saved > 1 ? 's' : ''} saved`, text: 'Ready for review in Invoice Management once the vendor or resource side is in.' });
+      render();
+    });
   }
 
   // Review pop-up: live hours check, save a missing client invoice, Approve, or Reject with a reason.

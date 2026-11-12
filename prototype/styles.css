@@ -792,6 +792,7 @@ td > .person-name + .person-sub { margin-top: 1px; }
 .review-match.ok { background: #e7f6ee; color: #146c43; }
 .review-match.bad { background: var(--danger-soft); color: var(--danger); }
 .review-actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+.table-card + .review-actions { margin-top: 14px; }
 .review-actions .btn-reject { background: var(--danger-soft); color: var(--danger); }
 .review-reject { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
 @media (max-width: 720px) { .review-grid { grid-template-columns: 1fr; } }
