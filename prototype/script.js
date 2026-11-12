@@ -273,7 +273,7 @@ const TEAM_MEMBERS = {
     type: 'W-2', role: 'Data Analyst', email: 'maya.reed@outlook.com', phone: '(646) 555-0128',
     address: '312 W 88th St, Apt 4B, New York, NY 10024', ssn: '•••-••-2290',
     client: 'Northwind Labs', rate: '62.00', location: 'Remote', start: '2026-03-02', end: '2027-02-26',
-    term: 'Net 15', status: 'Active', am: 'Alicia Ross',
+    term: 'Net 10', status: 'Active', am: 'Alicia Ross',
     docs: [
       ['W-4', 'W4_Reed_2026.pdf', 'Mar 2, 2026', '—', 'Valid'],
       ['I-9', null, '—', '—', 'Incomplete'],
@@ -285,7 +285,7 @@ const TEAM_MEMBERS = {
     type: '1099', role: 'UX Consultant', email: 'jordan@blakeux.studio', phone: '(415) 555-0186',
     address: '2201 Mission St, Suite 5, San Francisco, CA 94110', ssn: '•••-••-7731',
     client: 'Northwind Labs', rate: '90.00', location: 'Remote', start: '2026-07-06', end: '2027-01-08',
-    term: 'Net 15', status: 'Active', am: 'Alicia Ross',
+    term: 'Net 10', status: 'Active', am: 'Alicia Ross',
     docs: [
       ['1099 contract — Northwind Labs', 'Blake_1099_Northwind.pdf', 'Jul 1, 2026', 'Jan 8, 2027', 'Signed'],
       ['W-9', 'Blake_W9_2026.pdf', 'Jun 30, 2026', '—', 'Valid'],
@@ -296,7 +296,7 @@ const TEAM_MEMBERS = {
     type: 'Consultant', vendor: 'Coral Staffing LLC', vendorContact: 'Daniel Ortiz · d.ortiz@coralstaffing.com',
     role: 'Business Analyst', email: 'deepa.kumar@coralstaffing.com', phone: '(512) 555-0147',
     client: 'Blue Harbor Health', rate: '80.00', location: 'Hybrid', start: '2026-01-12', end: '2026-12-31',
-    term: 'Net 30', status: 'Active', am: 'Alicia Ross',
+    term: 'Net 10', status: 'Active', am: 'Alicia Ross',
     docs: [
       ['Resume', 'Deepa_Kumar_Resume.pdf', 'Jan 5, 2026', '—', 'Valid'],
       ['Work authorization (H-1B)', 'Kumar_H1B_Approval.pdf', 'Dec 1, 2025', 'Nov 30, 2026', 'Expiring Soon'],
@@ -308,7 +308,7 @@ const TEAM_MEMBERS = {
     type: 'Consultant', vendor: 'Coral Staffing LLC', vendorContact: 'Daniel Ortiz · d.ortiz@coralstaffing.com',
     role: 'QA Engineer', email: 'rinaldo.silva@coralstaffing.com', phone: '(512) 555-0163',
     client: 'Apex Systems', rate: '72.00', location: 'Remote', start: '2026-09-14', end: '2027-03-12',
-    term: 'Net 30', status: 'Active', am: 'Benjamin Cole',
+    term: 'Net 10', status: 'Active', am: 'Benjamin Cole',
     docs: [
       ['Resume', 'Rinaldo_Silva_Resume.pdf', 'Sep 1, 2026', '—', 'Valid'],
       ['Work authorization (Green Card)', 'Silva_GC.pdf', 'Sep 1, 2026', 'Aug 14, 2033', 'Valid'],
@@ -320,7 +320,7 @@ const TEAM_MEMBERS = {
     type: 'Consultant', vendor: 'Summit IT Solutions', vendorContact: 'Ravi Menon · ravi@summitits.com',
     role: 'Java Developer', email: 'kevin.singh@summitits.com', phone: '(732) 555-0119',
     client: 'Blue Harbor Health', rate: '85.00', location: 'Hybrid', start: '2026-04-01', end: '2027-03-31',
-    term: 'Net 30', status: 'Active', am: 'Alicia Ross',
+    term: 'Net 10', status: 'Active', am: 'Alicia Ross',
     docs: [
       ['Resume', 'Kevin_Singh_Resume.pdf', 'Mar 20, 2026', '—', 'Valid'],
       ['Work authorization (EAD)', 'Singh_EAD.pdf', 'Mar 20, 2026', 'Jun 30, 2027', 'Valid'],
@@ -332,7 +332,7 @@ const TEAM_MEMBERS = {
     type: 'Consultant', vendor: 'Coral Staffing LLC', vendorContact: 'Daniel Ortiz · d.ortiz@coralstaffing.com',
     role: 'DevOps Engineer', email: 'omar.haddad@coralstaffing.com', phone: '(512) 555-0152',
     client: 'Blue Harbor Health', rate: '84.00', location: 'Onsite', start: '2026-02-02', end: '2027-01-29',
-    term: 'Net 30', status: 'Active', am: 'Alicia Ross',
+    term: 'Net 10', status: 'Active', am: 'Alicia Ross',
     docs: [
       ['Resume', 'Omar_Haddad_Resume.pdf', 'Jan 20, 2026', '—', 'Valid'],
       ['Work authorization (Green Card)', 'Haddad_GC.pdf', 'Jan 20, 2026', 'Mar 3, 2034', 'Valid'],
@@ -344,7 +344,7 @@ const TEAM_MEMBERS = {
     type: 'Consultant', vendor: 'Coral Staffing LLC', vendorContact: 'Daniel Ortiz · d.ortiz@coralstaffing.com',
     role: 'Scrum Master', email: 'sofia.marin@coralstaffing.com', phone: '(512) 555-0188',
     client: 'Meridian Retail Group', rate: '76.00', location: 'Remote', start: '2026-05-04', end: '2026-11-27',
-    term: 'Net 30', status: 'Active', am: 'Alicia Ross',
+    term: 'Net 10', status: 'Active', am: 'Alicia Ross',
     docs: [
       ['Resume', 'Sofia_Marin_Resume.pdf', 'Apr 22, 2026', '—', 'Valid'],
       ['Work authorization (TN)', 'Marin_TN_Approval.pdf', 'Apr 22, 2026', 'Apr 30, 2029', 'Valid'],
@@ -356,7 +356,7 @@ const TEAM_MEMBERS = {
     type: 'Consultant', vendor: 'Coral Staffing LLC', vendorContact: 'Daniel Ortiz · d.ortiz@coralstaffing.com',
     role: 'Data Engineer', email: 'priya.shah@coralstaffing.com', phone: '(512) 555-0174',
     client: 'Meridian Retail Group', rate: '88.00', location: 'Remote', start: '2026-11-16', end: '2027-05-14',
-    term: 'Net 30', status: 'Onboarding', am: 'Alicia Ross',
+    term: 'Net 10', status: 'Onboarding', am: 'Alicia Ross',
     docs: [
       ['Resume', 'Priya_Shah_Resume.pdf', 'Nov 9, 2026', '—', 'Valid'],
       ['Work authorization (H-1B)', 'Shah_H1B_Approval.pdf', 'Nov 9, 2026', 'Oct 1, 2028', 'Valid'],
@@ -673,10 +673,10 @@ function showFieldError(form, label, message) {
 /* ---------- 1099 invoice view ---------- */
 
 const RESOURCE_INVOICES = {
-  'INV-2026-10-0151': { client: 'Northwind Labs', period: 'October 2026', hours: '152', rate: '$90.00', amount: '$13,680.00', term: 'Net 15', submitted: 'Nov 2, 2026', status: 'Awaiting Client Invoice', invoice: ['BlakeUX-0046.pdf', '148 KB'], timesheet: ['Blake_Northwind_Oct26.pdf', '92 KB'] },
-  'INV-2026-10-0164': { client: 'Apex Systems', period: 'October 2026', hours: '102', rate: '$82.00', amount: '$8,364.00', term: 'Net 30', submitted: 'Nov 3, 2026', status: 'Approved', invoice: ['BlakeUX-0045.pdf', '151 KB'], timesheet: ['Blake_Apex_Oct26.pdf', '88 KB'] },
-  'INV-2026-09-0388': { client: 'Apex Systems', period: 'September 2026', hours: '108', rate: '$82.00', amount: '$8,856.00', term: 'Net 30', submitted: 'Oct 4, 2026', status: 'Rejected', reason: 'Billing period did not match the client invoice.', invoice: ['BlakeUX-0039.pdf', '146 KB'], timesheet: ['Blake_Apex_Sep26.pdf', '90 KB'] },
-  'INV-2026-09-0352': { client: 'Northwind Labs', period: 'September 2026', hours: '160', rate: '$90.00', amount: '$14,400.00', term: 'Net 15', submitted: 'Oct 2, 2026', status: 'Approved', invoice: ['BlakeUX-0038.pdf', '150 KB'], timesheet: ['Blake_Northwind_Sep26.pdf', '94 KB'] }
+  'INV-2026-10-0151': { client: 'Northwind Labs', period: 'October 2026', hours: '152', rate: '$90.00', amount: '$13,680.00', term: 'Net 10', submitted: 'Nov 2, 2026', status: 'Awaiting Client Invoice', invoice: ['BlakeUX-0046.pdf', '148 KB'], timesheet: ['Blake_Northwind_Oct26.pdf', '92 KB'] },
+  'INV-2026-10-0164': { client: 'Apex Systems', period: 'October 2026', hours: '102', rate: '$82.00', amount: '$8,364.00', term: 'Net 10', submitted: 'Nov 3, 2026', status: 'Approved', invoice: ['BlakeUX-0045.pdf', '151 KB'], timesheet: ['Blake_Apex_Oct26.pdf', '88 KB'] },
+  'INV-2026-09-0388': { client: 'Apex Systems', period: 'September 2026', hours: '108', rate: '$82.00', amount: '$8,856.00', term: 'Net 10', submitted: 'Oct 4, 2026', status: 'Rejected', reason: 'Billing period did not match the client invoice.', invoice: ['BlakeUX-0039.pdf', '146 KB'], timesheet: ['Blake_Apex_Sep26.pdf', '90 KB'] },
+  'INV-2026-09-0352': { client: 'Northwind Labs', period: 'September 2026', hours: '160', rate: '$90.00', amount: '$14,400.00', term: 'Net 10', submitted: 'Oct 2, 2026', status: 'Approved', invoice: ['BlakeUX-0038.pdf', '150 KB'], timesheet: ['Blake_Northwind_Sep26.pdf', '94 KB'] }
 };
 
 let selectedInvoice = 'INV-2026-10-0151';
@@ -827,17 +827,17 @@ function docDetailScreen(screen, id) {
 // invoice / timesheet: file name, null = not uploaded, 'na' = not applicable (W-2 has no invoice).
 // clientHours: hours on the client invoice, or null while it has not been uploaded.
 const INVOICES = {
-  'INV-2026-10-0142': { person: 'Rinaldo Silva', sub: 'Coral Staffing', vendor: 'Coral Staffing LLC', client: 'Apex Systems', period: 'October 2026', hours: 168, clientHours: 168, rate: 72, term: 'Net 30', submitted: 'Nov 4 (v2)', status: 'Approved', invoice: 'CS-INV-10482.pdf', timesheet: 'Silva_Oct26_timesheet.pdf' },
-  'INV-2026-10-0151': { person: 'Jordan Blake', sub: '1099', client: 'Northwind Labs', period: 'October 2026', hours: 152, clientHours: null, rate: 90, term: 'Net 15', submitted: 'Nov 2', status: 'In Progress', invoice: 'BlakeUX-0046.pdf', timesheet: 'Blake_Northwind_Oct26.pdf' },
-  'INV-2026-10-0187': { person: 'Kevin Singh', sub: 'Summit IT', vendor: 'Summit IT Solutions', client: 'Blue Harbor Health', period: 'October 2026', hours: 160, clientHours: 152, rate: 85, term: 'Net 30', submitted: 'Nov 3', status: 'Rejected', invoice: 'SIT-INV-2210.pdf', timesheet: 'Singh_Oct26_timesheet.pdf' },
-  'TS-2026-10-0093': { person: 'Maya Reed', sub: 'W-2 · timesheet', w2: true, client: 'Northwind Labs', period: 'October 2026', hours: 168, clientHours: 168, rate: 62, term: 'Net 15', submitted: 'Nov 2', status: 'Approved', invoice: 'na', timesheet: 'Reed_Oct26.pdf' },
-  'INV-2026-10-0203': { person: 'Deepa Kumar', sub: 'Coral Staffing', vendor: 'Coral Staffing LLC', client: 'Blue Harbor Health', period: 'October 2026', hours: 160, clientHours: 168, rate: 80, term: 'Net 30', submitted: 'Nov 3', status: 'Rejected', invoice: 'CS-INV-10477.pdf', timesheet: 'Kumar_Oct26_timesheet.pdf' },
-  'INV-2026-10-0211': { person: 'Ana Torres', sub: 'BluePeak Consulting', vendor: 'BluePeak Consulting Inc.', client: 'GlobalCare Insurance', period: 'October 2026', hours: 176, clientHours: 176, rate: 88, term: 'Net 30', submitted: 'Nov 4', status: 'Approved', invoice: 'BP-INV-5521.pdf', timesheet: 'Torres_Oct26_timesheet.pdf' },
-  'INV-2026-10-0198': { person: 'Omar Haddad', sub: 'Coral Staffing', vendor: 'Coral Staffing LLC', client: 'Blue Harbor Health', period: 'October 2026', hours: 144, clientHours: null, rate: 84, term: 'Net 30', submitted: 'Nov 3', status: 'In Progress', invoice: 'CS-INV-10479.pdf', timesheet: null },
-  'INV-2026-10-0176': { person: 'Sofia Marin', sub: 'Coral Staffing', vendor: 'Coral Staffing LLC', client: 'Meridian Retail Group', period: 'October 2026', hours: 168, clientHours: null, rate: 76, term: 'Net 30', submitted: 'Nov 2', status: 'In Progress', invoice: 'CS-INV-10471.pdf', timesheet: 'Marin_Oct26_timesheet.pdf' },
-  'NS-ELENA': { person: 'Elena Petrova', sub: 'Coral Staffing', vendor: 'Coral Staffing LLC', client: 'Apex Systems', period: 'October 2026', hours: null, clientHours: 160, rate: 78, term: 'Net 30', submitted: '—', status: 'Not Submitted', invoice: null, timesheet: null },
-  'NS-LENA': { person: 'Lena Fischer', sub: 'Summit IT', vendor: 'Summit IT Solutions', client: 'Blue Harbor Health', period: 'October 2026', hours: null, clientHours: 168, rate: 82, term: 'Net 30', submitted: '—', status: 'Not Submitted', invoice: null, timesheet: null },
-  'NS-AVA': { person: 'Ava Chen', sub: '1099', client: 'Northwind Labs', period: 'October 2026', hours: null, clientHours: 160, rate: 86, term: 'Net 15', submitted: '—', status: 'Not Submitted', invoice: null, timesheet: null }
+  'INV-2026-10-0142': { person: 'Rinaldo Silva', sub: 'Coral Staffing', vendor: 'Coral Staffing LLC', client: 'Apex Systems', period: 'October 2026', hours: 168, clientHours: 168, rate: 72, term: 'Net 10', submitted: 'Nov 4 (v2)', status: 'Approved', invoice: 'CS-INV-10482.pdf', timesheet: 'Silva_Oct26_timesheet.pdf' },
+  'INV-2026-10-0151': { person: 'Jordan Blake', sub: '1099', client: 'Northwind Labs', period: 'October 2026', hours: 152, clientHours: null, rate: 90, term: 'Net 10', submitted: 'Nov 2', status: 'In Progress', invoice: 'BlakeUX-0046.pdf', timesheet: 'Blake_Northwind_Oct26.pdf' },
+  'INV-2026-10-0187': { person: 'Kevin Singh', sub: 'Summit IT', vendor: 'Summit IT Solutions', client: 'Blue Harbor Health', period: 'October 2026', hours: 160, clientHours: 152, rate: 85, term: 'Net 10', submitted: 'Nov 3', status: 'Rejected', invoice: 'SIT-INV-2210.pdf', timesheet: 'Singh_Oct26_timesheet.pdf' },
+  'TS-2026-10-0093': { person: 'Maya Reed', sub: 'W-2 · timesheet', w2: true, client: 'Northwind Labs', period: 'October 2026', hours: 168, clientHours: 168, rate: 62, term: 'Net 10', submitted: 'Nov 2', status: 'Approved', invoice: 'na', timesheet: 'Reed_Oct26.pdf' },
+  'INV-2026-10-0203': { person: 'Deepa Kumar', sub: 'Coral Staffing', vendor: 'Coral Staffing LLC', client: 'Blue Harbor Health', period: 'October 2026', hours: 160, clientHours: 168, rate: 80, term: 'Net 10', submitted: 'Nov 3', status: 'Rejected', invoice: 'CS-INV-10477.pdf', timesheet: 'Kumar_Oct26_timesheet.pdf' },
+  'INV-2026-10-0211': { person: 'Ana Torres', sub: 'BluePeak Consulting', vendor: 'BluePeak Consulting Inc.', client: 'GlobalCare Insurance', period: 'October 2026', hours: 176, clientHours: 176, rate: 88, term: 'Net 10', submitted: 'Nov 4', status: 'Approved', invoice: 'BP-INV-5521.pdf', timesheet: 'Torres_Oct26_timesheet.pdf' },
+  'INV-2026-10-0198': { person: 'Omar Haddad', sub: 'Coral Staffing', vendor: 'Coral Staffing LLC', client: 'Blue Harbor Health', period: 'October 2026', hours: 144, clientHours: null, rate: 84, term: 'Net 10', submitted: 'Nov 3', status: 'In Progress', invoice: 'CS-INV-10479.pdf', timesheet: null },
+  'INV-2026-10-0176': { person: 'Sofia Marin', sub: 'Coral Staffing', vendor: 'Coral Staffing LLC', client: 'Meridian Retail Group', period: 'October 2026', hours: 168, clientHours: null, rate: 76, term: 'Net 10', submitted: 'Nov 2', status: 'In Progress', invoice: 'CS-INV-10471.pdf', timesheet: 'Marin_Oct26_timesheet.pdf' },
+  'NS-ELENA': { person: 'Elena Petrova', sub: 'Coral Staffing', vendor: 'Coral Staffing LLC', client: 'Apex Systems', period: 'October 2026', hours: null, clientHours: 160, rate: 78, term: 'Net 10', submitted: '—', status: 'Not Submitted', invoice: null, timesheet: null },
+  'NS-LENA': { person: 'Lena Fischer', sub: 'Summit IT', vendor: 'Summit IT Solutions', client: 'Blue Harbor Health', period: 'October 2026', hours: null, clientHours: 168, rate: 82, term: 'Net 10', submitted: '—', status: 'Not Submitted', invoice: null, timesheet: null },
+  'NS-AVA': { person: 'Ava Chen', sub: '1099', client: 'Northwind Labs', period: 'October 2026', hours: null, clientHours: 160, rate: 86, term: 'Net 10', submitted: '—', status: 'Not Submitted', invoice: null, timesheet: null }
 };
 
 const AUDIT_INVOICE_IDS = ['INV-2026-10-0142', 'INV-2026-10-0151', 'INV-2026-10-0187', 'TS-2026-10-0093', 'INV-2026-10-0203', 'INV-2026-10-0211', 'NS-LENA', 'NS-AVA'];
@@ -1095,7 +1095,7 @@ function memberEditScreen(screen, name) {
     { label: 'Work location', type: 'select', options: withCurrent(m.location, ['Remote', 'Hybrid', 'Onsite']) },
     { label: 'Start date', type: 'date', value: m.start },
     { label: 'End date', type: 'date', value: m.end },
-    { label: 'Payment term', type: 'select', options: withCurrent(m.term, ['Net 15', 'Net 7', 'Net 30', 'Net 45', 'Net 60', 'Immediate', 'Custom']), customInput: true },
+    { label: 'Payment term', type: 'select', options: withCurrent(m.term, ['Net 10', 'Net 7', 'Net 15', 'Net 30', 'Net 45', 'Net 60', 'Immediate', 'Custom']), customInput: true },
     activePersona === 'superadmin'
       ? { label: 'Account manager', type: 'select', options: withCurrent(m.am, ['Alicia Ross', 'Benjamin Cole', 'Priya Natarajan']) }
       : { label: 'Account manager', value: m.am, readonly: true, lock: 'Assigned by Super Admin' },
@@ -1513,7 +1513,7 @@ const personaConfig = {
                 { label: 'Work location', type: 'select', options: ['Hybrid — Chicago, IL', 'Remote', 'Onsite'] },
                 { label: 'Start date', type: 'date', value: '2026-12-01' },
                 { label: 'End date', type: 'date', value: '2027-11-30' },
-                { label: 'Payment term', type: 'select', options: ['Net 15', 'Net 7', 'Net 30', 'Net 45', 'Net 60', 'Immediate', 'Custom'], customInput: true },
+                { label: 'Payment term', type: 'select', options: ['Net 10', 'Net 7', 'Net 15', 'Net 30', 'Net 45', 'Net 60', 'Immediate', 'Custom'], customInput: true },
                 { label: 'Duration', value: '12 months', readonly: true }
               ]
             },
@@ -2042,7 +2042,7 @@ const personaConfig = {
                 { label: 'Total billed hours', value: '144', required: true },
                 { label: 'Hourly rate', value: '$84.00', readonly: true },
                 { label: 'Invoice amount (USD)', value: '$12,096.00', readonly: true },
-                { label: 'Payment term', value: 'Net 30', readonly: true }
+                { label: 'Payment term', value: 'Net 10', readonly: true }
               ]
             },
             {
@@ -2201,8 +2201,8 @@ const personaConfig = {
           total: 2,
           headers: ['Client', 'Role', 'Location', 'Start', 'End', 'Payment Term', 'Status'],
           rows: [
-            ['Northwind Labs', 'Data Analyst', 'Remote', 'Mar 2, 2026', 'Feb 26, 2027', 'Net 15', b('Active')],
-            ['Meridian Retail Group', 'Reporting Analyst (part-time)', 'Remote', 'Sep 8, 2026', 'Dec 18, 2026', 'Net 15', b('Active')]
+            ['Northwind Labs', 'Data Analyst', 'Remote', 'Mar 2, 2026', 'Feb 26, 2027', 'Net 10', b('Active')],
+            ['Meridian Retail Group', 'Reporting Analyst (part-time)', 'Remote', 'Sep 8, 2026', 'Dec 18, 2026', 'Net 10', b('Active')]
           ]
         }
       },
@@ -2307,8 +2307,8 @@ const personaConfig = {
             title: 'Current engagements',
             chip: '2 active',
             items: [
-              { label: sub('Northwind Labs', 'UX Consultant · $90.00/hr · Net 15'), value: b('Active'), meta: '' },
-              { label: sub('Apex Systems', 'Product Analyst · $82.00/hr · Net 30'), value: b('Active'), meta: '' }
+              { label: sub('Northwind Labs', 'UX Consultant · $90.00/hr · Net 10'), value: b('Active'), meta: '' },
+              { label: sub('Apex Systems', 'Product Analyst · $82.00/hr · Net 10'), value: b('Active'), meta: '' }
             ]
           }
         ]
@@ -2322,8 +2322,8 @@ const personaConfig = {
           total: 2,
           headers: ['Client', 'Job Title', 'Hourly Rate', 'Location', 'Term', 'Payment Term', 'Status'],
           rows: [
-            ['Northwind Labs', 'UX Consultant', '$90.00', 'Remote', 'Jul 6, 2026 – Jan 8, 2027', 'Net 15', b('Active')],
-            ['Apex Systems', 'Product Analyst', '$82.00', 'Remote', 'Aug 3, 2026 – Feb 5, 2027', 'Net 30', b('Active')]
+            ['Northwind Labs', 'UX Consultant', '$90.00', 'Remote', 'Jul 6, 2026 – Jan 8, 2027', 'Net 10', b('Active')],
+            ['Apex Systems', 'Product Analyst', '$82.00', 'Remote', 'Aug 3, 2026 – Feb 5, 2027', 'Net 10', b('Active')]
           ]
         }
       },
@@ -2359,7 +2359,7 @@ const personaConfig = {
                 { label: 'Total billed hours', value: '136', required: true },
                 { label: 'Hourly rate', value: '$90.00', readonly: true },
                 { label: 'Invoice amount (USD)', value: '$12,240.00', readonly: true },
-                { label: 'Payment term', value: 'Net 15', readonly: true }
+                { label: 'Payment term', value: 'Net 10', readonly: true }
               ]
             },
             {
@@ -3123,10 +3123,10 @@ function createField(field) {
       control = `<select ${field.customInput ? 'data-custom-select' : ''}>${options.map((o) => `<option>${o}</option>`).join('')}</select>`;
       if (field.customInput) {
         control += `<div class="custom-term-row" hidden>
-            <input class="custom-term" placeholder="Enter term, e.g. Net 10 or Net 20" />
+            <input class="custom-term" placeholder="Enter term, e.g. Net 20 or Net 25" />
             <button type="button" class="btn btn-secondary btn-sm custom-term-add">Add</button>
           </div>
-          <span class="field-note" hidden>Use the format Net + number of days, e.g. Net 10.</span>`;
+          <span class="field-note" hidden>Use the format Net + number of days, e.g. Net 20.</span>`;
       }
       break;
     }
