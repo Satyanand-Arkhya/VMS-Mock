@@ -208,6 +208,30 @@ const TEAM_MEMBERS = {
       ['E-Verify document', 'Singh_EVerify.pdf', 'Mar 28, 2026', '—', 'Valid']
     ]
   },
+  'Omar Haddad': {
+    type: 'Consultant', vendor: 'Coral Staffing LLC', vendorContact: 'Daniel Ortiz · d.ortiz@coralstaffing.com',
+    role: 'DevOps Engineer', email: 'omar.haddad@coralstaffing.com', phone: '(512) 555-0152',
+    client: 'Blue Harbor Health', rate: '84.00', location: 'Onsite', start: '2026-02-02', end: '2027-01-29',
+    term: 'Net 30', status: 'Active', am: 'Alicia Ross',
+    docs: [
+      ['Resume', 'Omar_Haddad_Resume.pdf', 'Jan 20, 2026', '—', 'Valid'],
+      ['Work authorization (Green Card)', 'Haddad_GC.pdf', 'Jan 20, 2026', 'Mar 3, 2034', 'Valid'],
+      ['I-9 audit report', 'Haddad_I9_Audit.pdf', 'Jan 28, 2026', '—', 'Valid'],
+      ['E-Verify document', 'Haddad_EVerify.pdf', 'Jan 28, 2026', '—', 'Valid']
+    ]
+  },
+  'Sofia Marin': {
+    type: 'Consultant', vendor: 'Coral Staffing LLC', vendorContact: 'Daniel Ortiz · d.ortiz@coralstaffing.com',
+    role: 'Scrum Master', email: 'sofia.marin@coralstaffing.com', phone: '(512) 555-0188',
+    client: 'Meridian Retail Group', rate: '76.00', location: 'Remote', start: '2026-05-04', end: '2026-11-27',
+    term: 'Net 30', status: 'Active', am: 'Alicia Ross',
+    docs: [
+      ['Resume', 'Sofia_Marin_Resume.pdf', 'Apr 22, 2026', '—', 'Valid'],
+      ['Work authorization (TN)', 'Marin_TN_Approval.pdf', 'Apr 22, 2026', 'Apr 30, 2029', 'Valid'],
+      ['I-9 audit report', 'Marin_I9_Audit.pdf', 'Apr 30, 2026', '—', 'Valid'],
+      ['E-Verify document', null, '—', '—', 'Incomplete']
+    ]
+  },
   'Priya Shah': {
     type: 'Consultant', vendor: 'Coral Staffing LLC', vendorContact: 'Daniel Ortiz · d.ortiz@coralstaffing.com',
     role: 'Data Engineer', email: 'priya.shah@coralstaffing.com', phone: '(512) 555-0174',
@@ -223,6 +247,11 @@ const TEAM_MEMBERS = {
 };
 
 let selectedMember = 'Maya Reed';
+
+// Vendor consultant rows: View opens the consultant's profile, Edit opens their edit form (both pop-ups).
+function consultantActions(name) {
+  return `<div class="row-actions"><button class="link-btn" data-target="memberDetail" data-member="${name}">View</button><button class="link-btn" data-target="memberEdit" data-member="${name}">Edit</button></div>`;
+}
 
 function memberAction(name, withSubmissions) {
   return `<div class="row-actions"><button class="link-btn" data-target="memberDetail" data-member="${name}">View / Edit</button>${withSubmissions ? `<button class="link-btn" data-target="memberSubmissions" data-member="${name}">Invoices &amp; Timesheets</button>` : ''}</div>`;
@@ -1265,11 +1294,11 @@ const personaConfig = {
           total: 12,
           headers: ['Consultant', 'Client', 'Hourly Rate', 'Engagement', 'Location', 'Status', 'Actions'],
           rows: [
-            [person('Deepa Kumar', 'Business Analyst'), 'Blue Harbor Health', '$80.00', 'Jan 12 – Dec 31, 2026', 'Hybrid', b('Active'), acts('View', 'Edit')],
-            [person('Rinaldo Silva', 'QA Engineer'), 'Apex Systems', '$72.00', 'Sep 14, 2026 – Mar 12, 2027', 'Remote', b('Active'), acts('View', 'Edit')],
-            [person('Omar Haddad', 'DevOps Engineer'), 'Blue Harbor Health', '$84.00', 'Feb 2, 2026 – Jan 29, 2027', 'Onsite', b('Active'), acts('View', 'Edit')],
-            [person('Sofia Marin', 'Scrum Master'), 'Meridian Retail Group', '$76.00', 'May 4, 2026 – Nov 27, 2026', 'Remote', b('Active'), acts('View', 'Edit')],
-            [person('Priya Shah', 'Data Engineer'), 'Meridian Retail Group', '$88.00', 'Nov 16, 2026 – May 14, 2027', 'Remote', b('Onboarding'), acts('View', 'Edit')]
+            [person('Deepa Kumar', 'Business Analyst'), 'Blue Harbor Health', '$80.00', 'Jan 12 – Dec 31, 2026', 'Hybrid', b('Active'), consultantActions('Deepa Kumar')],
+            [person('Rinaldo Silva', 'QA Engineer'), 'Apex Systems', '$72.00', 'Sep 14, 2026 – Mar 12, 2027', 'Remote', b('Active'), consultantActions('Rinaldo Silva')],
+            [person('Omar Haddad', 'DevOps Engineer'), 'Blue Harbor Health', '$84.00', 'Feb 2, 2026 – Jan 29, 2027', 'Onsite', b('Active'), consultantActions('Omar Haddad')],
+            [person('Sofia Marin', 'Scrum Master'), 'Meridian Retail Group', '$76.00', 'May 4, 2026 – Nov 27, 2026', 'Remote', b('Active'), consultantActions('Sofia Marin')],
+            [person('Priya Shah', 'Data Engineer'), 'Meridian Retail Group', '$88.00', 'Nov 16, 2026 – May 14, 2027', 'Remote', b('Onboarding'), consultantActions('Priya Shah')]
           ]
         }
       },
@@ -1609,11 +1638,11 @@ const personaConfig = {
           total: 12,
           headers: ['Consultant', 'Client', 'Hourly Rate', 'Engagement', 'Location', 'Status', 'Actions'],
           rows: [
-            [person('Deepa Kumar', 'Business Analyst'), 'Blue Harbor Health', '$80.00', 'Jan 12 – Dec 31, 2026', 'Hybrid', b('Active'), acts('View', 'Edit')],
-            [person('Rinaldo Silva', 'QA Engineer'), 'Apex Systems', '$72.00', 'Sep 14, 2026 – Mar 12, 2027', 'Remote', b('Active'), acts('View', 'Edit')],
-            [person('Omar Haddad', 'DevOps Engineer'), 'Blue Harbor Health', '$84.00', 'Feb 2, 2026 – Jan 29, 2027', 'Onsite', b('Active'), acts('View', 'Edit')],
-            [person('Sofia Marin', 'Scrum Master'), 'Meridian Retail Group', '$76.00', 'May 4, 2026 – Nov 27, 2026', 'Remote', b('Active'), acts('View', 'Edit')],
-            [person('Priya Shah', 'Data Engineer'), 'Meridian Retail Group', '$88.00', 'Nov 16, 2026 – May 14, 2027', 'Remote', b('Onboarding'), acts('View', 'Edit')]
+            [person('Deepa Kumar', 'Business Analyst'), 'Blue Harbor Health', '$80.00', 'Jan 12 – Dec 31, 2026', 'Hybrid', b('Active'), consultantActions('Deepa Kumar')],
+            [person('Rinaldo Silva', 'QA Engineer'), 'Apex Systems', '$72.00', 'Sep 14, 2026 – Mar 12, 2027', 'Remote', b('Active'), consultantActions('Rinaldo Silva')],
+            [person('Omar Haddad', 'DevOps Engineer'), 'Blue Harbor Health', '$84.00', 'Feb 2, 2026 – Jan 29, 2027', 'Onsite', b('Active'), consultantActions('Omar Haddad')],
+            [person('Sofia Marin', 'Scrum Master'), 'Meridian Retail Group', '$76.00', 'May 4, 2026 – Nov 27, 2026', 'Remote', b('Active'), consultantActions('Sofia Marin')],
+            [person('Priya Shah', 'Data Engineer'), 'Meridian Retail Group', '$88.00', 'Nov 16, 2026 – May 14, 2027', 'Remote', b('Onboarding'), consultantActions('Priya Shah')]
           ]
         }
       },
@@ -1817,11 +1846,11 @@ const personaConfig = {
           total: 12,
           headers: ['Consultant', 'Client', 'Hourly Rate', 'Engagement', 'Location', 'Status', 'Actions'],
           rows: [
-            [person('Deepa Kumar', 'Business Analyst'), 'Blue Harbor Health', '$80.00', 'Jan 12 – Dec 31, 2026', 'Hybrid', b('Active'), acts('View', 'Edit')],
-            [person('Rinaldo Silva', 'QA Engineer'), 'Apex Systems', '$72.00', 'Sep 14, 2026 – Mar 12, 2027', 'Remote', b('Active'), acts('View', 'Edit')],
-            [person('Omar Haddad', 'DevOps Engineer'), 'Blue Harbor Health', '$84.00', 'Feb 2, 2026 – Jan 29, 2027', 'Onsite', b('Active'), acts('View', 'Edit')],
-            [person('Sofia Marin', 'Scrum Master'), 'Meridian Retail Group', '$76.00', 'May 4, 2026 – Nov 27, 2026', 'Remote', b('Active'), acts('View', 'Edit')],
-            [person('Priya Shah', 'Data Engineer'), 'Meridian Retail Group', '$88.00', 'Nov 16, 2026 – May 14, 2027', 'Remote', b('Onboarding'), acts('View', 'Edit')]
+            [person('Deepa Kumar', 'Business Analyst'), 'Blue Harbor Health', '$80.00', 'Jan 12 – Dec 31, 2026', 'Hybrid', b('Active'), consultantActions('Deepa Kumar')],
+            [person('Rinaldo Silva', 'QA Engineer'), 'Apex Systems', '$72.00', 'Sep 14, 2026 – Mar 12, 2027', 'Remote', b('Active'), consultantActions('Rinaldo Silva')],
+            [person('Omar Haddad', 'DevOps Engineer'), 'Blue Harbor Health', '$84.00', 'Feb 2, 2026 – Jan 29, 2027', 'Onsite', b('Active'), consultantActions('Omar Haddad')],
+            [person('Sofia Marin', 'Scrum Master'), 'Meridian Retail Group', '$76.00', 'May 4, 2026 – Nov 27, 2026', 'Remote', b('Active'), consultantActions('Sofia Marin')],
+            [person('Priya Shah', 'Data Engineer'), 'Meridian Retail Group', '$88.00', 'Nov 16, 2026 – May 14, 2027', 'Remote', b('Onboarding'), consultantActions('Priya Shah')]
           ]
         }
       },
@@ -2360,6 +2389,9 @@ const personaConfig = {
   });
   personaConfig.vendor.screens.push({ id: 'invoiceDetail', parent: 'invoices', title: 'Invoice' });
 
+  // Vendor: View / Edit on their own consultants opens the consultant's profile / edit form.
+  MEMBER_SCREENS.forEach((s) => personaConfig.vendor.screens.push({ ...JSON.parse(JSON.stringify(s)), parent: 'consultants' }));
+
   // Document Tracker: View opens the document with its full version history.
   personaConfig.superadmin.screens.push({ id: 'docDetail', parent: 'documentTracker', title: 'Document' });
   personaConfig.accountmanager.screens.push({ id: 'docDetail', parent: 'docs', title: 'Document' });
@@ -2596,9 +2628,12 @@ let replaceNextNav = false;
 const MODAL_SCREENS = new Set([
   'clientAdd', 'clientEdit', 'vendorAdd', 'vendorEdit', 'resourceAdd', 'consultantAdd', 'memberEdit',
   'submitOnBehalf', 'invoiceUpdate', 'adminUserAdd', 'adminUserEdit', 'invoiceSubmit', 'timesheet', 'correction', 'rejectedInvoice',
-  'clientHolidayCalendar'
+  'clientHolidayCalendar', 'memberDetail', 'docDetail', 'invoiceDetail', 'invoiceView'
 ]);
+// Read-only pop-ups (View …). A form opened from one of these stacks on top of it.
+const VIEW_MODALS = new Set(['clientHolidayCalendar', 'memberDetail', 'docDetail', 'invoiceDetail', 'invoiceView']);
 let modalBase = null; // { screen, tab } behind the open pop-up
+let modalPrev = null; // the View pop-up underneath a stacked form pop-up
 
 function isModalId(id) {
   return MODAL_SCREENS.has(id) && !currentPersona().nav.some((n) => n.target === id) && !!findScreenExact(id);
@@ -2626,7 +2661,7 @@ function navSnapshot() {
   return {
     persona: activePersona, screen: activeScreen, tab: activeTab, member: selectedMember, inv: selectedInv,
     invReturn: invoiceReturn, invoice: selectedInvoice, doc: selectedDoc, am: selectedAm, client: selectedClientInvoiceClient,
-    modalBase
+    modalBase, modalPrev
   };
 }
 
@@ -2664,6 +2699,7 @@ window.addEventListener('popstate', (event) => {
   selectedMember = s.member; selectedInv = s.inv; invoiceReturn = s.invReturn; selectedInvoice = s.invoice;
   selectedDoc = s.doc; selectedAm = s.am; selectedClientInvoiceClient = s.client;
   modalBase = s.modalBase || null;
+  modalPrev = s.modalPrev || null;
   navDepth = state.depth || 0;
   loginScreen.classList.add('hidden');
   appShell.classList.remove('hidden');
@@ -2692,15 +2728,28 @@ function goToScreen(screenId, clientName, tab = 0) {
   }
   const fromModal = isModalId(activeScreen);
   const toModal = isModalId(screenId);
-  if (toModal && !fromModal) modalBase = { screen: activeScreen, tab: activeTab };
+  const onOwnEntry = navDepth > 0 && history.state && history.state.nav && history.state.nav.screen === activeScreen;
+  if (toModal && !fromModal) { modalBase = { screen: activeScreen, tab: activeTab }; modalPrev = null; }
+  if (fromModal && toModal) {
+    if (VIEW_MODALS.has(activeScreen)) {
+      modalPrev = activeScreen; // opening a form (e.g. Edit) on top of a View pop-up
+    } else if (modalPrev && screenId === modalPrev && onOwnEntry) {
+      history.back(); // Save / Cancel back to the View underneath: close the form pop-up
+      return;
+    } else {
+      replaceNextNav = true; // form saved to another pop-up: replace its entry so Back won't reopen it
+      modalPrev = null;
+    }
+  }
   if (fromModal && !toModal) {
-    // Save / Cancel back to the screen behind the pop-up: just close it (so Back won't reopen the form).
-    if (modalBase && screenId === modalBase.screen && navDepth > 0 && history.state && history.state.nav && history.state.nav.screen === activeScreen) {
-      history.back();
+    // Save / Cancel back to the screen behind the pop-up(s): just close them (so Back won't reopen the form).
+    if (modalBase && screenId === modalBase.screen && onOwnEntry) {
+      history.go(modalPrev ? -2 : -1);
       return;
     }
     replaceNextNav = true;
     modalBase = null;
+    modalPrev = null;
   }
   activeTab = tab;
   activeScreen = screenId;
@@ -3140,7 +3189,10 @@ function modalMarkup(screen) {
           ${screen.form
             ? createForm(screen.form, true)
             : `<div class="modal-content">${createTable(screen.table)}${createDetail(screen.detail)}</div>
-               <div class="form-footer modal-footer"><span></span><div class="form-buttons"><button type="button" class="btn btn-primary" data-modal-close>Close</button></div></div>`}
+               <div class="form-footer modal-footer"><span></span><div class="form-buttons">
+                 <button type="button" class="btn ${screen.actions && screen.actions.length ? 'btn-secondary' : 'btn-primary'}" data-modal-close>Close</button>
+                 ${actionButtons(screen.actions)}
+               </div></div>`}
         </div>
       </div>
     </div>
@@ -3706,7 +3758,7 @@ function render() {
     activeTab = keepTab;
   }
 
-  renderLeftNav(screen);
+  renderLeftNav(page);
   renderPersonaButtons();
   renderUser();
   renderBreadcrumb(page);
