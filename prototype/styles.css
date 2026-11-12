@@ -672,6 +672,7 @@ h1 {
 
 .content-grid { grid-template-columns: 1fr 1fr; }
 .content-grid.single { grid-template-columns: 1fr; }
+.content-grid > * { min-width: 0; }
 
 .list-plain li { gap: 12px; background: #fff; padding: 10px 12px; }
 .li-label { display: flex; flex-direction: column; min-width: 0; }
@@ -758,6 +759,35 @@ td > .person-name + .person-sub { margin-top: 1px; }
 .validity-cell { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .validity-cell input { min-width: 0; width: 100%; }
 .add-doc-btn { align-self: flex-start; }
+
+/* Document rows: name + status | file | dates — one row per document, used on every upload screen */
+.form-grid > .doc-field:not(.doc-bare) { grid-column: 1 / -1; }
+.doc-field:not(.doc-bare) {
+  display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 10px 18px; align-items: start;
+  border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; background: #fbfdff;
+}
+.doc-field.has-dates:not(.doc-bare) { grid-template-columns: 170px minmax(0, 1fr) 340px; }
+.extra-docs { display: flex !important; flex-direction: column; gap: 12px; }
+.extra-doc-head .extra-doc-remove { align-self: flex-start; padding: 0; }
+.extra-doc-head input.extra-doc-name { flex: none; width: 100%; min-width: 0; box-sizing: border-box; }
+.doc-file .upload-done { flex-wrap: wrap; row-gap: 4px; }
+.upload-box.compact { flex-direction: row; justify-content: flex-start; }
+.doc-name { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding-top: 4px; }
+.doc-name label { font-size: 0.9rem; font-weight: 700; color: var(--text, #102a43); display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.doc-name .lock { margin-left: 0; }
+.doc-state { align-self: flex-start; font-size: 0.72rem; font-weight: 700; border-radius: 999px; padding: 2px 8px; background: #eef2f6; color: var(--muted); }
+.doc-state.ok { background: #e7f6ee; color: #146c43; }
+.doc-file, .doc-dates { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.doc-dates .validity-row { margin-top: 0; }
+.validity-row.single { grid-template-columns: 1fr; }
+.doc-field.doc-bare { display: flex; flex-direction: column; gap: 8px; }
+.upload-box.compact { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; text-align: left; padding: 8px 10px; min-height: 44px; border-radius: 10px; cursor: pointer; }
+.upload-box.compact .upload-btn { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 0.85rem; color: var(--brand-700); background: var(--brand-100); border-radius: 8px; padding: 6px 10px; white-space: nowrap; }
+.upload-box.compact .upload-hint { font-size: 0.75rem; color: var(--muted); }
+.upload-box.compact:focus-visible { outline: 2px solid var(--brand-500); outline-offset: 2px; }
+@media (max-width: 1100px) {
+  .doc-field:not(.doc-bare), .doc-field.has-dates:not(.doc-bare) { grid-template-columns: 1fr; }
+}
 
 /* MM/DD/YYYY date field with calendar button */
 .date-field { position: relative; display: flex; min-width: 0; flex: 0 0 auto; }

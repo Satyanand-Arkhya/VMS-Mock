@@ -3158,6 +3158,50 @@ function createTable(table) {
   `;
 }
 
+const UPLOAD_ICON = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>';
+
+// The three parts of a document row: the file control, its dates, and the Uploaded / Not uploaded badge.
+function uploadParts(field) {
+  const locked = field.amOnly || field.byOther;
+  let file;
+  // Uploaded only by the account manager (e.g. a consultant's I-9 audit report): the vendor can view and download, never edit or delete.
+  // `byOther`: the document is uploaded by someone else (e.g. the vendor uploads W-9 / COI / ACH), so this form shows a note.
+  if (locked) {
+    file = field.file
+      ? `<div class="upload-done">${fileChip(field.file, field.size)}<span class="lock">View / download only</span></div>`
+      : `<div class="upload-locked">${field.byOther || 'Uploaded later by your account manager, then renewed every 3 or 6 months (only the latest is shown). You can view and download it, but not edit or delete it.'}</div>`;
+  } else {
+    file = field.file
+      ? `<div class="upload-done">${fileChip(field.file, field.size)}<button class="link-btn">Replace</button></div>`
+      : `<div class="upload-box compact" ${field.multiple ? 'data-multiple' : ''} role="button" tabindex="0">
+          <span class="upload-btn">${UPLOAD_ICON}${field.multiple ? 'Choose files' : 'Choose file'}</span>
+          <span class="upload-hint">PDF, DOCX, JPG, PNG · max 5 MB${field.multiple ? ' each · several allowed' : ''}</span>
+          <input type="file" class="upload-input" accept=".pdf,.docx,.jpg,.jpeg,.png" ${field.multiple ? 'multiple' : ''} hidden />
+        </div>
+        <div class="upload-list"></div>`;
+  }
+  let dates = '';
+  if (field.expiry) {
+    dates += '<div class="validity-row single"><div class="validity-cell"><span class="expiry-label">Expiry date</span><input type="date" /></div></div>';
+  }
+  // Periodic audit report: the account manager picks the period it covers (3 or 6 months) and its start.
+  if (field.auditPeriod) {
+    dates += `<div class="validity-row">
+        <div class="validity-cell"><span class="expiry-label">Audit period</span><select><option>6 months</option><option>3 months</option></select></div>
+        <div class="validity-cell"><span class="expiry-label">Period start</span><input type="date" /></div>
+      </div>
+      <span class="person-sub">A new report replaces the one shown; earlier reports stay in version history.</span>`;
+  }
+  if (field.validity) {
+    dates += `<div class="validity-row">
+        <div class="validity-cell"><span class="expiry-label">Start date</span><input type="date" value="${field.start || ''}" /></div>
+        <div class="validity-cell"><span class="expiry-label">End date</span><input type="date" value="${field.end || ''}" /></div>
+      </div>`;
+  }
+  const state = locked ? '' : field.file ? '<span class="doc-state ok">Uploaded</span>' : '<span class="doc-state">Not uploaded</span>';
+  return { file, dates, state };
+}
+
 function createField(field) {
   const req = field.required ? '<span class="req">*</span>' : '';
   const label = field.label ? `<label>${field.label}${req}${field.readonly ? `<span class="lock">${field.lock || 'Auto-filled'}</span>` : ''}</label>` : '';
@@ -3192,39 +3236,19 @@ function createField(field) {
     case 'textarea':
       control = `<textarea>${field.value || ''}</textarea>`;
       break;
-    case 'upload':
-      // Uploaded only by the account manager (e.g. a consultant's I-9 audit report): the vendor can view and download, never edit or delete.
-      // `byOther`: the document is uploaded by someone else (e.g. the vendor uploads W-9 / COI / ACH), so this form shows a note.
-      if (field.amOnly || field.byOther) {
-        control = field.file
-          ? `<div class="upload-done">${fileChip(field.file, field.size)}<span class="lock">View / download only</span></div>`
-          : `<div class="upload-locked">${field.byOther || 'Uploaded later by your account manager, then renewed every 3 or 6 months (only the latest is shown). You can view and download it, but not edit or delete it.'}</div>`;
-        break;
+    case 'upload': {
+      // Every document is one row: name + status | file | dates. Without a label (e.g. inside a review panel) it stacks.
+      const { file, dates, state } = uploadParts(field);
+      const showForAttr = field.showFor ? ` data-show-for="${field.showFor}"${field.startHidden ? ' hidden' : ''}` : '';
+      if (!field.label) {
+        return `<div class="field doc-field doc-bare"${showForAttr}>${file}${dates}${field.note ? `<span class="person-sub">${field.note}</span>` : ''}</div>`;
       }
-      control = field.file
-        ? `<div class="upload-done">${fileChip(field.file, field.size)}<button class="link-btn">Replace</button></div>`
-        : `<div class="upload-box" ${field.multiple ? 'data-multiple' : ''}>${field.multiple ? 'Drop files or' : 'Drop file or'} <span class="link-text">browse</span><span class="person-sub">PDF, DOCX, JPG, PNG · max 5 MB${field.multiple ? ' each · multiple files allowed' : ''}</span>
-            <input type="file" class="upload-input" accept=".pdf,.docx,.jpg,.jpeg,.png" ${field.multiple ? 'multiple' : ''} hidden />
-          </div>
-          <div class="upload-list"></div>`;
-      if (field.expiry) {
-        control += '<div class="expiry-row"><span class="expiry-label">Expiry date</span><input type="date" /></div>';
-      }
-      // Periodic audit report: the account manager picks the period it covers (3 or 6 months) and its start.
-      if (field.auditPeriod) {
-        control += `<div class="validity-row">
-            <div class="validity-cell"><span class="expiry-label">Audit period</span><select><option>6 months</option><option>3 months</option></select></div>
-            <div class="validity-cell"><span class="expiry-label">Period start</span><input type="date" /></div>
-          </div>
-          <span class="person-sub">Uploading a new report replaces the one shown; earlier reports stay in version history.</span>`;
-      }
-      if (field.validity) {
-        control += `<div class="validity-row">
-            <div class="validity-cell"><span class="expiry-label">Start date</span><input type="date" value="${field.start || ''}" /></div>
-            <div class="validity-cell"><span class="expiry-label">End date</span><input type="date" value="${field.end || ''}" /></div>
-          </div>`;
-      }
-      break;
+      return `<div class="field doc-field ${dates ? 'has-dates' : ''}"${showForAttr}>
+          <div class="doc-name">${label}${state}${field.note ? `<span class="person-sub">${field.note}</span>` : ''}</div>
+          <div class="doc-file">${file}</div>
+          ${dates ? `<div class="doc-dates">${dates}</div>` : ''}
+        </div>`;
+    }
     case 'multiselect': {
       // Dropdown with search + checkboxes; selected values show as chips in the closed control.
       const selected = field.selected || [];
@@ -3268,10 +3292,17 @@ function createField(field) {
 }
 
 // One "other document" row: a document-name field plus its own upload box (and Remove on rows added later).
+// Same three-column row as every other document: name (typed) + status | file | dates.
 function extraDocRow(removable, validity) {
-  return `<div class="extra-doc">
-      <div class="extra-doc-head"><input class="extra-doc-name" placeholder="Enter document name" />${removable ? '<button type="button" class="link-btn extra-doc-remove">Remove</button>' : ''}</div>
-      ${createField({ type: 'upload', validity })}
+  const { file, dates } = uploadParts({ type: 'upload', validity });
+  return `<div class="field doc-field extra-doc ${dates ? 'has-dates' : ''}">
+      <div class="doc-name extra-doc-head">
+        <input class="extra-doc-name" placeholder="Document name" aria-label="Document name" />
+        <span class="doc-state">Not uploaded</span>
+        ${removable ? '<button type="button" class="link-btn link-danger extra-doc-remove">Remove</button>' : ''}
+      </div>
+      <div class="doc-file">${file}</div>
+      ${dates ? `<div class="doc-dates">${dates}</div>` : ''}
     </div>`;
 }
 
@@ -3525,7 +3556,17 @@ function wireFormControls(root) {
     if (!input) return;
     const list = box.nextElementSibling;
     const multiple = box.hasAttribute('data-multiple');
+    // "Uploaded / Not uploaded" badge on the document row follows the chosen files.
+    const syncState = () => {
+      const state = box.closest('.doc-field')?.querySelector('.doc-state');
+      if (!state) return;
+      const has = !!list.querySelector('.upload-done');
+      state.textContent = has ? 'Selected' : 'Not uploaded';
+      state.classList.toggle('ok', has);
+    };
+    new MutationObserver(syncState).observe(list, { childList: true });
     box.addEventListener('click', () => input.click());
+    box.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); } });
     input.addEventListener('click', (e) => e.stopPropagation());
     input.addEventListener('change', () => {
       if (!multiple) list.innerHTML = '';
