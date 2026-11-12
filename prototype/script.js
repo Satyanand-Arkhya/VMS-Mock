@@ -678,7 +678,7 @@ function invoiceViewScreen(screen, id) {
     ...screen,
     title: id,
     description: `${inv.client} · ${inv.period}. The invoice and timesheet you submitted.`,
-    actions: inv.status === 'Rejected' ? [{ label: 'Correct Invoice', target: 'correction', primary: true }] : [],
+    actions: inv.status === 'Rejected' ? [{ label: 'Resubmit Invoice', target: 'correction', primary: true }] : [],
     alert: inv.reason ? { tone: 'danger', title: 'This invoice was rejected', text: inv.reason } : undefined,
     detail: {
       sections: [{
@@ -1054,7 +1054,7 @@ function invoiceDetailScreen(screen, id) {
   const manage = canManageInvoices();
   const actions = [];
   if (inv.status === 'Rejected') {
-    actions.push(manage ? { label: 'Upload Corrected Invoice', target: 'invoiceUpdate', primary: true } : { label: 'Correct Invoice', target: 'rejectedInvoice', primary: true });
+    actions.push(manage ? { label: 'Upload Corrected Invoice', target: 'invoiceUpdate', primary: true } : { label: 'Resubmit Invoice', target: 'rejectedInvoice', primary: true });
   } else if (inv.status === 'Not Submitted' && manage) {
     actions.push({ label: inv.w2 ? 'Upload Timesheet' : 'Upload Invoice & Timesheet', target: 'invoiceUpdate', primary: true });
   }
@@ -1541,7 +1541,7 @@ const personaConfig = {
           total: 12,
           headers: ['Invoice #', 'Consultant', 'Client', 'Hours', 'Amount', 'Submitted', 'Status', 'Actions'],
           rows: [
-            [mono('INV-2026-10-0203'), person('Deepa Kumar'), 'Persistent', '160', '$12,800.00', 'Nov 3, 2026', b('Rejected'), '<div class="row-actions"><button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0203">View</button><button class="link-btn" data-target="rejectedInvoice">Correct</button></div>'],
+            [mono('INV-2026-10-0203'), person('Deepa Kumar'), 'Persistent', '160', '$12,800.00', 'Nov 3, 2026', b('Rejected'), '<div class="row-actions"><button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0203">View</button><button class="link-btn" data-target="rejectedInvoice">Resubmit</button></div>'],
             [mono('INV-2026-10-0142'), person('Rinaldo Silva'), 'Citus Tech', '168', '$12,096.00', 'Nov 4, 2026 (v2)', b('Approved'), '<button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0142">View</button>'],
             [mono('INV-2026-10-0198'), person('Omar Haddad'), 'Persistent', '144', '$12,096.00', 'Nov 3, 2026', b('In Progress'), '<button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0198">View</button>'],
             [mono('INV-2026-10-0176'), person('Sofia Marin'), 'Citus Tech', '168', '$12,768.00', 'Nov 2, 2026', b('In Progress'), '<button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0176">View</button>']
@@ -1881,7 +1881,7 @@ const personaConfig = {
           total: 12,
           headers: ['Invoice #', 'Consultant', 'Client', 'Hours', 'Amount', 'Submitted', 'Status', 'Actions'],
           rows: [
-            [mono('INV-2026-10-0203'), person('Deepa Kumar'), 'Persistent', '160', '$12,800.00', 'Nov 3, 2026', b('Rejected'), '<div class="row-actions"><button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0203">View</button><button class="link-btn" data-target="rejectedInvoice">Correct</button></div>'],
+            [mono('INV-2026-10-0203'), person('Deepa Kumar'), 'Persistent', '160', '$12,800.00', 'Nov 3, 2026', b('Rejected'), '<div class="row-actions"><button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0203">View</button><button class="link-btn" data-target="rejectedInvoice">Resubmit</button></div>'],
             [mono('INV-2026-10-0142'), person('Rinaldo Silva'), 'Citus Tech', '168', '$12,096.00', 'Nov 4, 2026 (v2)', b('Approved'), '<button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0142">View</button>'],
             [mono('INV-2026-10-0198'), person('Omar Haddad'), 'Persistent', '144', '$12,096.00', 'Nov 3, 2026', b('In Progress'), '<button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0198">View</button>'],
             [mono('INV-2026-10-0176'), person('Sofia Marin'), 'Citus Tech', '168', '$12,768.00', 'Nov 2, 2026', b('In Progress'), '<button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0176">View</button>']
@@ -2128,7 +2128,7 @@ const personaConfig = {
           total: 12,
           headers: ['Invoice #', 'Consultant', 'Client', 'Hours', 'Amount', 'Submitted', 'Status', 'Actions'],
           rows: [
-            [mono('INV-2026-10-0203'), person('Deepa Kumar'), 'Persistent', '160', '$12,800.00', 'Nov 3, 2026', b('Rejected'), '<div class="row-actions"><button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0203">View</button><button class="link-btn" data-target="rejectedInvoice">Correct</button></div>'],
+            [mono('INV-2026-10-0203'), person('Deepa Kumar'), 'Persistent', '160', '$12,800.00', 'Nov 3, 2026', b('Rejected'), '<div class="row-actions"><button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0203">View</button><button class="link-btn" data-target="rejectedInvoice">Resubmit</button></div>'],
             [mono('INV-2026-10-0142'), person('Rinaldo Silva'), 'Citus Tech', '168', '$12,096.00', 'Nov 4, 2026 (v2)', b('Approved'), '<button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0142">View</button>'],
             [mono('INV-2026-10-0198'), person('Omar Haddad'), 'Persistent', '144', '$12,096.00', 'Nov 3, 2026', b('In Progress'), '<button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0198">View</button>'],
             [mono('INV-2026-10-0176'), person('Sofia Marin'), 'Citus Tech', '168', '$12,768.00', 'Nov 2, 2026', b('In Progress'), '<button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0176">View</button>']
@@ -2169,7 +2169,7 @@ const personaConfig = {
       {
         id: 'rejectedInvoice',
         parent: 'invoices',
-        title: 'Correct Rejected Invoice',
+        title: 'Resubmit Rejected Invoice',
         description: 'INV-2026-10-0203 · Deepa Kumar · Persistent · October 2026',
         alert: {
           tone: 'danger',
@@ -2368,7 +2368,7 @@ const personaConfig = {
           tone: 'danger',
           title: 'Your September invoice for HTC was rejected',
           text: 'INV-2026-09-0388 — billing period did not match the client invoice.',
-          action: { label: 'Correct invoice', target: 'correction' }
+          action: { label: 'Resubmit invoice', target: 'correction' }
         },
         kpis: [
           { label: 'Billed in October', value: '$13,680', trend: '152 h · HTC', tone: 'neutral' },
@@ -2399,7 +2399,7 @@ const personaConfig = {
           headers: ['Invoice #', 'Period', 'Hours', 'Amount', 'Status', 'Actions'],
           rows: [
             [mono('INV-2026-10-0151'), 'Oct 2026', '152', '$13,680.00', b('Awaiting Client Invoice'), invoiceViewAction('INV-2026-10-0151')],
-            [mono('INV-2026-09-0388'), 'Sep 2026', '160', '$14,400.00', b('Rejected'), `<div class="row-actions">${invoiceViewAction('INV-2026-09-0388')}<button class="link-btn" data-target="correction">Correct</button></div>`],
+            [mono('INV-2026-09-0388'), 'Sep 2026', '160', '$14,400.00', b('Rejected'), `<div class="row-actions">${invoiceViewAction('INV-2026-09-0388')}<button class="link-btn" data-target="correction">Resubmit</button></div>`],
             [mono('INV-2026-08-0301'), 'Aug 2026', '168', '$15,120.00', b('Approved'), invoiceViewAction('INV-2026-08-0301')]
           ]
         }
@@ -2437,7 +2437,7 @@ const personaConfig = {
       {
         id: 'correction',
         parent: 'status',
-        title: 'Correct Rejected Invoice',
+        title: 'Resubmit Rejected Invoice',
         description: 'INV-2026-09-0388 · HTC · UX Consultant',
         alert: {
           tone: 'danger',
@@ -3478,7 +3478,7 @@ function resolveScreenState(screen) {
           const inv = INVOICES[id];
           const view = `<button class="link-btn" data-target="invoiceDetail" data-inv="${id}">View</button>`;
           return [mono(id), person(inv.person), inv.client, String(inv.hours), invAmount(inv), inv.submitted, b(inv.status),
-            `<div class="row-actions">${view}${inv.status === 'Rejected' ? '<button class="link-btn" data-target="rejectedInvoice">Correct</button>' : ''}</div>`];
+            `<div class="row-actions">${view}${inv.status === 'Rejected' ? '<button class="link-btn" data-target="rejectedInvoice">Resubmit</button>' : ''}</div>`];
         })
       }
     };
