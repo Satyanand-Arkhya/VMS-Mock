@@ -1300,6 +1300,12 @@ function withCurrent(value, options) {
   return [value, ...options.filter((o) => o !== value)];
 }
 
+// Documents a W-2 / 1099 resource uploads after signing in (a consultant's documents are all uploaded by the account manager).
+// Super Admin / Account Manager don't see them until they are uploaded; after that they can only view and download them.
+const SELF_UPLOADED_DOCS = ['W-4', 'I-9', 'W-9', 'ACH form'];
+const selfUploaded = (m, doc) => m.type !== 'Consultant' && SELF_UPLOADED_DOCS.includes(doc);
+const visibleDocs = (m) => m.docs.filter(([doc, file]) => file || !selfUploaded(m, doc));
+
 function memberDetailScreen(screen, name) {
   const m = TEAM_MEMBERS[name] || TEAM_MEMBERS['Maya Reed'];
   const personal = [
@@ -1322,7 +1328,8 @@ function memberDetailScreen(screen, name) {
     { label: 'Account manager', value: m.am },
     { label: 'Status', value: b(m.status) }
   ];
-  const missing = m.docs.filter((d) => !d[1]).length;
+  const docs = visibleDocs(m);
+  const missing = docs.filter((d) => !d[1]).length;
   return {
     ...screen,
     title: name,
@@ -1337,8 +1344,9 @@ function memberDetailScreen(screen, name) {
         hint: missing ? `${missing} document${missing > 1 ? 's' : ''} missing — shown as Incomplete in the Document Tracker.` : 'All onboarding documents on file.',
         headers: ['Document', 'File', 'Last Updated', 'Expires', 'Status', 'Actions'],
         // A periodic audit report shows only the latest one, with the period it covers; earlier ones stay in history.
-        rows: m.docs.map(([doc, file, updated, expires, status, period, earlier]) => [
-          period ? sub(doc, `Latest · covers ${period}${earlier ? ` · ${earlier} earlier in history` : ''}`) : doc,
+        rows: docs.map(([doc, file, updated, expires, status, period, earlier]) => [
+          period ? sub(doc, `Latest · covers ${period}${earlier ? ` · ${earlier} earlier in history` : ''}`)
+            : selfUploaded(m, doc) ? sub(doc, 'Uploaded by the resource') : doc,
           file ? fileChip(file) : '<span class="person-sub inline">Not uploaded</span>',
           updated,
           expires,
@@ -1387,9 +1395,11 @@ function memberEditScreen(screen, name) {
       : { label: 'Account manager', value: m.am, readonly: true, lock: 'Assigned by Super Admin' },
     { label: 'Status', type: 'select', options: withCurrent(m.status, ['Active', 'Onboarding', 'Inactive', 'Ended']) }
   ];
-  const documents = m.docs.map(([doc, file, , expires, , period]) => (/audit report/i.test(doc)
+  const documents = visibleDocs(m).map(([doc, file, , expires, , period]) => (/audit report/i.test(doc)
       // Account manager / Super Admin: upload the next periodic audit report (3 or 6 months).
       ? { label: doc, type: 'upload', file: file || undefined, auditPeriod: true, note: period ? `Latest report · covers ${period}` : '' }
+      : selfUploaded(m, doc)
+        ? { label: doc, type: 'upload', file, byOther: 'Uploaded by the resource.', readonly: true, lock: 'Uploaded by resource' }
       : {
           label: expires !== '—' ? `${doc} (expires ${expires})` : doc,
           type: 'upload',
@@ -1666,15 +1676,6 @@ const personaConfig = {
               ]
             },
             {
-              title: 'Documents uploaded by the vendor',
-              hint: 'The vendor uploads these after signing in with the username and password from their welcome email. Until then they show as Incomplete.',
-              fields: [
-                { label: 'W-9 (start / end date)', type: 'upload', byOther: 'Uploaded by the vendor, with start and end date.', readonly: true, lock: 'Vendor uploads' },
-                { label: 'COI (start / end date)', type: 'upload', byOther: 'Uploaded by the vendor, with start and end date.', readonly: true, lock: 'Vendor uploads' },
-                { label: 'ACH form', type: 'upload', byOther: 'Uploaded by the vendor.', readonly: true, lock: 'Vendor uploads' }
-              ]
-            },
-            {
               title: 'Sign-in',
               hint: 'On save, the vendor gets an email with their username (the email above) and a temporary password. They must set a new password at first sign-in. Passwords expire every 30 days.',
               fields: []
@@ -1746,16 +1747,6 @@ const personaConfig = {
                 { label: 'Other documents', type: 'extraDocs', full: true, validity: true }
               ]
             },
-            {
-              title: 'W-2 documents uploaded by the resource',
-              showFor: 'W-2 Employee',
-              hint: 'The resource uploads these after signing in. Until then they show as Incomplete.',
-              fields: [
-                { label: 'W-4', type: 'upload', byOther: 'Uploaded by the W-2 resource, with start and end date.', readonly: true, lock: 'Resource uploads' },
-                { label: 'I-9', type: 'upload', byOther: 'Uploaded by the W-2 resource, with start and end date.', readonly: true, lock: 'Resource uploads' },
-                { label: 'ACH form', type: 'upload', byOther: 'Uploaded by the W-2 resource.', readonly: true, lock: 'Resource uploads' }
-              ]
-            },
             // 1099 mirrors the W-2 layout: 1099 contract ↔ employment contract, 1099 year end ↔ payslips, W-9 ↔ W-4.
             {
               title: '1099 documents uploaded by the account manager',
@@ -1766,16 +1757,6 @@ const personaConfig = {
                 { label: '1099 (year end)', type: 'upload', validity: true },
                 { label: 'Audit report', type: 'upload', byOther: 'Uploaded later by the account manager, not during onboarding. A new report is uploaded for each 3- or 6-month period; only the latest is shown.', readonly: true, lock: 'Later' },
                 { label: 'Other documents', type: 'extraDocs', full: true, validity: true }
-              ]
-            },
-            {
-              title: '1099 documents uploaded by the resource',
-              showFor: '1099 Contractor',
-              hint: 'The resource uploads these after signing in. Until then they show as Incomplete.',
-              fields: [
-                { label: 'W-9', type: 'upload', byOther: 'Uploaded by the 1099 resource, with start and end date.', readonly: true, lock: 'Resource uploads' },
-                { label: 'I-9', type: 'upload', byOther: 'Uploaded by the 1099 resource, with start and end date.', readonly: true, lock: 'Resource uploads' },
-                { label: 'ACH form', type: 'upload', byOther: 'Uploaded by the 1099 resource.', readonly: true, lock: 'Resource uploads' }
               ]
             },
             {
