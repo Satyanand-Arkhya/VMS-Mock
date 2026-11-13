@@ -972,13 +972,17 @@ function imStatusNote(r) {
 let ciClient = 'Persistent';
 const ciPending = {}; // record id -> chosen file name, until "Save client invoices"
 
+// Same layout as Invoice Management: Client / Status / Billing period filters, then Vendor Consultants / W-2 / 1099 tabs.
+let ciStatusFilter = 'All statuses';
+
 function clientInvoicesScreen(screen) {
-  const recs = Object.entries(IM_RECORDS).filter(([, r]) => r.client === ciClient);
+  if (activeTab >= IM_TABS.length) activeTab = 0;
+  const type = IM_TAB_TYPES[activeTab];
+  const ofClient = Object.entries(IM_RECORDS).filter(([, r]) => r.client === ciClient);
+  const recs = ofClient.filter(([, r]) => r.type === type && (ciStatusFilter === 'All statuses' || imStatus(r) === ciStatusFilter));
   const missing = recs.filter(([, r]) => !r.clientInvoice).length;
-  const typeLabel = (r) => (r.type === 'Consultant' ? 'Vendor consultant' : `${r.type} resource`);
   const rows = recs.map(([id, r]) => [
-    person(r.person, r.vendor || r.type),
-    typeLabel(r),
+    person(r.person, r.vendor || `${r.type} resource`),
     r.clientInvoice
       ? `<div class="doc-cell">${fileChip(r.clientInvoice)}<button type="button" class="link-btn" data-preview="${r.clientInvoice}">View</button></div>`
       : ciPending[id]
@@ -987,18 +991,24 @@ function clientInvoicesScreen(screen) {
     r.clientInvoice ? String(r.clientHours) : `<input class="cell-input ci-h" data-rec="${id}" inputmode="decimal" placeholder="0" />`,
     `${b(imStatus(r))}${imStatusNote(r) ? `<span class="person-sub">${imStatusNote(r)}</span>` : ''}`
   ]);
+  const filters = createFilters([
+    { label: 'Client', options: CLIENT_NAMES, selected: ciClient },
+    { label: 'Status', options: ['All statuses', 'Approved', 'Rejected', 'In Progress'], selected: ciStatusFilter },
+    { label: 'Billing period', options: [IM_PERIOD], selected: IM_PERIOD }
+  ]);
+  const tabs = createTabs(IM_TABS.map((t, i) => `${t} (${ofClient.filter(([, r]) => r.type === IM_TAB_TYPES[i]).length})`));
   const table = createTable({
-    title: `${ciClient} · ${IM_PERIOD}`,
-    chip: missing ? `${missing} client invoice${missing > 1 ? 's' : ''} missing` : 'All client invoices uploaded',
+    title: `${IM_TABS[activeTab]} · ${IM_PERIOD}`,
+    chip: missing ? `${missing} client invoice${missing > 1 ? 's' : ''} missing` : `${recs.length} ${recs.length === 1 ? 'person' : 'people'}`,
     noSearch: true,
-    headers: ['Person', 'Type', 'Client Invoice', 'Client Billable Hours', 'Status'],
-    rows: rows.length ? rows : [['<span class="person-sub inline">No one is assigned to this client for this period.</span>', '', '', '', '']]
+    headers: [type === 'Consultant' ? 'Consultant' : 'Resource', 'Client Invoice', 'Client Billable Hours', 'Status'],
+    rows: rows.length ? rows : [['<span class="person-sub inline">No one matches these filters.</span>', '', '', '']]
   });
   return {
     ...screen,
     title: `Client invoices · ${ciClient}`,
     description: `Client invoices for ${IM_PERIOD}. Upload a missing client invoice with its billable hours; approving or rejecting is done in Invoice Management.`,
-    custom: `${table}${missing ? '<div class="review-actions"><button type="button" class="btn btn-primary" data-ci="save">Save client invoices</button></div>' : ''}`
+    custom: `${filters}${tabs}${table}${missing ? '<div class="review-actions"><button type="button" class="btn btn-primary" data-ci="save">Save client invoices</button></div>' : ''}`
   };
 }
 
@@ -3776,6 +3786,8 @@ function wireFormControls(root) {
   // Client invoice pop-up: pick a file per person, enter hours, then "Save client invoices".
   if (activeScreen === 'clientInvoices') {
     const modal = root.querySelector('.modal');
+    modal?.querySelector('select[data-filter="Client"]')?.addEventListener('change', (e) => { ciClient = e.target.value; render(); refreshNavState(); });
+    modal?.querySelector('select[data-filter="Status"]')?.addEventListener('change', (e) => { ciStatusFilter = e.target.value; render(); refreshNavState(); });
     modal?.querySelectorAll('.ci-up').forEach((btn) => {
       const wrap = btn.parentElement;
       const input = wrap.querySelector('.upload-input');
