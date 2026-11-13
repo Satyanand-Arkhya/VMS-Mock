@@ -2794,7 +2794,7 @@ const profileTrigger = document.getElementById('profileTrigger');
 const profileMenu = document.getElementById('profileMenu');
 
 function closeProfileMenu() {
-  profileMenu.classList.add('hidden');
+  profileMenu.hidden = true;
   profileTrigger.setAttribute('aria-expanded', 'false');
 }
 
@@ -2817,7 +2817,7 @@ function renderProfileMenu() {
 }
 
 function openProfileMenu() {
-  profileMenu.classList.remove('hidden');
+  profileMenu.hidden = false;
   profileTrigger.setAttribute('aria-expanded', 'true');
   // Keep the menu on screen: on narrow screens the profile button sits at the left, so open the menu to the right.
   const r = profileTrigger.getBoundingClientRect();
@@ -2828,7 +2828,7 @@ function openProfileMenu() {
 
 profileTrigger.addEventListener('click', (e) => {
   e.stopPropagation();
-  if (profileMenu.classList.contains('hidden')) openProfileMenu(); else closeProfileMenu();
+  if (profileMenu.hidden) openProfileMenu(); else closeProfileMenu();
 });
 profileMenu.addEventListener('click', (e) => {
   const item = e.target.closest('.profile-menu-item');
@@ -2839,10 +2839,10 @@ profileMenu.addEventListener('click', (e) => {
   goToScreen(item.dataset.profileTarget);
 });
 document.addEventListener('click', (e) => {
-  if (!profileMenu.classList.contains('hidden') && !e.target.closest('.user-block')) closeProfileMenu();
+  if (!profileMenu.hidden && !e.target.closest('.user-block')) closeProfileMenu();
 });
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && !profileMenu.classList.contains('hidden')) { closeProfileMenu(); profileTrigger.focus(); }
+  if (e.key === 'Escape' && !profileMenu.hidden) { closeProfileMenu(); profileTrigger.focus(); }
 });
 
 /* ---------- Mobile menu (☰ Menu on phones) ---------- */
