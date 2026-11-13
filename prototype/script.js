@@ -505,32 +505,23 @@ const MEMBER_SUBMISSIONS = {
   ]
 };
 
-function submissionDocCell(file, kind) {
+function submissionDocCell(file) {
   if (file === 'na') return '<span class="person-sub inline">Not applicable</span>';
   if (file) return `<div class="doc-cell">${fileChip(file)}<button type="button" class="link-btn" data-preview="${file}">View</button></div>`;
-  return `<span class="cell-upload-wrap"><button type="button" class="upload-mini cell-upload">Upload ${kind}</button>
-    <input type="file" class="upload-input" accept=".pdf,.docx,.jpg,.jpeg,.png" hidden /></span>`;
+  return '<span class="person-sub inline">Not uploaded</span>';
 }
 
 function memberSubmissionsScreen(screen, name) {
   const m = TEAM_MEMBERS[name] || TEAM_MEMBERS['Maya Reed'];
   const rows = MEMBER_SUBMISSIONS[name] || [];
   const missing = rows.reduce((n, r) => n + (r.invoice === null) + (r.timesheet === null), 0);
-  // Vendor consultants: view only. Their invoices and timesheets are uploaded by the vendor, never on their behalf.
-  const consultant = m.type === 'Consultant';
-  const cell = (file, kind) => (consultant && !file ? '<span class="person-sub inline">Not uploaded</span>' : submissionDocCell(file, kind));
   return {
     ...screen,
     title: `${name} · Invoices & Timesheets`,
-    description: m.type === 'W-2'
-      ? 'W-2 resources submit a monthly timesheet only. You can submit a timesheet on their behalf, or upload one that is missing.'
-      : consultant
-        ? `Invoices and timesheets are uploaded by the vendor, ${m.vendor}. View only: they cannot be uploaded on the consultant’s behalf.`
-        : 'You can submit an invoice and timesheet on their behalf, or upload a missing document.',
-    actions: [
-      { label: 'View Profile', target: 'memberDetail' },
-      ...(consultant ? [] : [{ label: m.type === 'W-2' ? 'Upload Timesheet' : 'Upload Invoice', target: 'submitOnBehalf', primary: true }])
-    ],
+    // View only: invoices and timesheets are uploaded only by the vendor (consultants) or the resource (W-2, 1099).
+    description: `View only. ${m.type === 'W-2' ? 'W-2 resources submit a monthly timesheet only, uploaded by the resource.'
+      : m.type === 'Consultant' ? `Invoices and timesheets are uploaded by the vendor, ${m.vendor}.` : 'Invoices and timesheets are uploaded by the 1099 resource.'}`,
+    actions: [{ label: 'View Profile', target: 'memberDetail' }],
     table: {
       title: 'Submissions',
       chip: missing ? `${missing} document${missing > 1 ? 's' : ''} missing` : 'All documents on file',
@@ -538,58 +529,9 @@ function memberSubmissionsScreen(screen, name) {
       headers: ['Period', 'Client', 'Reference', 'Hours', 'Amount', 'Invoice', 'Timesheet', 'Status'],
       rows: rows.map((r) => [
         r.period, r.client,
-        r.ref === '—' ? '—' : `${mono(r.ref)}${r.by ? `<span class="person-sub">By ${r.by} (on behalf)</span>` : ''}`,
-        r.hours, r.amount, cell(r.invoice, 'invoice'), cell(r.timesheet, 'timesheet'), b(r.status)
+        r.ref === '—' ? '—' : mono(r.ref),
+        r.hours, r.amount, submissionDocCell(r.invoice), submissionDocCell(r.timesheet), b(r.status)
       ])
-    }
-  };
-}
-
-/* ---------- Submit on behalf (Account Manager / Super Admin) ---------- */
-
-const BILLING_PERIODS = ['November 2026', 'October 2026'];
-
-function submitOnBehalfScreen(screen, name) {
-  const m = TEAM_MEMBERS[name] || TEAM_MEMBERS['Maya Reed'];
-  const w2 = m.type === 'W-2';
-  const me = currentPersona().user.name;
-  return {
-    ...screen,
-    title: w2 ? `Upload Timesheet for ${name}` : `Upload Invoice for ${name}`,
-    description: `${w2 ? 'Timesheet' : 'Invoice and timesheet'} submitted by you on ${name}’s behalf${m.type === 'Consultant' ? ` (vendor: ${m.vendor})` : ''}. Reconciliation runs automatically on submit.`,
-    form: {
-      sections: [
-        {
-          title: 'On behalf of',
-          fields: [
-            { label: 'Person', value: `${name} · ${typeLabel(m)}`, readonly: true, lock: 'Selected' },
-            { label: 'Submitted by', value: `${me} (on behalf)`, readonly: true, lock: 'Recorded in Audit Log' }
-          ]
-        },
-        {
-          title: w2 ? 'Timesheet' : 'Invoice',
-          fields: [
-            { label: 'Assignment', type: 'select', options: [`${m.client} — ${m.role}`], required: true },
-            { label: 'Billing period', type: 'select', options: BILLING_PERIODS, required: true },
-            { label: w2 ? 'Total hours' : 'Total billed hours', placeholder: 'e.g. 160', required: true },
-            ...(w2 ? [] : [
-              { label: 'Hourly rate', value: `$${m.rate}`, readonly: true },
-              { label: 'Invoice amount (USD)', value: '$0.00', readonly: true }
-            ]),
-            { label: 'Payment term', value: m.term, readonly: true }
-          ]
-        },
-        {
-          title: 'Attachments',
-          hint: 'PDF, DOCX, JPG, JPEG or PNG · max 5 MB per file.',
-          fields: [
-            ...(w2 ? [] : [{ label: 'Invoice', type: 'upload', required: true }]),
-            { label: 'Timesheet', type: 'upload', required: true }
-          ]
-        }
-      ],
-      submit: { label: 'Submit for Reconciliation', target: 'memberSubmissions', action: 'on-behalf' },
-      cancel: { label: 'Cancel', target: 'memberSubmissions' }
     }
   };
 }
@@ -1112,7 +1054,6 @@ function invoiceReviewScreen(screen, id) {
 }
 
 let selectedInv = 'INV-2026-10-0142';
-const INVOICE_ALIASES = {}; // placeholder id (NS-…) → real invoice number once submitted
 let invoiceReturn = null; // list screen the user opened an invoice from (for breadcrumb / Cancel)
 
 const canManageInvoices = () => activePersona === 'superadmin' || activePersona === 'accountmanager';
@@ -1125,33 +1066,19 @@ const invHours = (inv) => {
   return `${mismatch ? diff(String(inv.hours)) : inv.hours} / ${inv.clientHours ?? '—'}`;
 };
 
-// Super Admin / Account Manager may upload on behalf of W-2 and 1099 resources only. A vendor consultant's invoice
-// and timesheet are always uploaded by their vendor.
-function canUploadFor(inv) {
-  return canManageInvoices() && !inv.vendor;
-}
-
+// Invoices and timesheets are uploaded only by the vendor (consultants) or the resource (W-2, 1099). Super Admin and
+// Account Manager view them and review them in Invoice Management; they never upload, correct or edit them.
 function invoiceActions(id) {
   const inv = INVOICES[id];
-  const link = (label, target, cls = '') => `<button class="link-btn ${cls}" data-target="${target}" data-inv="${id}">${label}</button>`;
-  if (inv.status === 'Not Submitted') {
-    return canUploadFor(inv) ? `<div class="row-actions">${link('Upload', 'invoiceUpdate')}</div>` : '<span class="person-sub inline">Due Nov 15, 2026</span>';
-  }
-  // A submitted invoice / timesheet can't be edited by anyone; only a rejected one can be corrected.
-  const parts = [link('View', 'invoiceDetail')];
-  if (inv.status === 'Rejected' && canUploadFor(inv)) parts.push(link('Upload corrected', 'invoiceUpdate'));
-  return `<div class="row-actions">${parts.join('')}</div>`;
+  if (inv.status === 'Not Submitted') return '<span class="person-sub inline">Due Nov 15, 2026</span>';
+  return `<div class="row-actions"><button class="link-btn" data-target="invoiceDetail" data-inv="${id}">View</button></div>`;
 }
 
-// File cell: chip if on file; inline Upload (Super Admin / AM) when a submitted invoice is missing it.
+// File cell: chip if on file, otherwise "Not uploaded".
 function invoiceFileCell(id, kind) {
-  const inv = INVOICES[id];
-  const file = inv[kind];
+  const file = INVOICES[id][kind];
   if (file === 'na') return '<span class="person-sub inline">Not applicable</span>';
-  if (file) return fileChip(file);
-  if (inv.status === 'Not Submitted' || !canUploadFor(inv)) return '<span class="person-sub inline">Not uploaded</span>';
-  return `<span class="cell-upload-wrap"><button type="button" class="upload-mini inv-upload" data-inv="${id}" data-kind="${kind}">Upload ${kind}</button>
-    <input type="file" class="upload-input" accept=".pdf,.docx,.jpg,.jpeg,.png" hidden /></span>`;
+  return file ? fileChip(file) : '<span class="person-sub inline">Not uploaded</span>';
 }
 
 function vendorInvoicesTable(table) {
@@ -1166,16 +1093,10 @@ function vendorInvoicesTable(table) {
 }
 
 function invoiceDetailScreen(screen, id) {
-  id = INVOICE_ALIASES[id] || id;
   const inv = INVOICES[id] || INVOICES['INV-2026-10-0142'];
-  const manage = canUploadFor(inv); // no on-behalf uploads for vendor consultants
   const actions = [];
-  if (inv.status === 'Rejected') {
-    if (manage) actions.push({ label: 'Upload Corrected Invoice', target: 'invoiceUpdate', primary: true });
-    else if (activePersona === 'vendor') actions.push({ label: 'Resubmit Invoice', target: 'rejectedInvoice', primary: true });
-  } else if (inv.status === 'Not Submitted' && manage) {
-    actions.push({ label: inv.w2 ? 'Upload Timesheet' : 'Upload Invoice & Timesheet', target: 'invoiceUpdate', primary: true });
-  }
+  if (inv.status === 'Rejected' && activePersona === 'vendor') actions.push({ label: 'Resubmit Invoice', target: 'rejectedInvoice', primary: true });
+  const uploader = inv.vendor ? `the vendor, ${inv.vendor}` : `the ${inv.w2 ? 'W-2' : '1099'} resource`;
   // Vendor: while the invoice is Rejected or In Progress (not yet approved) they can replace a wrong file, or upload a missing one.
   const vendorCanChange = activePersona === 'vendor' && ['Rejected', 'In Progress'].includes(inv.status);
   const fileRow = (label, kind) => {
@@ -1196,7 +1117,7 @@ function invoiceDetailScreen(screen, id) {
     alert: inv.status === 'Rejected'
       ? { tone: 'danger', title: 'Rejected by reconciliation', text: `Total hours: expected ${inv.clientHours} (client invoice), submitted ${inv.hours}.` }
       : inv.status === 'Not Submitted'
-        ? { tone: 'warning', title: 'Not submitted yet', text: `No invoice or timesheet for ${inv.period}. Due Nov 15, 2026.${manage ? ' You can upload them on their behalf.' : inv.vendor && canManageInvoices() ? ` They are uploaded by the vendor, ${inv.vendor}.` : ''}` }
+        ? { tone: 'warning', title: 'Not submitted yet', text: `No invoice or timesheet for ${inv.period}. Due Nov 15, 2026.${canManageInvoices() ? ` They are uploaded by ${uploader}.` : ''}` }
         : undefined,
     detail: {
       sections: [{
@@ -1210,7 +1131,7 @@ function invoiceDetailScreen(screen, id) {
           { label: 'Client invoice hours', value: inv.clientHours ?? 'Awaiting client invoice' },
           ...(inv.w2 ? [] : [{ label: 'Hourly rate', value: usd(inv.rate) }, { label: 'Invoice amount (USD)', value: invAmount(inv) }]),
           { label: 'Payment term', value: inv.term },
-          { label: 'Submitted', value: inv.submitted + (inv.by ? ` · by ${inv.by} (on behalf)` : '') },
+          { label: 'Submitted', value: inv.submitted },
           { label: 'Status', value: b(inv.status) }
         ]
       }],
@@ -1219,61 +1140,6 @@ function invoiceDetailScreen(screen, id) {
         headers: ['Document', 'File', 'Uploaded', 'Actions'],
         rows: [...(inv.w2 ? [] : [fileRow('Invoice', 'invoice')]), fileRow('Timesheet', 'timesheet')]
       }
-    }
-  };
-}
-
-function invoiceUpdateScreen(screen, id) {
-  const inv = INVOICES[id] || INVOICES['INV-2026-10-0142'];
-  const mode = inv.status === 'Rejected' ? 'correct' : inv.status === 'Not Submitted' ? 'new' : 'edit';
-  const me = currentPersona().user.name;
-  const titles = {
-    correct: `Upload Corrected ${inv.w2 ? 'Timesheet' : 'Invoice'} · ${inv.person}`,
-    new: `Upload ${inv.w2 ? 'Timesheet' : 'Invoice & Timesheet'} · ${inv.person}`,
-    edit: `Edit ${id}`
-  };
-  const upload = (label, kind) => ({
-    label, type: 'upload', required: mode !== 'edit',
-    note: inv[kind] && inv[kind] !== 'na' ? `${mode === 'edit' ? 'Current' : 'Rejected version'}: ${inv[kind]}${mode === 'edit' ? ' — upload a file to replace it' : ''}` : ''
-  });
-  return {
-    ...screen,
-    parent: invoiceReturn || screen.parent,
-    title: titles[mode],
-    description: mode === 'edit'
-      ? 'Super Admin edit. Saving re-runs reconciliation and is recorded in the Audit Log.'
-      : `Submitted by you on ${inv.person}’s behalf${inv.vendor ? ` (vendor: ${inv.vendor})` : ''}. Reconciliation runs automatically.${mode === 'correct' ? ' The rejected version is kept as Superseded.' : ''}`,
-    form: {
-      sections: [
-        {
-          title: 'On behalf of',
-          fields: [
-            { label: 'Person', value: `${inv.person}${inv.vendor ? ` · ${inv.vendor}` : ` · ${inv.sub}`}`, readonly: true, lock: 'Selected' },
-            { label: 'Submitted by', value: `${me}${mode === 'edit' ? '' : ' (on behalf)'}`, readonly: true, lock: 'Recorded in Audit Log' }
-          ]
-        },
-        {
-          title: inv.w2 ? 'Timesheet' : 'Invoice',
-          hint: inv.clientHours != null ? `Client invoice shows ${inv.clientHours} hours for this period.` : 'Client invoice not uploaded yet.',
-          fields: [
-            { label: 'Client', value: inv.client, readonly: true, lock: 'From assignment' },
-            { label: 'Billing period', value: inv.period, readonly: true, lock: 'From assignment' },
-            { label: 'Total billed hours', value: mode === 'edit' ? String(inv.hours) : '', placeholder: inv.clientHours ? `e.g. ${inv.clientHours}` : 'e.g. 160', required: true },
-            ...(inv.w2 ? [] : [
-              { label: 'Hourly rate', value: usd(inv.rate), readonly: true },
-              { label: 'Invoice amount (USD)', value: mode === 'edit' ? invAmount(inv) : '$0.00', readonly: true }
-            ]),
-            { label: 'Payment term', value: inv.term, readonly: true }
-          ]
-        },
-        {
-          title: 'Attachments',
-          hint: 'PDF, DOCX, JPG, JPEG or PNG · max 5 MB per file.',
-          fields: [...(inv.w2 ? [] : [upload('Invoice', 'invoice')]), upload('Timesheet', 'timesheet')]
-        }
-      ],
-      submit: { label: mode === 'edit' ? 'Save Changes' : 'Submit for Reconciliation', target: 'invoiceDetail', action: 'inv-update' },
-      cancel: { label: 'Cancel', target: invoiceReturn || 'invoiceDetail' }
     }
   };
 }
@@ -2616,8 +2482,7 @@ const personaConfig = {
   // or submit a new invoice / timesheet on the person's behalf.
   ['superadmin', 'accountmanager'].forEach((key) => {
     personaConfig[key].screens.push(
-      { id: 'memberSubmissions', parent: 'teamMembers', title: 'Invoices & Timesheets' },
-      { id: 'submitOnBehalf', parent: 'teamMembers', title: 'Submit on behalf' }
+      { id: 'memberSubmissions', parent: 'teamMembers', title: 'Invoices & Timesheets' }
     );
   });
 
@@ -2638,11 +2503,10 @@ const personaConfig = {
     { id: 'adminUserEdit', parent: 'adminUsers', title: 'Edit Account Manager' }
   );
 
-  // Invoices: View opens the invoice (all three); Super Admin / AM can upload missing or corrected documents.
+  // Invoices: View opens the invoice (all three). Super Admin / AM only view; uploads come from the vendor or resource.
   ['superadmin', 'accountmanager'].forEach((key) => {
     personaConfig[key].screens.push(
       { id: 'invoiceDetail', parent: 'vendorInvoices', title: 'Invoice' },
-      { id: 'invoiceUpdate', parent: 'vendorInvoices', title: 'Update Invoice' },
       // Invoice Management: Review opens the client invoice and the person's document side by side.
       { id: 'invoiceReview', parent: 'invoiceUpload', title: 'Review' },
       // Read-only View pop-ups (separate from Edit).
@@ -2890,7 +2754,7 @@ let replaceNextNav = false;
 /* Add / edit forms open as pop-ups over the screen they were opened from (modalBase). */
 const MODAL_SCREENS = new Set([
   'clientAdd', 'clientEdit', 'vendorAdd', 'vendorEdit', 'resourceAdd', 'consultantAdd', 'memberEdit',
-  'submitOnBehalf', 'invoiceUpdate', 'adminUserAdd', 'adminUserEdit', 'invoiceSubmit', 'timesheet', 'correction', 'rejectedInvoice',
+  'adminUserAdd', 'adminUserEdit', 'invoiceSubmit', 'timesheet', 'correction', 'rejectedInvoice',
   'memberDetail', 'docDetail', 'invoiceDetail', 'invoiceView', 'invoiceReview', 'clientView', 'vendorView', 'clientInvoices'
 ]);
 // Read-only pop-ups (View …). A form opened from one of these stacks on top of it.
@@ -3547,7 +3411,6 @@ function resolveScreenState(screen) {
   if (screen.id === 'memberDetail') return memberDetailScreen(screen, selectedMember);
   if (screen.id === 'memberEdit') return memberEditScreen(screen, selectedMember);
   if (screen.id === 'memberSubmissions') return memberSubmissionsScreen(screen, selectedMember);
-  if (screen.id === 'submitOnBehalf') return submitOnBehalfScreen(screen, selectedMember);
   if (screen.id === 'invoiceView') return invoiceViewScreen(screen, selectedInvoice);
   if (screen.id === 'clientAdd' || screen.id === 'clientEdit') return clientFormScreen(screen);
   if (screen.id === 'clients' && activePersona === 'superadmin') return { ...screen, table: clientsTable(screen.table) };
@@ -3573,7 +3436,6 @@ function resolveScreenState(screen) {
     };
   }
   if (screen.id === 'invoiceDetail') return invoiceDetailScreen(screen, selectedInv);
-  if (screen.id === 'invoiceUpdate') return invoiceUpdateScreen(screen, selectedInv);
   if (screen.id === 'changePassword') return changePasswordScreen(screen);
   // Edit Vendor: the vendor's sign-in status with "Send new password".
   if (screen.id === 'vendorEdit') {
@@ -3850,146 +3712,6 @@ function wireFormControls(root) {
     });
   });
 
-  // Submit on behalf: live invoice amount, validation, duplicate check (INV-8), then add to the person's submissions.
-  root.querySelectorAll('[data-action="on-behalf"]').forEach((btn) => {
-    const form = btn.closest('.form-card');
-    const m = TEAM_MEMBERS[selectedMember];
-    const w2 = m.type === 'W-2';
-    const hoursLabel = w2 ? 'Total hours' : 'Total billed hours';
-    const field = (label) => [...form.querySelectorAll('.field')].find((f) => f.querySelector('label')?.childNodes[0]?.textContent.trim() === label);
-    const money = (n) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    const hoursInput = field(hoursLabel).querySelector('input');
-    const amountInput = field('Invoice amount (USD)')?.querySelector('input');
-    hoursInput.addEventListener('input', () => {
-      const h = Number(hoursInput.value);
-      if (amountInput) amountInput.value = money(h > 0 ? Math.round(h * Number(m.rate) * 100) / 100 : 0);
-    });
-
-    btn.addEventListener('click', (event) => {
-      form.querySelectorAll('.field-error').forEach((n) => n.remove());
-      const hours = Number(formValue(form, hoursLabel));
-      const periodLong = formValue(form, 'Billing period');
-      const period = `${periodLong.slice(0, 3)} ${periodLong.split(' ')[1]}`;
-      const fileOf = (label) => field(label)?.querySelector('.upload-done[data-file]')?.dataset.file || '';
-      const timesheet = fileOf('Timesheet');
-      const invoice = w2 ? 'na' : fileOf('Invoice');
-      const rows = MEMBER_SUBMISSIONS[selectedMember] || (MEMBER_SUBMISSIONS[selectedMember] = []);
-      let ok = true;
-      if (!(hours > 0 && hours <= 744)) { showFieldError(form, hoursLabel, 'Enter the total hours for the month (more than 0).'); ok = false; }
-      if (!timesheet) { showFieldError(form, 'Timesheet', 'Upload the timesheet.'); ok = false; }
-      if (!w2 && !invoice) { showFieldError(form, 'Invoice', 'Upload the invoice.'); ok = false; }
-      // One invoice (or, for W-2, one timesheet) per person per month.
-      if (rows.some((r) => r.period === period && r.ref !== '—' && r.status !== 'Rejected')) {
-        showFieldError(form, 'Billing period', `${selectedMember} already has an active ${w2 ? 'timesheet' : 'invoice'} for ${periodLong}. Only one ${w2 ? 'timesheet' : 'invoice'} is allowed per month.`);
-        ok = false;
-      }
-      if (!ok) { event.stopPropagation(); return; }
-
-      const month = String(new Date(`${periodLong} 1`).getMonth() + 1).padStart(2, '0');
-      const ref = `${w2 ? 'TS' : 'INV'}-2026-${month}-0${300 + Math.floor(Math.random() * 600)}`;
-      const record = {
-        period, client: m.client, ref, hours: String(hours),
-        amount: w2 ? '—' : money(Math.round(hours * Number(m.rate) * 100) / 100),
-        invoice, timesheet, status: 'In Progress', by: currentPersona().user.name
-      };
-      // A rejected submission for the same period is replaced by this one (kept as Superseded history).
-      rows.forEach((r) => { if (r.period === period && r.client === m.client && r.status === 'Rejected') r.status = 'Superseded'; });
-      // Replace a "Due" / "Not Started" placeholder for the same period, otherwise add on top.
-      const placeholder = rows.findIndex((r) => r.period === period && r.client === m.client && r.ref === '—');
-      if (placeholder >= 0) rows.splice(placeholder, 1, record); else rows.unshift(record);
-      flashMessage = {
-        title: `${w2 ? 'Timesheet' : 'Invoice'} submitted on behalf of ${selectedMember}`,
-        text: `${ref} · ${m.client} · ${periodLong} · ${hours} h. It is In Progress until the client invoice is matched; reconciliation runs automatically.`
-      };
-    });
-  });
-
-  // Invoices: upload a missing invoice / timesheet straight from the table or the invoice page.
-  root.querySelectorAll('.inv-upload').forEach((btn) => {
-    const wrap = btn.parentElement;
-    const input = wrap.querySelector('.upload-input');
-    btn.addEventListener('click', (e) => { e.stopPropagation(); input.click(); });
-    input.addEventListener('change', () => {
-      const file = input.files[0];
-      if (!file) return;
-      const ext = file.name.split('.').pop().toLowerCase();
-      wrap.querySelector('.upload-error')?.remove();
-      if (!UPLOAD_TYPES.includes(ext) || file.size > UPLOAD_MAX_BYTES) {
-        const err = document.createElement('div');
-        err.className = 'upload-error';
-        err.textContent = !UPLOAD_TYPES.includes(ext) ? 'Only PDF, DOCX, JPG, JPEG or PNG.' : 'Max 5 MB per file.';
-        wrap.appendChild(err);
-        input.value = '';
-        return;
-      }
-      const inv = INVOICES[btn.dataset.inv];
-      inv[btn.dataset.kind] = file.name;
-      flashMessage = { title: `${btn.dataset.kind === 'invoice' ? 'Invoice' : 'Timesheet'} uploaded`, text: `${file.name} added to ${btn.dataset.inv} (${inv.person}) on their behalf by ${currentPersona().user.name}.` };
-      render();
-    });
-  });
-
-  // Invoices: corrected / new / edited submission. Saving re-runs reconciliation against the client invoice hours.
-  root.querySelectorAll('[data-action="inv-update"]').forEach((btn) => {
-    const form = btn.closest('.form-card');
-    const id = selectedInv;
-    const inv = INVOICES[id];
-    const mode = inv.status === 'Rejected' ? 'correct' : inv.status === 'Not Submitted' ? 'new' : 'edit';
-    const field = (label) => [...form.querySelectorAll('.field')].find((f) => f.querySelector('label')?.childNodes[0]?.textContent.trim() === label);
-    const hoursInput = field('Total billed hours').querySelector('input');
-    const amountInput = field('Invoice amount (USD)')?.querySelector('input');
-    hoursInput.addEventListener('input', () => {
-      const h = Number(hoursInput.value);
-      if (amountInput) amountInput.value = usd(h > 0 ? Math.round(h * inv.rate * 100) / 100 : 0);
-    });
-
-    btn.addEventListener('click', (event) => {
-      form.querySelectorAll('.field-error').forEach((n) => n.remove());
-      const hours = Number(hoursInput.value);
-      const fileOf = (label) => field(label)?.querySelector('.upload-done[data-file]')?.dataset.file || '';
-      const newInvoice = inv.w2 ? '' : fileOf('Invoice');
-      const newTimesheet = fileOf('Timesheet');
-      let ok = true;
-      if (!(hours > 0 && hours <= 744)) { showFieldError(form, 'Total billed hours', 'Enter the total hours for the month (more than 0).'); ok = false; }
-      if (mode !== 'edit') {
-        if (!inv.w2 && !newInvoice) { showFieldError(form, 'Invoice', `Upload the ${mode === 'correct' ? 'corrected ' : ''}invoice.`); ok = false; }
-        if (!newTimesheet) { showFieldError(form, 'Timesheet', 'Upload the timesheet.'); ok = false; }
-      }
-      if (!ok) { event.stopPropagation(); return; }
-
-      const me = currentPersona().user.name;
-      if (newInvoice) inv.invoice = newInvoice;
-      if (newTimesheet) inv.timesheet = newTimesheet;
-      inv.hours = hours;
-      const version = (Number((inv.submitted.match(/\(v(\d+)\)/) || [])[1]) || 1) + (mode === 'new' ? 0 : 1);
-      inv.submitted = mode === 'new' ? 'Today' : `Today (v${version})`;
-      if (mode !== 'edit') inv.by = me;
-      // Reconciliation: exact match on total hours once the client invoice is in.
-      if (inv.clientHours == null) inv.status = 'In Progress';
-      else inv.status = hours === inv.clientHours ? 'Approved' : 'Rejected';
-
-      // A first submission gets its own invoice / timesheet number.
-      let shownId = id;
-      if (mode === 'new') {
-        shownId = `${inv.w2 ? 'TS' : 'INV'}-2026-10-0${300 + Math.floor(Math.random() * 600)}`;
-        INVOICES[shownId] = inv;
-        delete INVOICES[id];
-        INVOICE_ALIASES[id] = shownId;
-        [AUDIT_INVOICE_IDS, VENDOR_INVOICE_IDS].forEach((list) => { const i = list.indexOf(id); if (i >= 0) list[i] = shownId; });
-        selectedInv = shownId;
-      }
-
-      const what = inv.w2 ? 'Timesheet' : 'Invoice';
-      const result = inv.status === 'Approved' ? 'Reconciliation matched the client invoice — Approved.'
-        : inv.status === 'Rejected' ? `Reconciliation rejected it: expected ${inv.clientHours} hours, submitted ${hours}.`
-          : 'In Progress until the client invoice is uploaded.';
-      flashMessage = {
-        title: mode === 'edit' ? `${id} updated` : mode === 'correct' ? `Corrected ${what.toLowerCase()} submitted for ${inv.person}` : `${what} ${shownId} submitted for ${inv.person}`,
-        text: `${hours} h for ${inv.client}, ${inv.period}. ${result}${mode === 'correct' ? ' The rejected version is kept as Superseded.' : ''}`
-      };
-    });
-  });
-
   // Invoice Management: Client / Status filters re-draw the list (the tab picks Vendor Consultants, W-2 or 1099).
   if (activeScreen === 'invoiceUpload' || (activeScreen === 'invoiceReview' && modalBase?.screen === 'invoiceUpload')) {
     root.querySelector('select[data-filter="Client"]')?.addEventListener('change', (e) => { selectedClientInvoiceClient = e.target.value; render(); refreshNavState(); });
@@ -4251,28 +3973,6 @@ function wireFormControls(root) {
         flashMessage = { title: 'Account manager deleted', text };
         goToScreen('adminUsers');
       });
-    });
-  });
-
-  // Upload buttons inside table cells (e.g. a missing invoice or timesheet): pick a file, then show it in the cell.
-  root.querySelectorAll('.cell-upload').forEach((btn) => {
-    const wrap = btn.parentElement;
-    const input = wrap.querySelector('.upload-input');
-    btn.addEventListener('click', (e) => { e.stopPropagation(); input.click(); });
-    input.addEventListener('change', () => {
-      const file = input.files[0];
-      if (!file) return;
-      const ext = file.name.split('.').pop().toLowerCase();
-      wrap.querySelector('.upload-error')?.remove();
-      if (!UPLOAD_TYPES.includes(ext) || file.size > UPLOAD_MAX_BYTES) {
-        const err = document.createElement('div');
-        err.className = 'upload-error';
-        err.textContent = !UPLOAD_TYPES.includes(ext) ? 'Only PDF, DOCX, JPG, JPEG or PNG.' : 'Max 5 MB per file.';
-        wrap.appendChild(err);
-        input.value = '';
-        return;
-      }
-      wrap.outerHTML = `<div class="doc-cell">${fileChip(file.name, fmtSize(file.size))}<button type="button" class="link-btn" data-preview="${file.name}">View</button></div><span class="person-sub inline">Uploaded by you · just now</span>`;
     });
   });
 
