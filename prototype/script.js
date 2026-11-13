@@ -9,7 +9,7 @@
 const BADGE_TONES = {
   approved: ['Active', 'Valid', 'Approved', 'Matched', 'Signed', 'Submitted', 'Uploaded', 'Paid', 'Current'],
   rejected: ['Rejected', 'Expired', 'Inactive', 'Mismatch', 'Missing'],
-  warning: ['Expiring Soon', 'Review', 'Due', 'Due Soon', 'Action Needed', 'Draft'],
+  warning: ['Expiring Soon', 'Review', 'Due', 'Due Soon', 'Action Needed', 'Draft', 'Not Uploaded'],
   progress: ['In Progress', 'Pending', 'Incomplete', 'Awaiting Client Invoice', 'Onboarding', 'Not Started', 'Invited'],
   neutral: ['Not Applicable', 'Closed', 'Ended', 'Superseded']
 };
@@ -189,11 +189,6 @@ document.addEventListener('click', (e) => {
     input.click();
   }
 }, true);
-
-// Opens a pop-up with that client's invoices for the billing period (stays on the Clients page).
-function clientInvoiceAction(clientName) {
-  return `<button class="link-btn" data-target="clientInvoices" data-client="${clientName}">Client invoice</button>`;
-}
 
 const DASHBOARD_KPI_TARGETS = {
   superadmin: ['clients', 'vendors', 'w2Resources', 'w9Resources'],
@@ -637,19 +632,6 @@ function clientFormScreen(screen) {
 }
 
 // Clients list: Account Managers column comes from CLIENT_AM so it reflects every change.
-function clientsTable(table) {
-  const col = table.headers.indexOf('Account Manager');
-  if (col < 0) return table;
-  return {
-    ...table,
-    headers: table.headers.map((h, i) => (i === col ? 'Account Managers' : h)),
-    rows: table.rows.map((row) => {
-      const name = (row[0].match(/person-name">([^<]+)/) || [])[1];
-      const ams = CLIENT_AM[name];
-      return ams ? row.map((cell, i) => (i === col ? (ams.length ? ams.join('<br>') : '<span class="person-sub inline">None</span>') : cell)) : row;
-    })
-  };
-}
 
 function adminUsersScreen(screen) {
   return {
@@ -967,48 +949,76 @@ function imStatusNote(r) {
   return '';
 }
 
-/* Client invoice pop-up (from a client's row): every person on that client for the billing period, with the
-   client invoice and client billable hours. A missing client invoice can be uploaded here with its hours. */
-let ciClient = 'Persistent';
+/* Clients page (Super Admin: Client Management; Account Manager: My Clients). Pick a client, an upload status and a
+   month, then a tab (Vendor Consultants / W-2 / 1099): every person on that client for that month is listed, and the
+   client invoice is uploaded for each one with its billable hours. Approving or rejecting is done in Invoice Management. */
+const CLIENT_INFO = {
+  'Persistent': { code: 'PER', zone: 'USD · America/Chicago', msa: `Dec 9, 2026 ${b('Expiring Soon')}` },
+  'HTC': { code: 'HTC', zone: 'USD · America/New_York', msa: 'Feb 12, 2027' },
+  'Citus Tech': { code: 'CT', zone: 'USD · America/Los_Angeles', msa: 'Jan 30, 2028' }
+};
+const CI_MONTHS = ['October 2026', 'September 2026', 'August 2026']; // October is the period under reconciliation
+let ciClient = 'All clients';
+let ciStatusFilter = 'All';
+let ciMonth = CI_MONTHS[0];
 const ciPending = {}; // record id -> chosen file name, until "Save client invoices"
 
-// Same layout as Invoice Management: Client / Status / Billing period filters, then Vendor Consultants / W-2 / 1099 tabs.
-let ciStatusFilter = 'All statuses';
+// Client invoice for a person in the selected month. Earlier months are all on file in this sample data.
+function ciInvoice(r) {
+  if (ciMonth === IM_PERIOD) return { file: r.clientInvoice, hours: r.clientHours };
+  const mon = ciMonth.slice(0, 3);
+  return { file: `${CLIENT_INFO[r.client].code}-${mon}26-${r.person.split(' ').pop()}.pdf`, hours: r.docHours || 168 };
+}
 
-function clientInvoicesScreen(screen) {
+function clientsScreen(screen) {
   if (activeTab >= IM_TABS.length) activeTab = 0;
   const type = IM_TAB_TYPES[activeTab];
-  const ofClient = Object.entries(IM_RECORDS).filter(([, r]) => r.client === ciClient);
-  const recs = ofClient.filter(([, r]) => r.type === type && (ciStatusFilter === 'All statuses' || imStatus(r) === ciStatusFilter));
-  const missing = recs.filter(([, r]) => !r.clientInvoice).length;
-  const rows = recs.map(([id, r]) => [
-    person(r.person, r.vendor || `${r.type} resource`),
-    r.clientInvoice
-      ? `<div class="doc-cell">${fileChip(r.clientInvoice)}<button type="button" class="link-btn" data-preview="${r.clientInvoice}">View</button></div>`
-      : ciPending[id]
-        ? `<div class="doc-cell">${fileChip(ciPending[id])}</div>`
-        : `<span class="cell-upload-wrap"><button type="button" class="upload-mini ci-up" data-rec="${id}">Upload</button><input type="file" class="upload-input" accept=".pdf,.docx,.jpg,.jpeg,.png" hidden /></span>`,
-    r.clientInvoice ? String(r.clientHours) : `<input class="cell-input ci-h" data-rec="${id}" inputmode="decimal" placeholder="0" />`,
-    `${b(imStatus(r))}${imStatusNote(r) ? `<span class="person-sub">${imStatusNote(r)}</span>` : ''}`
-  ]);
+  const all = ciClient === 'All clients';
+  const inScope = Object.entries(IM_RECORDS).filter(([, r]) => all || r.client === ciClient);
+  const statusOk = ([, r]) => ciStatusFilter === 'All' || (ciStatusFilter === 'Uploaded') === !!ciInvoice(r).file;
+  const recs = inScope.filter(([, r]) => r.type === type).filter(statusOk);
+  const current = ciMonth === IM_PERIOD;
+  const missing = recs.filter(([, r]) => !ciInvoice(r).file).length;
+  const rows = recs.map(([id, r]) => {
+    const { file, hours } = ciInvoice(r);
+    return [
+      person(r.person, r.vendor || `${r.type} resource`),
+      ...(all ? [r.client] : []),
+      file
+        ? `<div class="doc-cell">${fileChip(file)}<button type="button" class="link-btn" data-preview="${file}">View</button></div>`
+        : ciPending[id]
+          ? `<div class="doc-cell">${fileChip(ciPending[id])}</div>`
+          : `<span class="cell-upload-wrap"><button type="button" class="upload-mini ci-up" data-rec="${id}">Upload</button><input type="file" class="upload-input" accept=".pdf,.docx,.jpg,.jpeg,.png" hidden /></span>`,
+      file ? String(hours) : `<input class="cell-input ci-h" data-rec="${id}" inputmode="decimal" placeholder="0" />`,
+      b(file ? 'Uploaded' : 'Not Uploaded')
+    ];
+  });
   const filters = createFilters([
-    { label: 'Client', options: CLIENT_NAMES, selected: ciClient },
-    { label: 'Status', options: ['All statuses', 'Approved', 'Rejected', 'In Progress'], selected: ciStatusFilter },
-    { label: 'Billing period', options: [IM_PERIOD], selected: IM_PERIOD }
+    { label: 'Client', options: ['All clients', ...CLIENT_NAMES], selected: ciClient },
+    { label: 'Status', options: ['All', 'Uploaded', 'Not uploaded'], selected: ciStatusFilter },
+    { label: 'Month', options: CI_MONTHS, selected: ciMonth }
   ]);
-  const tabs = createTabs(IM_TABS.map((t, i) => `${t} (${ofClient.filter(([, r]) => r.type === IM_TAB_TYPES[i]).length})`));
+  // A selected client shows its details with View / Edit.
+  const info = CLIENT_INFO[ciClient];
+  const strip = all ? '' : `<div class="client-strip">
+      <div><span class="person-sub">Client</span><b>${ciClient}</b><span class="person-sub">${info.zone}</span></div>
+      <div><span class="person-sub">Account managers</span><b>${(CLIENT_AM[ciClient] || []).join(', ') || '—'}</b></div>
+      <div><span class="person-sub">MSA expiry</span><b>${info.msa}</b></div>
+      <div class="row-actions"><button class="link-btn" data-target="clientView">View</button><button class="link-btn" data-target="clientEdit">Edit</button></div>
+    </div>`;
+  const tabs = createTabs(IM_TABS.map((t, i) => `${t} (${inScope.filter(([, r]) => r.type === IM_TAB_TYPES[i]).length})`));
+  const cols = [type === 'Consultant' ? 'Consultant' : 'Resource', ...(all ? ['Client'] : []), 'Client Invoice', 'Client Billable Hours', 'Status'];
   const table = createTable({
-    title: `${IM_TABS[activeTab]} · ${IM_PERIOD}`,
-    chip: missing ? `${missing} client invoice${missing > 1 ? 's' : ''} missing` : `${recs.length} ${recs.length === 1 ? 'person' : 'people'}`,
+    title: `${all ? 'All clients' : ciClient} · ${IM_TABS[activeTab]} · ${ciMonth}`,
+    chip: missing ? `${missing} client invoice${missing > 1 ? 's' : ''} not uploaded` : `${recs.length} ${recs.length === 1 ? 'person' : 'people'}`,
     noSearch: true,
-    headers: [type === 'Consultant' ? 'Consultant' : 'Resource', 'Client Invoice', 'Client Billable Hours', 'Status'],
-    rows: rows.length ? rows : [['<span class="person-sub inline">No one matches these filters.</span>', '', '', '']]
+    headers: cols,
+    rows: rows.length ? rows : [[`<span class="person-sub inline">No one matches these filters.</span>`, ...cols.slice(1).map(() => '')]]
   });
   return {
     ...screen,
-    title: `Client invoices · ${ciClient}`,
-    description: `Client invoices for ${IM_PERIOD}. Upload a missing client invoice with its billable hours; approving or rejecting is done in Invoice Management.`,
-    custom: `${filters}${tabs}${table}${missing ? '<div class="review-actions"><button type="button" class="btn btn-primary" data-ci="save">Save client invoices</button></div>' : ''}`
+    table: undefined,
+    custom: `${filters}${strip}${tabs}${table}${missing && current ? '<div class="review-actions"><button type="button" class="btn btn-primary" data-ci="save">Save client invoices</button></div>' : ''}`
   };
 }
 
@@ -1523,18 +1533,9 @@ const personaConfig = {
       {
         id: 'clients',
         title: 'Client Management',
-        description: 'Every client, its assigned account manager, and MSA coverage.',
-        actions: [{ label: 'Add Client', target: 'clientAdd', primary: true }],
-        table: {
-          title: 'All clients',
-          total: 3,
-          headers: ['Client', 'Region', 'Account Manager', 'MSA Expiry', 'Client invoice status', 'Status', 'Actions'],
-          rows: [
-            [sub('Persistent', 'USD · America/Chicago'), 'Central', 'Alicia Ross, Priya Natarajan', `Dec 9, 2026 ${b('Expiring Soon')}`, `${b('In Progress')} <span class="person-sub inline">2 of 5</span>`, b('Active'), `<div class="row-actions"><button class="link-btn" data-target="clientView">View</button><button class="link-btn" data-target="clientEdit">Edit</button>${clientInvoiceAction('Persistent')}</div>`],
-            [sub('HTC', 'USD · America/New_York'), 'US-East', 'Alicia Ross', 'Feb 12, 2027', b('Uploaded'), b('Active'), `<div class="row-actions"><button class="link-btn" data-target="clientView">View</button><button class="link-btn" data-target="clientEdit">Edit</button>${clientInvoiceAction('HTC')}</div>`],
-            [sub('Citus Tech', 'USD · America/Los_Angeles'), 'US-West', 'Benjamin Cole, Alicia Ross', 'Jan 30, 2028', b('Pending'), b('Active'), `<div class="row-actions"><button class="link-btn" data-target="clientView">View</button><button class="link-btn" data-target="clientEdit">Edit</button>${clientInvoiceAction('Citus Tech')}</div>`]
-          ]
-        }
+        description: 'Choose a client, status and month, then upload the client invoice for each consultant or resource with its billable hours. Approving or rejecting is done in Invoice Management.',
+        actions: [{ label: 'Add Client', target: 'clientAdd', primary: true }]
+        // Filters, tabs and the upload list are built by clientsScreen().
       },
       {
         id: 'clientAdd',
@@ -1883,17 +1884,8 @@ const personaConfig = {
       {
         id: 'clients',
         title: 'My Clients',
-        description: 'Clients assigned to you and the people working on each.',
-        table: {
-          title: 'Assigned clients',
-          total: 3,
-          headers: ['Client', 'Region', 'Vendors', 'People', 'MSA Expiry', 'Client invoice status', 'Status', 'Actions'],
-          rows: [
-            [sub('Persistent', 'America/Chicago'), 'Central', '2', '5', `Dec 9, 2026 ${b('Expiring Soon')}`, `${b('In Progress')} <span class="person-sub inline">2 of 5</span>`, b('Active'), `<div class="row-actions"><button class="link-btn" data-target="clientView">View</button><button class="link-btn" data-target="clientEdit">Edit</button>${clientInvoiceAction('Persistent')}</div>`],
-            [sub('HTC', 'America/New_York'), 'US-East', '3', '5', 'Feb 12, 2027', b('Uploaded'), b('Active'), `<div class="row-actions"><button class="link-btn" data-target="clientView">View</button><button class="link-btn" data-target="clientEdit">Edit</button>${clientInvoiceAction('HTC')}</div>`],
-            [sub('Citus Tech', 'America/Los_Angeles'), 'US-West', '1', '2', 'Jan 30, 2028', b('Pending'), b('Active'), `<div class="row-actions"><button class="link-btn" data-target="clientView">View</button><button class="link-btn" data-target="clientEdit">Edit</button>${clientInvoiceAction('Citus Tech')}</div>`]
-          ]
-        }
+        description: 'Choose one of your clients, a status and a month, then upload the client invoice for each consultant or resource with its billable hours. Approving or rejecting is done in Invoice Management.',
+        actions: [{ label: 'Add Client', target: 'clientAdd', primary: true }]
       },
       {
         id: 'vendorList',
@@ -2503,7 +2495,7 @@ const personaConfig = {
    pre-assigned to themselves. */
 (function shareOnboardingForms() {
   const am = personaConfig.accountmanager;
-  const parents = { vendorAdd: 'vendorList', resourceAdd: 'w2Resources' };
+  const parents = { vendorAdd: 'vendorList', resourceAdd: 'w2Resources', clientAdd: 'clients' };
   Object.entries(parents).forEach(([id, parent]) => {
     const source = personaConfig.superadmin.screens.find((s) => s.id === id);
     const copy = JSON.parse(JSON.stringify(source));
@@ -2573,7 +2565,6 @@ const personaConfig = {
       { id: 'invoiceReview', parent: 'invoiceUpload', title: 'Review' },
       // Read-only View pop-ups (separate from Edit).
       { id: 'clientView', parent: 'clients', title: 'Client' },
-      { id: 'clientInvoices', parent: 'clients', title: 'Client invoices' },
       { id: 'vendorView', parent: key === 'superadmin' ? 'vendors' : 'vendorList', title: 'Vendor' }
     );
   });
@@ -2817,7 +2808,7 @@ let replaceNextNav = false;
 const MODAL_SCREENS = new Set([
   'clientAdd', 'clientEdit', 'vendorAdd', 'vendorEdit', 'resourceAdd', 'consultantAdd', 'memberEdit',
   'adminUserAdd', 'adminUserEdit', 'invoiceSubmit', 'timesheet', 'correction', 'rejectedInvoice',
-  'memberDetail', 'docDetail', 'invoiceDetail', 'invoiceView', 'invoiceReview', 'clientView', 'vendorView', 'clientInvoices'
+  'memberDetail', 'docDetail', 'invoiceDetail', 'invoiceView', 'invoiceReview', 'clientView', 'vendorView'
 ]);
 // Read-only pop-ups (View …). A form opened from one of these stacks on top of it.
 const VIEW_MODALS = new Set(['memberDetail', 'docDetail', 'invoiceDetail', 'invoiceView', 'clientView', 'vendorView']);
@@ -2852,7 +2843,7 @@ function navSnapshot() {
   return {
     persona: activePersona, screen: activeScreen, tab: activeTab, member: selectedMember, inv: selectedInv,
     invReturn: invoiceReturn, invoice: selectedInvoice, doc: selectedDoc, am: selectedAm, client: selectedClientInvoiceClient,
-    rec: selectedRec, imStatus: imStatusFilter, ciClient, modalBase, modalPrev
+    rec: selectedRec, imStatus: imStatusFilter, ciClient, ciStatusFilter, ciMonth, modalBase, modalPrev
   };
 }
 
@@ -2898,6 +2889,8 @@ window.addEventListener('popstate', (event) => {
   selectedDoc = s.doc; selectedAm = s.am; selectedClientInvoiceClient = s.client;
   selectedRec = s.rec || selectedRec; imStatusFilter = s.imStatus || 'All statuses'; imRejecting = false;
   ciClient = s.ciClient || ciClient;
+  ciStatusFilter = s.ciStatusFilter || ciStatusFilter;
+  ciMonth = s.ciMonth || ciMonth;
   modalBase = s.modalBase || null;
   modalPrev = s.modalPrev || null;
   navDepth = state.depth || 0;
@@ -2926,7 +2919,6 @@ function goToScreen(screenId, clientName, tab = 0) {
   if (screenId === 'invoiceUpload' && clientName) {
     selectedClientInvoiceClient = clientName;
   }
-  if (screenId === 'clientInvoices' && clientName) ciClient = clientName;
   const fromModal = isModalId(activeScreen);
   const toModal = isModalId(screenId);
   const onOwnEntry = navDepth > 0 && history.state && history.state.nav && history.state.nav.screen === activeScreen;
@@ -3477,13 +3469,12 @@ function resolveScreenState(screen) {
   if (screen.id === 'resourceAdd') return resourceAddScreen(screen);
   if (screen.id === 'invoiceView') return invoiceViewScreen(screen, selectedInvoice);
   if (screen.id === 'clientAdd' || screen.id === 'clientEdit') return clientFormScreen(screen);
-  if (screen.id === 'clients' && activePersona === 'superadmin') return { ...screen, table: clientsTable(screen.table) };
+  if (screen.id === 'clients') return clientsScreen(screen);
   if (screen.id === 'documentTracker' || (screen.id === 'docs' && activePersona === 'accountmanager')) return { ...screen, table: trackerTable(screen.table) };
   if (screen.id === 'docDetail') return docDetailScreen(screen, selectedDoc);
   if (screen.id === 'vendors' || screen.id === 'vendorList') return { ...screen, table: vendorListTable(screen.table) };
   if (screen.id === 'consultantAdd') return consultantAddScreen(screen);
   if (screen.id === 'invoiceReview') return invoiceReviewScreen(screen, selectedRec);
-  if (screen.id === 'clientInvoices') return clientInvoicesScreen(screen);
   // Vendor's Invoices list follows the shared invoice records (so a replaced file / resubmission shows at once).
   if (screen.id === 'invoices' && activePersona === 'vendor') {
     const ids = ['INV-2026-10-0203', 'INV-2026-10-0142', 'INV-2026-10-0198', 'INV-2026-10-0176'];
@@ -3529,6 +3520,7 @@ function screenMarkup(screen) {
       ${createActivity(screen.activity)}
       ${createFilters(screen.filters)}
       ${createTabs(screen.tabs)}
+      ${screen.custom || ''}
       ${createTable(screen.table)}
       ${createDetail(screen.detail)}
       ${createForm(screen.form)}
@@ -3784,10 +3776,12 @@ function wireFormControls(root) {
   }
 
   // Client invoice pop-up: pick a file per person, enter hours, then "Save client invoices".
-  if (activeScreen === 'clientInvoices') {
-    const modal = root.querySelector('.modal');
+  if (activeScreen === 'clients') {
+    const modal = root.querySelector('.screen');
+    const statusValue = { 'All': 'All', 'Uploaded': 'Uploaded', 'Not uploaded': 'Not uploaded' };
     modal?.querySelector('select[data-filter="Client"]')?.addEventListener('change', (e) => { ciClient = e.target.value; render(); refreshNavState(); });
-    modal?.querySelector('select[data-filter="Status"]')?.addEventListener('change', (e) => { ciStatusFilter = e.target.value; render(); refreshNavState(); });
+    modal?.querySelector('select[data-filter="Status"]')?.addEventListener('change', (e) => { ciStatusFilter = statusValue[e.target.value]; render(); refreshNavState(); });
+    modal?.querySelector('select[data-filter="Month"]')?.addEventListener('change', (e) => { ciMonth = e.target.value; render(); refreshNavState(); });
     modal?.querySelectorAll('.ci-up').forEach((btn) => {
       const wrap = btn.parentElement;
       const input = wrap.querySelector('.upload-input');
