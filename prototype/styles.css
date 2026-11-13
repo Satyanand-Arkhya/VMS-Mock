@@ -662,6 +662,20 @@ h1 {
 .profile-menu-item.active { color: var(--brand-500); font-weight: 600; }
 .profile-menu-sep { height: 1px; background: var(--line); margin: 4px 0; }
 .profile-signout { color: var(--danger); }
+
+/* Vendor lists: arrow at the end of a row opens the vendor's consultants underneath */
+.row-toggle { display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 1px solid var(--line); border-radius: 8px; background: white; color: var(--muted); cursor: pointer; transition: transform 0.15s ease, background 0.15s ease; }
+.row-toggle:hover { background: #f2f7fb; color: var(--brand-500); }
+.row-toggle.open { transform: rotate(180deg); color: var(--brand-500); border-color: var(--brand-500); }
+tr.has-expand td:last-child { width: 48px; text-align: right; }
+tr.expand-row > td { background: #f6f9fc; padding: 0 16px 16px; }
+.vendor-expand { border: 1px solid var(--line); border-radius: 12px; background: white; margin-top: 4px; overflow-x: auto; }
+.vendor-expand-title { display: flex; align-items: center; gap: 8px; padding: 12px 14px; font-weight: 700; font-size: 0.9rem; border-bottom: 1px solid var(--line); }
+.vendor-expand-empty { padding: 14px; color: var(--muted); font-size: 0.88rem; }
+.sub-table { width: 100%; border-collapse: collapse; }
+.sub-table th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); text-align: left; padding: 8px 14px; }
+.sub-table td { padding: 10px 14px; border-top: 1px solid var(--line); background: white; }
+.vx-inv { display: flex; align-items: center; gap: 8px; }
 .user-name { font-weight: 700; font-size: 0.88rem; }
 .user-role { font-size: 0.75rem; color: var(--muted); }
 

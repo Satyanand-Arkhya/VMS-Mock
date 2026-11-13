@@ -23,8 +23,6 @@ function acts(...labels) {
   const targets = {
     'View / Edit': 'clientEdit',
     'Client invoice': 'invoiceUpload',
-    'Vendor Invoice': 'vendorInvoices',
-    'Consultants': 'vendorConsultants',
     'Open': 'clientEdit',
     'View': 'clients',
     'Edit': 'clientEdit',
@@ -878,7 +876,6 @@ const INVOICES = {
 };
 
 const AUDIT_INVOICE_IDS = ['INV-2026-10-0142', 'INV-2026-10-0151', 'INV-2026-10-0187', 'TS-2026-10-0093', 'INV-2026-10-0203', 'INV-2026-10-0211', 'NS-LENA', 'NS-AVA'];
-const VENDOR_INVOICE_IDS = ['INV-2026-10-0203', 'INV-2026-10-0142', 'INV-2026-10-0198', 'INV-2026-10-0176', 'NS-ELENA'];
 
 /* ---------- Invoice Management (Super Admin / Account Manager): manual review per person ----------
    One record per person for the billing period. clientInvoice / doc: file, null = not uploaded yet.
@@ -1081,15 +1078,78 @@ function invoiceFileCell(id, kind) {
   return file ? fileChip(file) : '<span class="person-sub inline">Not uploaded</span>';
 }
 
-function vendorInvoicesTable(table) {
+/* ---------- Vendor lists (Super Admin: Vendor Management; Account Manager: My Vendors) ----------
+   The arrow at the end of a vendor row opens that vendor's consultants underneath, each with their latest invoice. */
+
+let selectedVendor = 'Coral Staffing LLC';
+const openVendorRows = new Set(); // vendors whose consultants panel is open
+
+function vendorConsultantRoster(vendor) {
+  const roster = Object.entries(TEAM_MEMBERS)
+    .filter(([, m]) => m.type === 'Consultant' && m.vendor === vendor)
+    .map(([name, m]) => ({ name, role: m.role, client: m.client, status: m.status, profile: true }));
+  // Consultants with an invoice on file but no profile in this sample data.
+  Object.values(INVOICES).forEach((inv) => {
+    if (inv.vendor === vendor && !roster.some((c) => c.name === inv.person)) {
+      roster.push({ name: inv.person, role: '', client: inv.client, status: 'Active', profile: false });
+    }
+  });
+  return roster;
+}
+
+function vendorConsultantsPanel(vendor) {
+  const roster = vendorConsultantRoster(vendor);
+  if (!roster.length) return '<div class="vendor-expand-empty">No consultants yet. Use Add Consultant to add the first one.</div>';
+  const rows = roster.map((c) => {
+    const [invId, inv] = Object.entries(INVOICES).find(([, i]) => i.person === c.name) || [];
+    const invoice = !inv
+      ? '<span class="person-sub inline">No invoice yet</span>'
+      : inv.status === 'Not Submitted'
+        ? `${b('Not Submitted')}<span class="person-sub">${inv.period} · due Nov 15, 2026</span>`
+        : `<div class="vx-inv">${mono(invId)} ${b(inv.status)}</div><span class="person-sub">${inv.period}</span>`;
+    const actions = [
+      c.profile ? `<button class="link-btn" data-target="memberDetail" data-member="${c.name}">View</button>` : '',
+      inv ? `<button class="link-btn" data-target="invoiceDetail" data-inv="${invId}">View Invoice</button>` : ''
+    ].join('');
+    return `<tr><td>${person(c.name, c.role)}</td><td>${c.client || NOT_MAPPED}</td><td>${b(c.status)}</td><td>${invoice}</td><td><div class="row-actions">${actions}</div></td></tr>`;
+  }).join('');
+  return `<div class="vendor-expand">
+      <div class="vendor-expand-title">Consultants of ${vendor} <span class="action-chip">${roster.length}</span></div>
+      <table class="sub-table">
+        <thead><tr><th>Consultant</th><th>Client</th><th>Status</th><th>Latest invoice</th><th>Actions</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+const CHEVRON_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+
+function vendorListTable(table) {
+  const vendors = table.vendors || [];
   return {
     ...table,
-    headers: ['Invoice #', 'Consultant', 'Client', 'Hours', 'Amount', 'Invoice', 'Timesheet', 'Status', 'Actions'],
-    rows: VENDOR_INVOICE_IDS.map((id) => {
-      const inv = INVOICES[id];
-      return [mono(invRef(id)), person(inv.person), inv.client, inv.hours ?? '—', invAmount(inv), invoiceFileCell(id, 'invoice'), invoiceFileCell(id, 'timesheet'), b(inv.status), invoiceActions(id)];
-    })
+    rows: vendors.map((v) => {
+      const open = openVendorRows.has(v.name);
+      return [
+        ...v.cells,
+        `<div class="row-actions"><button class="link-btn" data-target="vendorView" data-vendor="${v.name}">View</button><button class="link-btn" data-target="vendorEdit" data-vendor="${v.name}">Edit</button><button class="link-btn" data-target="consultantAdd" data-vendor="${v.name}">Add Consultant</button></div>`,
+        `<button type="button" class="row-toggle${open ? ' open' : ''}" data-vendor-toggle="${v.name}" aria-expanded="${open}" aria-label="Show consultants of ${v.name}" title="Consultants">${CHEVRON_ICON}</button>`
+      ];
+    }),
+    expand: vendors.map((v) => ({ html: vendorConsultantsPanel(v.name), open: openVendorRows.has(v.name) }))
   };
+}
+
+// Add Consultant opened from a vendor row: the vendor is fixed; payment term comes from that vendor.
+function consultantAddScreen(screen) {
+  const copy = JSON.parse(JSON.stringify(screen));
+  copy.title = `Add Consultant · ${selectedVendor}`;
+  const first = copy.form.sections[0];
+  first.fields = [
+    { label: 'Vendor', value: selectedVendor, readonly: true, lock: 'Selected' },
+    ...first.fields.map((f) => (f.label === 'Payment term' ? { ...f, value: vendorPaymentTerm(selectedVendor) } : f))
+  ];
+  return copy;
 }
 
 function invoiceDetailScreen(screen, id) {
@@ -1441,20 +1501,22 @@ const personaConfig = {
       {
         id: 'vendors',
         title: 'Vendor Management',
-        description: 'All vendors, their account manager and onboarding document status.',
+        description: 'All vendors and their account manager. Click the arrow at the end of a row to see the vendor’s consultants and their invoices.',
         actions: [{ label: 'Add Vendor', target: 'vendorAdd', primary: true }],
         table: {
           title: 'All vendors',
           total: 84,
-          headers: ['Vendor', 'Account Manager', 'Consultants', 'Status', 'Actions'],
-          rows: [
-            [sub('Coral Staffing LLC', 'Austin, TX'), 'Alicia Ross', '12', b('Active'), `<div class="row-actions"><button class="link-btn" data-target="vendorView">View</button><button class="link-btn" data-target="vendorEdit">Edit</button><button class="link-btn" data-target="vendorInvoices">Vendor Invoice</button><button class="link-btn" data-target="vendorConsultants">Consultants</button></div>`],
-            [sub('Ridgeline Talent Group', 'Charlotte, NC'), 'Benjamin Cole', '4', b('Onboarding'), `<div class="row-actions"><button class="link-btn" data-target="vendorView">View</button><button class="link-btn" data-target="vendorEdit">Edit</button><button class="link-btn" data-target="vendorInvoices">Vendor Invoice</button><button class="link-btn" data-target="vendorConsultants">Consultants</button></div>`],
-            [sub('BluePeak Consulting Inc.', 'Denver, CO'), 'Benjamin Cole', '8', b('Active'), `<div class="row-actions"><button class="link-btn" data-target="vendorView">View</button><button class="link-btn" data-target="vendorEdit">Edit</button><button class="link-btn" data-target="vendorInvoices">Vendor Invoice</button><button class="link-btn" data-target="vendorConsultants">Consultants</button></div>`],
-            [sub('Summit IT Solutions', 'Edison, NJ'), 'Alicia Ross', '19', b('Active'), `<div class="row-actions"><button class="link-btn" data-target="vendorView">View</button><button class="link-btn" data-target="vendorEdit">Edit</button><button class="link-btn" data-target="vendorInvoices">Vendor Invoice</button><button class="link-btn" data-target="vendorConsultants">Consultants</button></div>`],
-            [sub('Keystone Tech Partners', 'Pittsburgh, PA'), 'Priya Natarajan', '0', b('Invited'), `<div class="row-actions"><button class="link-btn" data-target="vendorView">View</button><button class="link-btn" data-target="vendorEdit">Edit</button><button class="link-btn" data-target="vendorInvoices">Vendor Invoice</button><button class="link-btn" data-target="vendorConsultants">Consultants</button></div>`],
-            [sub('Orbit Systems Group', 'San Jose, CA'), 'Priya Natarajan', '6', b('Inactive'), `<div class="row-actions"><button class="link-btn" data-target="vendorView">View</button><button class="link-btn" data-target="vendorEdit">Edit</button><button class="link-btn" data-target="vendorInvoices">Vendor Invoice</button><button class="link-btn" data-target="vendorConsultants">Consultants</button></div>`]
-          ]
+          headers: ['Vendor', 'Account Manager', 'Status', 'Actions', ''],
+          // Rows (with the ▾ consultants panel) are built by vendorListTable().
+          vendors: [
+            { name: 'Coral Staffing LLC', cells: [sub('Coral Staffing LLC', 'Austin, TX'), 'Alicia Ross', b('Active')] },
+            { name: 'Ridgeline Talent Group', cells: [sub('Ridgeline Talent Group', 'Charlotte, NC'), 'Benjamin Cole', b('Onboarding')] },
+            { name: 'BluePeak Consulting Inc.', cells: [sub('BluePeak Consulting Inc.', 'Denver, CO'), 'Benjamin Cole', b('Active')] },
+            { name: 'Summit IT Solutions', cells: [sub('Summit IT Solutions', 'Edison, NJ'), 'Alicia Ross', b('Active')] },
+            { name: 'Keystone Tech Partners', cells: [sub('Keystone Tech Partners', 'Pittsburgh, PA'), 'Priya Natarajan', b('Invited')] },
+            { name: 'Orbit Systems Group', cells: [sub('Orbit Systems Group', 'San Jose, CA'), 'Priya Natarajan', b('Inactive')] }
+          ],
+          rows: []
         }
       },
       {
@@ -1487,42 +1549,6 @@ const personaConfig = {
           ],
           submit: { label: 'Save Changes', target: 'vendors' },
           cancel: { label: 'Cancel', target: 'vendors' }
-        }
-      },
-      {
-        id: 'vendorInvoices',
-        parent: 'vendors',
-        title: 'Vendor Invoices',
-        description: 'Lists of invoices submitted by the selected vendor for reconciliation and payment review.',
-        table: {
-          title: 'Coral Staffing LLC · Invoices',
-          total: 12,
-          headers: ['Invoice #', 'Consultant', 'Client', 'Hours', 'Amount', 'Submitted', 'Status', 'Actions'],
-          rows: [
-            [mono('INV-2026-10-0203'), person('Deepa Kumar'), 'Persistent', '160', '$12,800.00', 'Nov 3, 2026', b('Rejected'), '<div class="row-actions"><button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0203">View</button><button class="link-btn" data-target="rejectedInvoice">Resubmit</button></div>'],
-            [mono('INV-2026-10-0142'), person('Rinaldo Silva'), 'Citus Tech', '168', '$12,096.00', 'Nov 4, 2026 (v2)', b('Approved'), '<button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0142">View</button>'],
-            [mono('INV-2026-10-0198'), person('Omar Haddad'), 'Persistent', '144', '$12,096.00', 'Nov 3, 2026', b('In Progress'), '<button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0198">View</button>'],
-            [mono('INV-2026-10-0176'), person('Sofia Marin'), 'Citus Tech', '168', '$12,768.00', 'Nov 2, 2026', b('In Progress'), '<button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0176">View</button>']
-          ]
-        }
-      },
-      {
-        id: 'vendorConsultants',
-        parent: 'vendors',
-        title: 'Vendor Consultants',
-        description: 'Consultants associated with the selected vendor and their current client assignments.',
-        table: {
-          title: 'Coral Staffing consultants',
-          total: 12,
-          headers: ['Consultant', 'Client', 'Hourly Rate', 'Assignment Period', 'Location', 'Status', 'Actions'],
-          rows: [
-            [person('Deepa Kumar', 'Business Analyst'), 'Persistent', '$80.00', 'Jan 12, 2026 – Dec 31, 2026', 'Boston, MA', b('Active'), consultantActions('Deepa Kumar')],
-            [person('Rinaldo Silva', 'QA Engineer'), 'Citus Tech', '$72.00', 'Sep 14, 2026 – Mar 12, 2027', 'Remote', b('Active'), consultantActions('Rinaldo Silva')],
-            [person('Omar Haddad', 'DevOps Engineer'), 'Persistent', '$84.00', 'Feb 2, 2026 – Jan 29, 2027', 'Chicago, IL', b('Active'), consultantActions('Omar Haddad')],
-            [person('Sofia Marin', 'Scrum Master'), 'Citus Tech', '$76.00', 'May 4, 2026 – Nov 27, 2026', 'Remote', b('Active'), consultantActions('Sofia Marin')],
-            [person('Priya Shah', 'Data Engineer'), 'Citus Tech', '$88.00', 'Nov 16, 2026 – May 14, 2027', 'Remote', b('Onboarding'), consultantActions('Priya Shah')],
-            [person('Marcus Lee', 'Salesforce Developer'), NOT_MAPPED, '$92.00', 'Dec 7, 2026 – Jun 4, 2027', 'San Francisco, CA', b('Onboarding'), consultantActions('Marcus Lee')]
-          ]
         }
       },
       {
@@ -1793,18 +1819,19 @@ const personaConfig = {
       {
         id: 'vendorList',
         title: 'My Vendors',
-        description: 'Vendors assigned to you. You can onboard new vendors and update their details.',
+        description: 'Vendors assigned to you. Click the arrow at the end of a row to see the vendor’s consultants and their invoices.',
         actions: [{ label: 'Add Vendor', target: 'vendorAdd', primary: true }],
         table: {
           title: 'Assigned vendors',
           total: 18,
-          headers: ['Vendor', 'Primary Contact', 'Consultants', 'Clients', 'Status', 'Actions'],
-          rows: [
-            [sub('Coral Staffing LLC', 'Austin, TX'), sub('Daniel Ortiz', 'd.ortiz@coralstaffing.com'), '12', 'Persistent, Citus Tech', b('Active'), `<div class="row-actions"><button class="link-btn" data-target="vendorView">View</button><button class="link-btn" data-target="vendorEdit">Edit</button><button class="link-btn" data-target="vendorInvoices">Vendor Invoice</button><button class="link-btn" data-target="vendorConsultants">Consultants</button></div>`],
-            [sub('Summit IT Solutions', 'Edison, NJ'), sub('Ravi Menon', 'ravi@summitits.com'), '19', 'Persistent, HTC', b('Active'), `<div class="row-actions"><button class="link-btn" data-target="vendorView">View</button><button class="link-btn" data-target="vendorEdit">Edit</button><button class="link-btn" data-target="vendorInvoices">Vendor Invoice</button><button class="link-btn" data-target="vendorConsultants">Consultants</button></div>`],
-            [sub('Ridgeline Talent Group', 'Charlotte, NC'), sub('Megan Price', 'mprice@ridgelinetalent.com'), '4', 'HTC', b('Onboarding'), `<div class="row-actions"><button class="link-btn" data-target="vendorView">View</button><button class="link-btn" data-target="vendorEdit">Edit</button><button class="link-btn" data-target="vendorInvoices">Vendor Invoice</button><button class="link-btn" data-target="vendorConsultants">Consultants</button></div>`],
-            [sub('Cascade Data Partners', 'Seattle, WA'), sub('Tom Hughes', 'tom@cascadedata.io'), '2', 'HTC', b('Active'), `<div class="row-actions"><button class="link-btn" data-target="vendorView">View</button><button class="link-btn" data-target="vendorEdit">Edit</button><button class="link-btn" data-target="vendorInvoices">Vendor Invoice</button><button class="link-btn" data-target="vendorConsultants">Consultants</button></div>`]
-          ]
+          headers: ['Vendor', 'Primary Contact', 'Status', 'Actions', ''],
+          vendors: [
+            { name: 'Coral Staffing LLC', cells: [sub('Coral Staffing LLC', 'Austin, TX'), sub('Daniel Ortiz', 'd.ortiz@coralstaffing.com'), b('Active')] },
+            { name: 'Summit IT Solutions', cells: [sub('Summit IT Solutions', 'Edison, NJ'), sub('Ravi Menon', 'ravi@summitits.com'), b('Active')] },
+            { name: 'Ridgeline Talent Group', cells: [sub('Ridgeline Talent Group', 'Charlotte, NC'), sub('Megan Price', 'mprice@ridgelinetalent.com'), b('Onboarding')] },
+            { name: 'Cascade Data Partners', cells: [sub('Cascade Data Partners', 'Seattle, WA'), sub('Tom Hughes', 'tom@cascadedata.io'), b('Active')] }
+          ],
+          rows: []
         }
       },
       {
@@ -1840,45 +1867,8 @@ const personaConfig = {
         }
       },
       {
-        id: 'vendorInvoices',
-        parent: 'vendorList',
-        title: 'Vendor Invoices',
-        description: 'Lists of invoices submitted by the selected vendor for reconciliation and payment review.',
-        table: {
-          title: 'Coral Staffing LLC · Invoices',
-          total: 12,
-          headers: ['Invoice #', 'Consultant', 'Client', 'Hours', 'Amount', 'Submitted', 'Status', 'Actions'],
-          rows: [
-            [mono('INV-2026-10-0203'), person('Deepa Kumar'), 'Persistent', '160', '$12,800.00', 'Nov 3, 2026', b('Rejected'), '<div class="row-actions"><button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0203">View</button><button class="link-btn" data-target="rejectedInvoice">Resubmit</button></div>'],
-            [mono('INV-2026-10-0142'), person('Rinaldo Silva'), 'Citus Tech', '168', '$12,096.00', 'Nov 4, 2026 (v2)', b('Approved'), '<button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0142">View</button>'],
-            [mono('INV-2026-10-0198'), person('Omar Haddad'), 'Persistent', '144', '$12,096.00', 'Nov 3, 2026', b('In Progress'), '<button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0198">View</button>'],
-            [mono('INV-2026-10-0176'), person('Sofia Marin'), 'Citus Tech', '168', '$12,768.00', 'Nov 2, 2026', b('In Progress'), '<button class="link-btn" data-target="invoiceDetail" data-inv="INV-2026-10-0176">View</button>']
-          ]
-        }
-      },
-      {
-        id: 'vendorConsultants',
-        parent: 'vendorList',
-        title: 'Vendor Consultants',
-        description: 'Consultants associated with the selected vendor and their current client assignments.',
-        actions: [{ label: 'Add Consultant', target: 'consultantAdd', primary: true }],
-        table: {
-          title: 'Coral Staffing consultants',
-          total: 12,
-          headers: ['Consultant', 'Client', 'Hourly Rate', 'Assignment Period', 'Location', 'Status', 'Actions'],
-          rows: [
-            [person('Deepa Kumar', 'Business Analyst'), 'Persistent', '$80.00', 'Jan 12, 2026 – Dec 31, 2026', 'Boston, MA', b('Active'), consultantActions('Deepa Kumar')],
-            [person('Rinaldo Silva', 'QA Engineer'), 'Citus Tech', '$72.00', 'Sep 14, 2026 – Mar 12, 2027', 'Remote', b('Active'), consultantActions('Rinaldo Silva')],
-            [person('Omar Haddad', 'DevOps Engineer'), 'Persistent', '$84.00', 'Feb 2, 2026 – Jan 29, 2027', 'Chicago, IL', b('Active'), consultantActions('Omar Haddad')],
-            [person('Sofia Marin', 'Scrum Master'), 'Citus Tech', '$76.00', 'May 4, 2026 – Nov 27, 2026', 'Remote', b('Active'), consultantActions('Sofia Marin')],
-            [person('Priya Shah', 'Data Engineer'), 'Citus Tech', '$88.00', 'Nov 16, 2026 – May 14, 2027', 'Remote', b('Onboarding'), consultantActions('Priya Shah')],
-            [person('Marcus Lee', 'Salesforce Developer'), NOT_MAPPED, '$92.00', 'Dec 7, 2026 – Jun 4, 2027', 'San Francisco, CA', b('Onboarding'), consultantActions('Marcus Lee')]
-          ]
-        }
-      },
-      {
         id: 'consultantAdd',
-        parent: 'vendorConsultants',
+        parent: 'vendorList',
         title: 'Add Consultant',
         description: 'Add a consultant for this vendor and their first client assignment. Only account managers and the Super Admin add vendor consultants; the consultant is emailed a username and temporary password.',
         form: {
@@ -1915,8 +1905,8 @@ const personaConfig = {
               fields: []
             }
           ],
-          submit: { label: 'Save & Send Login Details', target: 'vendorConsultants', action: 'consultant-invite' },
-          cancel: { label: 'Cancel', target: 'vendorConsultants' }
+          submit: { label: 'Save & Send Login Details', target: 'vendorList', action: 'consultant-invite' },
+          cancel: { label: 'Cancel', target: 'vendorList' }
         }
       },
       {
@@ -2472,11 +2462,9 @@ const personaConfig = {
     MEMBER_SCREENS.forEach((s) => personaConfig[key].screens.push(JSON.parse(JSON.stringify(s))));
   });
 
-  // Super Admin can add consultants for a vendor too: same form the Account Manager uses.
+  // Super Admin can add consultants for a vendor too (Add Consultant on a Vendor Management row): same form.
   const sa = personaConfig.superadmin;
-  const saConsultants = sa.screens.find((s) => s.id === 'vendorConsultants');
-  saConsultants.actions = [{ label: 'Add Consultant', target: 'consultantAdd', primary: true }];
-  sa.screens.push(JSON.parse(JSON.stringify(am.screens.find((s) => s.id === 'consultantAdd'))));
+  sa.screens.push({ ...JSON.parse(JSON.stringify(am.screens.find((s) => s.id === 'consultantAdd'))), parent: 'vendors' });
 
   // Super Admin and Account Manager: each person's invoices and timesheets — upload anything missing,
   // or submit a new invoice / timesheet on the person's behalf.
@@ -2506,7 +2494,7 @@ const personaConfig = {
   // Invoices: View opens the invoice (all three). Super Admin / AM only view; uploads come from the vendor or resource.
   ['superadmin', 'accountmanager'].forEach((key) => {
     personaConfig[key].screens.push(
-      { id: 'invoiceDetail', parent: 'vendorInvoices', title: 'Invoice' },
+      { id: 'invoiceDetail', parent: key === 'superadmin' ? 'vendors' : 'vendorList', title: 'Invoice' },
       // Invoice Management: Review opens the client invoice and the person's document side by side.
       { id: 'invoiceReview', parent: 'invoiceUpload', title: 'Review' },
       // Read-only View pop-ups (separate from Edit).
@@ -3144,7 +3132,7 @@ function createTable(table) {
         <table>
           <thead><tr>${table.headers.map((h) => `<th>${h}</th>`).join('')}</tr></thead>
           <tbody>
-            ${table.rows.map((row) => `<tr>${row.map((cell) => `<td>${cell}</td>`).join('')}</tr>`).join('')}
+            ${table.rows.map((row, i) => `<tr${table.expand ? ' class="has-expand"' : ''}>${row.map((cell) => `<td>${cell}</td>`).join('')}</tr>${table.expand ? `<tr class="expand-row"${table.expand[i].open ? '' : ' hidden'}><td colspan="${table.headers.length}">${table.expand[i].html}</td></tr>` : ''}`).join('')}
           </tbody>
         </table>
       </div>
@@ -3416,7 +3404,8 @@ function resolveScreenState(screen) {
   if (screen.id === 'clients' && activePersona === 'superadmin') return { ...screen, table: clientsTable(screen.table) };
   if (screen.id === 'documentTracker' || (screen.id === 'docs' && activePersona === 'accountmanager')) return { ...screen, table: trackerTable(screen.table) };
   if (screen.id === 'docDetail') return docDetailScreen(screen, selectedDoc);
-  if (screen.id === 'vendorInvoices') return { ...screen, table: vendorInvoicesTable(screen.table) };
+  if (screen.id === 'vendors' || screen.id === 'vendorList') return { ...screen, table: vendorListTable(screen.table) };
+  if (screen.id === 'consultantAdd') return consultantAddScreen(screen);
   if (screen.id === 'invoiceReview') return invoiceReviewScreen(screen, selectedRec);
   if (screen.id === 'clientInvoices') return clientInvoicesScreen(screen);
   // Vendor's Invoices list follows the shared invoice records (so a replaced file / resubmission shows at once).
@@ -4104,12 +4093,14 @@ function handleTargetClick(event) {
   const clientName = trigger.getAttribute('data-client');
   const memberName = trigger.getAttribute('data-member');
   if (memberName) selectedMember = memberName;
+  const vendorName = trigger.getAttribute('data-vendor');
+  if (vendorName) selectedVendor = vendorName;
   const invoiceId = trigger.getAttribute('data-invoice');
   if (invoiceId) selectedInvoice = invoiceId;
   const invId = trigger.getAttribute('data-inv');
   if (invId) {
     selectedInv = invId;
-    if (['invoiceAudit', 'vendorInvoices', 'invoices'].includes(activeScreen)) invoiceReturn = activeScreen;
+    if (['invoiceAudit', 'invoices'].includes(activeScreen)) invoiceReturn = activeScreen;
   }
   const docId = trigger.getAttribute('data-doc');
   if (docId) selectedDoc = docId;
@@ -4167,6 +4158,14 @@ function render() {
   });
 
   breadcrumb.onclick = handleTargetClick;
+  screenContainer.querySelectorAll('[data-vendor-toggle]').forEach((btn) => btn.addEventListener('click', () => {
+    const vendor = btn.dataset.vendorToggle;
+    const open = !openVendorRows.has(vendor);
+    if (open) openVendorRows.add(vendor); else openVendorRows.delete(vendor);
+    btn.classList.toggle('open', open);
+    btn.setAttribute('aria-expanded', String(open));
+    btn.closest('tr').nextElementSibling.hidden = !open;
+  }));
   breadcrumb.querySelector('.back-btn')?.addEventListener('click', (e) => { e.stopPropagation(); goBack(screen); });
 
   screenContainer.querySelectorAll('.chip-x').forEach((closeBtn) => {
