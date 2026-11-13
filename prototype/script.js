@@ -1193,15 +1193,23 @@ function withMemberParent(screen, name) {
   return { ...screen, parent };
 }
 
-// Add Resource opened from W-2 Resources or 1099 Resources: preselect that type and return there.
+// Add Resource opened from W-2 Resources adds a W-2 employee only; from 1099 Resources, a 1099 contractor only.
+// There is no type switch: only that type's sections are shown, and Save returns to the same list.
 function resourceAddScreen(screen) {
-  const list = modalBase && modalBase.screen === 'w9Resources' ? 'w9Resources' : 'w2Resources';
+  const w9 = modalBase && modalBase.screen === 'w9Resources';
+  const list = w9 ? 'w9Resources' : 'w2Resources';
+  const type = w9 ? '1099 Contractor' : 'W-2 Employee';
   const copy = JSON.parse(JSON.stringify(screen));
   copy.parent = list;
+  copy.title = w9 ? 'Add 1099 Resource' : 'Add W-2 Resource';
+  copy.description = w9
+    ? 'Add a 1099 contractor with personal, assignment and payment details.'
+    : 'Add a W-2 employee with personal, assignment and payment details.';
   copy.form.submit.target = list;
   copy.form.cancel.target = list;
-  const seg = copy.form.sections[0].fields.find((f) => f.type === 'segmented');
-  if (seg) seg.selected = list === 'w9Resources' ? 1 : 0;
+  copy.form.sections = copy.form.sections
+    .filter((s) => !s.fields.some((f) => f.type === 'segmented') && (!s.showFor || s.showFor === type))
+    .map(({ showFor, ...s }) => s);
   return copy;
 }
 
@@ -1689,7 +1697,7 @@ const personaConfig = {
         id: 'w2Resources',
         title: 'W-2 Resources',
         description: 'In-house W-2 employees. Each works for one client and submits one timesheet per month.',
-        actions: [{ label: 'Add Resource', target: 'resourceAdd', primary: true }],
+        actions: [{ label: 'Add W-2 Resource', target: 'resourceAdd', primary: true }],
         // Rows are built from the profiles by resourceListTable().
         table: { title: 'W-2 resources', resourceType: 'W-2', headers: [], rows: [] }
       },
@@ -1697,7 +1705,7 @@ const personaConfig = {
         id: 'w9Resources',
         title: '1099 Resources',
         description: 'In-house 1099 contractors. Each works for one client and submits one invoice and timesheet per month.',
-        actions: [{ label: 'Add Resource', target: 'resourceAdd', primary: true }],
+        actions: [{ label: 'Add 1099 Resource', target: 'resourceAdd', primary: true }],
         table: { title: '1099 resources', resourceType: '1099', headers: [], rows: [] }
       },
       {
@@ -1974,7 +1982,7 @@ const personaConfig = {
         id: 'w2Resources',
         title: 'W-2 Resources',
         description: 'W-2 employees working on your clients. Each submits one timesheet per month.',
-        actions: [{ label: 'Add Resource', target: 'resourceAdd', primary: true }],
+        actions: [{ label: 'Add W-2 Resource', target: 'resourceAdd', primary: true }],
         // Rows are built from the profiles by resourceListTable().
         table: { title: 'W-2 resources', resourceType: 'W-2', headers: [], rows: [] }
       },
@@ -1982,7 +1990,7 @@ const personaConfig = {
         id: 'w9Resources',
         title: '1099 Resources',
         description: '1099 contractors working on your clients. Each submits one invoice and timesheet per month.',
-        actions: [{ label: 'Add Resource', target: 'resourceAdd', primary: true }],
+        actions: [{ label: 'Add 1099 Resource', target: 'resourceAdd', primary: true }],
         table: { title: '1099 resources', resourceType: '1099', headers: [], rows: [] }
       },
       {
