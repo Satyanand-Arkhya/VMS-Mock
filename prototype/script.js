@@ -354,6 +354,105 @@ function vendorPaymentTerm(vendor) {
   return VENDOR_PAYMENT_TERMS[vendor] || 'Net 10';
 }
 
+/* ---------- Passwords: vendors, vendor consultants, W-2 and 1099 resources ----------
+   A password lasts 30 days. Changing it (even on day 29 or 30) starts a new 30-day period from that day.
+   On day 31 an unchanged password no longer signs in; the account manager / Super Admin emails a new temporary password,
+   which must be changed at the next sign-in. */
+const PROTO_TODAY = new Date(2026, 10, 13); // prototype "today": Nov 13, 2026
+const PASSWORD_DAYS = 30;
+const PASSWORDS = {
+  'd.ortiz@coralstaffing.com': { set: '2026-10-16' },          // day 28: expires in 2 days
+  'maya.reed@outlook.com': { set: '2026-10-30' },
+  'jordan@blakeux.studio': { set: '2026-10-20' },
+  'mprice@ridgelinetalent.com': { set: '2026-10-13' },         // day 31: expired
+  'kevin.singh@summitits.com': { set: '2026-10-12' },          // expired Nov 11, 2026
+  'contracts@harborviewstaffing.com': { set: '2026-11-13', temp: true }
+};
+const DEFAULT_PASSWORD_SET = '2026-10-25';
+// Prototype: every demo account's password is "password123" until the user changes it.
+const CURRENT_PASSWORDS = {};
+const currentPasswordOf = (email) => CURRENT_PASSWORDS[email] || 'password123';
+const EXTERNAL_PERSONAS = ['vendor', 'w2', 'w9'];
+
+function changePasswordScreen(screen) {
+  const p = passwordInfo(personaConfig[activePersona].user.email);
+  const status = p.expired ? `expired on ${p.expires}` : `was set on ${p.set} and expires on ${p.expires} (${p.daysLeft} day${p.daysLeft === 1 ? '' : 's'} left)`;
+  return {
+    ...screen,
+    form: {
+      sections: [{
+        title: 'Change password',
+        hint: `Passwords expire every 30 days. Your current password ${status}. Changing it now, even on day 29 or 30, keeps you signed in for the next 30 days from today.`,
+        fields: [
+          { label: 'Current password', type: 'password', required: true, autocomplete: 'current-password', note: 'Prototype: the current password is password123 unless you changed it.' },
+          { label: 'New password', type: 'password', required: true, autocomplete: 'new-password', placeholder: 'At least 8 characters', note: 'Must be different from your current password.' },
+          { label: 'Confirm new password', type: 'password', required: true, autocomplete: 'new-password' }
+        ]
+      }],
+      submit: { label: 'Change Password', target: 'dashboard', action: 'pw-change' },
+      cancel: { label: 'Cancel', target: 'dashboard' }
+    }
+  };
+}
+
+// Banner on dashboards: external users see their own expiry (5 days or less); account managers / Super Admin see expired passwords.
+function passwordAlert(screen) {
+  if (screen.id !== 'dashboard') return '';
+  if (EXTERNAL_PERSONAS.includes(activePersona)) {
+    const p = passwordInfo(personaConfig[activePersona].user.email);
+    if (p.daysLeft > 5) return '';
+    return createAlert({
+      tone: 'warning',
+      title: `Your password expires in ${p.daysLeft} day${p.daysLeft === 1 ? '' : 's'} (${p.expires})`,
+      text: 'Passwords expire every 30 days. Change it now to keep access; an unchanged password stops working the day after it expires.',
+      action: { label: 'Change Password', target: 'changePassword' }
+    });
+  }
+  const expired = Object.entries(TEAM_MEMBERS).filter(([, m]) => passwordInfo(m.email).expired);
+  if (!expired.length) return '';
+  const [name] = expired[0];
+  return createAlert({
+    tone: 'danger',
+    title: `${expired.length} password${expired.length > 1 ? 's' : ''} expired`,
+    text: `${expired.map(([n, m]) => `${n} (${m.type === 'Consultant' ? `consultant · ${m.vendor}` : m.type})`).join(', ')} did not change their password within 30 days and cannot sign in. Send a new temporary password from their Edit form.`,
+    action: { label: `Send new password to ${name}`, target: 'memberEdit', member: name }
+  });
+}
+const shortDate = (dt) => dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+function passwordInfo(email) {
+  const rec = PASSWORDS[email] || (PASSWORDS[email] = { set: DEFAULT_PASSWORD_SET });
+  const [y, m, d] = rec.set.split('-').map(Number);
+  const set = new Date(y, m - 1, d);
+  const expires = new Date(y, m - 1, d + PASSWORD_DAYS);
+  const daysLeft = Math.round((expires - PROTO_TODAY) / 86400000);
+  return { set: shortDate(set), expires: shortDate(expires), daysLeft, expired: daysLeft < 0, temp: !!rec.temp };
+}
+function setPassword(email, temp = false) {
+  const t = PROTO_TODAY;
+  PASSWORDS[email] = { set: `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`, temp };
+}
+// Sign-in block on Edit Vendor / Edit Team Member: password status + "Send new password" (account manager / Super Admin).
+function passwordStatusHtml(email, name, sent = false) {
+  const p = passwordInfo(email);
+  const state = p.temp ? b('Pending') + ' Temporary password sent; not changed yet'
+    : p.expired ? b('Expired') + ` Expired on ${p.expires}. ${name} cannot sign in until you send a new password.`
+    : `${b('Active')} Last changed ${p.set} · expires ${p.expires} (${p.daysLeft} day${p.daysLeft === 1 ? '' : 's'} left)`;
+  return `<div class="pw-status"><div class="pw-line">${state}</div>
+    ${sent ? `<div class="pw-sent">New temporary password emailed to ${email}. ${name} must set a new password at next sign-in.</div>` : ''}
+    <div class="pw-meta">Username: <b>${email}</b> · passwords expire every 30 days</div>
+    <button type="button" class="btn btn-secondary btn-sm send-pw" data-email="${email}" data-name="${name}">Send new password</button></div>`;
+}
+
+// "Send new password": emails a new temporary password (valid until it is changed at the next sign-in).
+document.addEventListener('click', (event) => {
+  const btn = event.target.closest('.send-pw');
+  if (!btn) return;
+  const { email, name } = btn.dataset;
+  setPassword(email, true);
+  const box = btn.closest('.pw-status');
+  box.outerHTML = passwordStatusHtml(email, name, true);
+});
+
 // Client cell for a consultant the account manager has not mapped to a client yet.
 const NOT_MAPPED = '<span class="person-sub inline">Not mapped</span>';
 
@@ -1276,6 +1375,8 @@ function memberEditScreen(screen, name) {
     form: {
       sections: [
         { title: 'Personal details', fields: personal },
+        // Sign-in status; an expired password (day 31) is replaced by emailing a new temporary password.
+        { title: 'Sign-in', fields: [{ type: 'html', full: true, html: passwordStatusHtml(m.email, name) }] },
         { title: 'Assignment', fields: engagement },
         {
           title: 'Documents',
@@ -1581,7 +1682,7 @@ const personaConfig = {
             },
             {
               title: 'Sign-in',
-              hint: 'On save, the vendor gets an email with their username (the email above) and a temporary password. They must set a new password at first sign-in.',
+              hint: 'On save, the vendor gets an email with their username (the email above) and a temporary password. They must set a new password at first sign-in. Passwords expire every 30 days.',
               fields: []
             }
           ],
@@ -1625,7 +1726,7 @@ const personaConfig = {
               fields: [
                 { label: 'Full name', value: 'Samuel Okafor', required: true },
                 { label: 'SSN', value: '•••-••-4417', required: true },
-                { label: 'Email', value: 'samuel.okafor@gmail.com', required: true },
+                { label: 'Email (username)', value: 'samuel.okafor@gmail.com', required: true, note: 'Sign-in username. Login details are sent to this address.' },
                 { label: 'Phone', value: '(312) 555-0173' },
                 { label: 'Address', value: '1840 W Division St, Apt 3R, Chicago, IL 60622', full: true }
               ]
@@ -1687,9 +1788,14 @@ const personaConfig = {
                 { label: 'I-9', type: 'upload', byOther: 'Uploaded by the 1099 resource, with start and end date.', readonly: true, lock: 'Resource uploads' },
                 { label: 'ACH form', type: 'upload', byOther: 'Uploaded by the 1099 resource.', readonly: true, lock: 'Resource uploads' }
               ]
+            },
+            {
+              title: 'Sign-in',
+              hint: 'On save, the resource gets an email with their username (the email above) and a temporary password. They must set a new password at first sign-in. Passwords expire every 30 days.',
+              fields: []
             }
           ],
-          submit: { label: 'Save & Send Invite', target: 'teamMembers' },
+          submit: { label: 'Save & Send Login Details', target: 'teamMembers', action: 'resource-invite' },
           cancel: { label: 'Cancel', target: 'teamMembers' }
         }
       },
@@ -1726,7 +1832,7 @@ const personaConfig = {
             ['09:58 AM', person('System', 'Reconciliation'), 'Status change', 'INV-2026-10-0187', `In Progress → ${b('Rejected')}`],
             ['09:31 AM', person('Alicia Ross', 'Account Manager'), 'Created consultant · login details emailed', 'Priya Shah (Coral Staffing)', '— → Data Engineer, $88.00/hr'],
             ['09:05 AM', person('Priya Natarajan', 'Account Manager'), 'Changed vendor status', 'Orbit Systems Group', `${b('Active')} → ${b('Inactive')}`],
-            ['08:47 AM', person('Jordan Blake', '1099 Resource'), 'Login (OTP verified)', 'Session', '—']
+            ['08:47 AM', person('Jordan Blake', '1099 Resource'), 'Login (password)', 'Session', '—']
           ]
         }
       }
@@ -1921,7 +2027,7 @@ const personaConfig = {
             },
             {
               title: 'Sign-in',
-              hint: 'On save, the consultant gets an email with their username (the email above) and a temporary password. They must set a new password at first sign-in.',
+              hint: 'On save, the consultant gets an email with their username (the email above) and a temporary password. They must set a new password at first sign-in. Passwords expire every 30 days.',
               fields: []
             }
           ],
@@ -2526,6 +2632,16 @@ const personaConfig = {
   });
   personaConfig.vendor.screens.push({ id: 'invoiceDetail', parent: 'invoices', title: 'Invoice' });
 
+  // Vendor, W-2 and 1099 portals: Change Password (passwords expire every 30 days).
+  EXTERNAL_PERSONAS.forEach((key) => {
+    personaConfig[key].nav.push({ label: 'Change Password', target: 'changePassword' });
+    personaConfig[key].screens.push({
+      id: 'changePassword',
+      title: 'Change Password',
+      description: 'Enter your current password, then choose a new one. Each password is valid for 30 days.'
+    });
+  });
+
   // Vendor: View only on their own consultants (the account manager / Super Admin add and edit them).
   MEMBER_SCREENS.filter((s) => s.id === 'memberDetail').forEach((s) => personaConfig.vendor.screens.push({ ...JSON.parse(JSON.stringify(s)), parent: 'consultants' }));
 
@@ -2571,7 +2687,7 @@ let activeScreen = 'dashboard';
 let activeTab = 0;
 let selectedClientInvoiceClient = 'All clients'; // Invoice Management client filter
 
-/* ---------- Sign-in: email + password (staff, vendors, consultants), or one-time code for W-2 / 1099 resources ---------- */
+/* ---------- Sign-in: everyone uses email (username) + password ---------- */
 
 function enterApp(personaKey) {
   activePersona = personaKey;
@@ -2584,19 +2700,30 @@ function enterApp(personaKey) {
   history.pushState({ nav: navSnapshot(), depth: 0 }, '');
 }
 
-// Email (username) + password: staff, vendors and vendor consultants. Vendors and consultants get their username and
-// a temporary password by email when the account manager / Super Admin creates them; the first sign-in asks for a new password.
-// Prototype: any non-empty password works.
+// Vendors, vendor consultants and W-2 / 1099 resources get their username and a temporary password by email when the
+// account manager / Super Admin creates them; the first sign-in asks for a new password. Their passwords expire every
+// 30 days (see PASSWORDS): on day 31 an unchanged password is refused until the account manager / Super Admin sends a new one.
+// Prototype: demo passwords are "password123"; a temporary password accepts anything.
 const passwordAccounts = {
-  'a.krishnan@arkhyatech.com': { persona: 'superadmin' },
-  'a.ross@arkhyatech.com': { persona: 'accountmanager' },
+  'a.krishnan@arkhyatech.com': { persona: 'superadmin', staff: true },
+  'a.ross@arkhyatech.com': { persona: 'accountmanager', staff: true },
   'd.ortiz@coralstaffing.com': { persona: 'vendor' },
-  'contracts@harborviewstaffing.com': { persona: 'vendor', temp: true }
+  'maya.reed@outlook.com': { persona: 'w2' },
+  'jordan@blakeux.studio': { persona: 'w9' },
+  'mprice@ridgelinetalent.com': { persona: 'vendor' },
+  'contracts@harborviewstaffing.com': { persona: 'vendor' }
 };
+const inactiveAccounts = ['billing@orbitsystems.com'];
 const loginEmail = document.getElementById('loginEmail');
 const loginPassword = document.getElementById('loginPassword');
 const loginError = document.getElementById('loginError');
 let pendingPersona = null;
+
+function showPane(id) {
+  document.querySelectorAll('.login-pane').forEach((pane) => pane.classList.toggle('hidden', pane.id !== id));
+  document.querySelectorAll('.login-error').forEach((e) => { e.textContent = ''; e.classList.add('hidden'); });
+}
+document.querySelectorAll('.back-link').forEach((btn) => btn.addEventListener('click', () => showPane(btn.dataset.pane)));
 
 function passwordSignIn() {
   const email = loginEmail.value.trim().toLowerCase();
@@ -2604,19 +2731,28 @@ function passwordSignIn() {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return err('Enter a valid email address.');
   if (!loginPassword.value) return err('Enter your password.');
   if (inactiveAccounts.includes(email)) return err('This account is inactive. Contact your account manager to restore access.');
-  if (otpAccounts[email]) return err('W-2 and 1099 resources sign in with a one-time code. Use the button below.');
   const account = passwordAccounts[email];
   if (!account) return err('Email or password is incorrect.');
-  err('');
-  if (account.temp) {
-    pendingPersona = account.persona;
-    document.getElementById('tempFor').textContent = email;
-    document.getElementById('newPassword').value = '';
-    document.getElementById('confirmPassword').value = '';
-    document.getElementById('setPasswordError').classList.add('hidden');
-    showPane('paneSetPassword');
-    return;
+  if (!account.staff) {
+    const p = passwordInfo(email);
+    if (p.temp) {
+      // Temporary password from the welcome / new-password email: choose a new one first.
+      err('');
+      pendingPersona = account.persona;
+      document.getElementById('tempFor').textContent = email;
+      document.getElementById('newPassword').value = '';
+      document.getElementById('confirmPassword').value = '';
+      showPane('paneSetPassword');
+      return;
+    }
+    if (loginPassword.value !== currentPasswordOf(email)) return err('Email or password is incorrect.');
+    if (p.expired) {
+      return err(`Your password expired on ${p.expires}. Passwords must be changed every 30 days. Your account manager will email you a new temporary password.`);
+    }
+  } else if (loginPassword.value !== 'password123') {
+    return err('Email or password is incorrect.');
   }
+  err('');
   enterApp(account.persona);
 }
 
@@ -2624,11 +2760,12 @@ loginButton.addEventListener('click', passwordSignIn);
 [loginEmail, loginPassword].forEach((el) => el.addEventListener('keydown', (e) => { if (e.key === 'Enter') passwordSignIn(); }));
 document.querySelectorAll('.login-chip').forEach((chip) => chip.addEventListener('click', () => {
   loginEmail.value = chip.dataset.email;
-  loginPassword.value = chip.dataset.temp ? 'Temp-7Qx2#' : 'password123';
+  loginPassword.value = chip.dataset.temp ? 'Temp-7Qx2#' : currentPasswordOf(chip.dataset.email);
   loginError.classList.add('hidden');
 }));
 
 document.getElementById('savePassword').addEventListener('click', () => {
+  const email = document.getElementById('tempFor').textContent;
   const pw = document.getElementById('newPassword').value;
   const confirm = document.getElementById('confirmPassword').value;
   const errEl = document.getElementById('setPasswordError');
@@ -2636,7 +2773,8 @@ document.getElementById('savePassword').addEventListener('click', () => {
   errEl.textContent = msg;
   errEl.classList.toggle('hidden', !msg);
   if (msg) return;
-  passwordAccounts[document.getElementById('tempFor').textContent].temp = false;
+  setPassword(email);
+  CURRENT_PASSWORDS[email] = pw;
   enterApp(pendingPersona);
 });
 
@@ -2644,153 +2782,6 @@ document.getElementById('signOut').addEventListener('click', () => {
   appShell.classList.add('hidden');
   loginScreen.classList.remove('hidden');
   showPane('paneStaff');
-});
-
-// One-time code sign-in: W-2 and 1099 resources only (vendors use username + password).
-const otpAccounts = {
-  'maya.reed@outlook.com': 'w2',
-  'jordan@blakeux.studio': 'w9'
-};
-const inactiveAccounts = ['billing@orbitsystems.com'];
-
-const otpEmail = document.getElementById('otpEmail');
-const otpEmailError = document.getElementById('otpEmailError');
-const otpCodeError = document.getElementById('otpCodeError');
-const otpInputs = [...document.querySelectorAll('#otpBoxes input')];
-const verifyCode = document.getElementById('verifyCode');
-const resendCode = document.getElementById('resendCode');
-let resendInterval = null;
-let attemptsLeft = 5;
-
-function showPane(id) {
-  document.querySelectorAll('.login-pane').forEach((pane) => pane.classList.toggle('hidden', pane.id !== id));
-  document.querySelectorAll('.login-error').forEach((e) => { e.textContent = ''; e.classList.add('hidden'); });
-  if (id === 'paneOtpEmail') otpEmail.focus();
-  if (id === 'paneOtpCode') otpInputs[0].focus();
-}
-
-function showError(el, message) {
-  el.textContent = message;
-  el.classList.toggle('hidden', !message);
-}
-
-document.getElementById('openOtp').addEventListener('click', () => showPane('paneOtpEmail'));
-document.querySelectorAll('.back-link').forEach((btn) => btn.addEventListener('click', () => showPane(btn.dataset.pane)));
-
-document.querySelectorAll('.demo-chip:not(.login-chip)').forEach((chip) => {
-  chip.addEventListener('click', () => {
-    otpEmail.value = chip.dataset.email;
-    showError(otpEmailError, '');
-  });
-});
-
-function startResendTimer() {
-  let seconds = 30;
-  clearInterval(resendInterval);
-  resendCode.disabled = true;
-  resendCode.innerHTML = `Resend code in <span id="resendTimer">${seconds}</span>s`;
-  resendInterval = setInterval(() => {
-    seconds -= 1;
-    if (seconds <= 0) {
-      clearInterval(resendInterval);
-      resendCode.disabled = false;
-      resendCode.textContent = 'Resend code';
-    } else {
-      document.getElementById('resendTimer').textContent = seconds;
-    }
-  }, 1000);
-}
-
-function resetCodeInputs() {
-  otpInputs.forEach((input) => { input.value = ''; input.classList.remove('filled', 'invalid'); });
-  verifyCode.disabled = true;
-  showError(otpCodeError, '');
-}
-
-function sendCode() {
-  const email = otpEmail.value.trim().toLowerCase();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    showError(otpEmailError, 'Enter a valid email address.');
-    return;
-  }
-  if (inactiveAccounts.includes(email)) {
-    showError(otpEmailError, 'This account is inactive. Contact your account manager to restore access.');
-    return;
-  }
-  if (passwordAccounts[email]) {
-    showError(otpEmailError, 'This account signs in with a username and password. Go back and use email and password sign-in.');
-    return;
-  }
-  if (!otpAccounts[email]) {
-    showError(otpEmailError, 'We couldn’t find a W-2 or 1099 resource account for this email. Check the address or contact your account manager.');
-    return;
-  }
-  showError(otpEmailError, '');
-  document.getElementById('otpSentTo').textContent = email;
-  attemptsLeft = 5;
-  resetCodeInputs();
-  showPane('paneOtpCode');
-  startResendTimer();
-}
-
-document.getElementById('sendCode').addEventListener('click', sendCode);
-otpEmail.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendCode(); });
-
-function currentCode() {
-  return otpInputs.map((input) => input.value).join('');
-}
-
-function updateCodeState() {
-  otpInputs.forEach((input) => { input.classList.toggle('filled', !!input.value); input.classList.remove('invalid'); });
-  if (attemptsLeft <= 0) return;
-  verifyCode.disabled = currentCode().length !== 6;
-  showError(otpCodeError, '');
-}
-
-otpInputs.forEach((input, i) => {
-  input.addEventListener('input', () => {
-    input.value = input.value.replace(/\D/g, '').slice(-1);
-    if (input.value && i < otpInputs.length - 1) otpInputs[i + 1].focus();
-    updateCodeState();
-  });
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Backspace' && !input.value && i > 0) otpInputs[i - 1].focus();
-    if (e.key === 'Enter' && !verifyCode.disabled) verifyCode.click();
-  });
-  input.addEventListener('paste', (e) => {
-    const digits = (e.clipboardData.getData('text') || '').replace(/\D/g, '').slice(0, 6);
-    if (!digits) return;
-    e.preventDefault();
-    otpInputs.forEach((box, j) => { box.value = digits[j] || ''; });
-    otpInputs[Math.min(digits.length, 5)].focus();
-    updateCodeState();
-  });
-});
-
-verifyCode.addEventListener('click', () => {
-  if (currentCode() === '000000') {
-    attemptsLeft -= 1;
-    otpInputs.forEach((input) => input.classList.add('invalid'));
-    showError(otpCodeError, attemptsLeft > 0
-      ? `That code is incorrect. ${attemptsLeft} attempt${attemptsLeft === 1 ? '' : 's'} left.`
-      : 'Too many incorrect attempts. Request a new code to continue.');
-    verifyCode.disabled = true;
-    return;
-  }
-  clearInterval(resendInterval);
-  enterApp(otpAccounts[document.getElementById('otpSentTo').textContent]);
-});
-
-resendCode.addEventListener('click', () => {
-  attemptsLeft = 5;
-  resetCodeInputs();
-  startResendTimer();
-  const note = document.createElement('div');
-  note.className = 'login-success';
-  note.textContent = 'A new code is on its way.';
-  resendCode.parentElement.after(note);
-  setTimeout(() => note.remove(), 3000);
-  otpInputs[0].focus();
 });
 
 /* ---------- Mobile menu (☰ Menu on phones) ---------- */
@@ -3074,7 +3065,7 @@ function createAlert(alert) {
         <div class="alert-title">${alert.title}</div>
         <div class="alert-text">${alert.text}</div>
       </div>
-      ${alert.action ? `<button class="btn btn-alert" data-target="${alert.action.target}">${alert.action.label}</button>` : ''}
+      ${alert.action ? `<button class="btn btn-alert" data-target="${alert.action.target}"${alert.action.member ? ` data-member="${alert.action.member}"` : ''}>${alert.action.label}</button>` : ''}
     </div>
   `;
 }
@@ -3346,6 +3337,12 @@ function createField(field) {
     case 'segmented':
       control = `<div class="segmented">${field.options.map((o, i) => `<button class="seg ${i === field.selected ? 'active' : ''}">${o}</button>`).join('')}</div>`;
       break;
+    case 'password':
+      control = `<input type="password" autocomplete="${field.autocomplete || 'off'}" ${field.placeholder ? `placeholder="${field.placeholder}"` : ''} />`;
+      break;
+    case 'html':
+      control = field.html;
+      break;
     default:
       control = `<input value="${field.value || ''}" ${field.placeholder ? `placeholder="${field.placeholder}"` : ''} ${field.readonly ? 'readonly class="readonly"' : ''} />`;
   }
@@ -3497,6 +3494,13 @@ function resolveScreenState(screen) {
   }
   if (screen.id === 'invoiceDetail') return invoiceDetailScreen(screen, selectedInv);
   if (screen.id === 'invoiceUpdate') return invoiceUpdateScreen(screen, selectedInv);
+  if (screen.id === 'changePassword') return changePasswordScreen(screen);
+  // Edit Vendor: the vendor's sign-in status with "Send new password".
+  if (screen.id === 'vendorEdit') {
+    const copy = { ...screen, form: { ...screen.form, sections: [...screen.form.sections.filter((s) => s.title !== 'Sign-in'),
+      { title: 'Sign-in', fields: [{ type: 'html', full: true, html: passwordStatusHtml('d.ortiz@coralstaffing.com', 'Daniel Ortiz') }] }] } };
+    return copy;
+  }
   if (screen.id === 'adminUsers') return adminUsersScreen(screen);
   if (screen.id === 'adminUserAdd') return adminUserAddScreen(screen);
   if (screen.id === 'adminUserEdit') return adminUserEditScreen(screen);
@@ -3511,6 +3515,7 @@ function screenMarkup(screen) {
         <p class="screen-desc">${screen.description}</p>
         <div class="screen-actions">${actionButtons(screen.actions)}</div>
       </div>
+      ${passwordAlert(screen)}
       ${createAlert(screen.alert)}
       ${createKpiRow(screen.kpis)}
       ${createPanels(screen.panels)}
@@ -4076,11 +4081,12 @@ function wireFormControls(root) {
 
   // Add Consultant (Account Manager / Super Admin): validate the email, then email the consultant a username + temporary password.
   // Add Vendor works the same way: the vendor is emailed a username + temporary password.
-  root.querySelectorAll('[data-action="consultant-invite"], [data-action="vendor-invite"]').forEach((btn) => {
+  root.querySelectorAll('[data-action="consultant-invite"], [data-action="vendor-invite"], [data-action="resource-invite"]').forEach((btn) => {
     btn.addEventListener('click', (event) => {
-      const vendor = btn.dataset.action === 'vendor-invite';
-      const who = vendor ? 'vendor' : 'consultant';
-      const nameLabel = vendor ? 'Name' : 'Consultant name';
+      const kind = btn.dataset.action.replace('-invite', '');
+      const vendor = kind === 'vendor';
+      const who = kind;
+      const nameLabel = { vendor: 'Name', consultant: 'Consultant name', resource: 'Full name' }[kind];
       const form = btn.closest('.form-card');
       form.querySelectorAll('.field-error').forEach((n) => n.remove());
       const name = formValue(form, nameLabel);
@@ -4090,9 +4096,31 @@ function wireFormControls(root) {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showFieldError(form, 'Email (username)', `Enter a valid email address. It is the ${who}’s sign-in username.`); ok = false; }
       if (!ok) { event.stopPropagation(); return; }
       flashMessage = {
-        title: `${vendor ? 'Vendor' : 'Consultant'} added · login details sent`,
-        text: `${name} was added. An email with their username (${email}) and a temporary password was sent to ${email}. They must set a new password at first sign-in.`
+        title: `${who[0].toUpperCase() + who.slice(1)} added · login details sent`,
+        text: `${name} was added. An email with their username (${email}) and a temporary password was sent to ${email}. They must set a new password at first sign-in; after that the password must be changed every 30 days.`
       };
+      setPassword(email.toLowerCase(), true);
+    });
+  });
+
+  // Change Password (vendor, W-2, 1099): the current password must be correct; a new password starts a fresh 30-day period.
+  root.querySelectorAll('[data-action="pw-change"]').forEach((btn) => {
+    btn.addEventListener('click', (event) => {
+      const form = btn.closest('.form-card');
+      form.querySelectorAll('.field-error').forEach((n) => n.remove());
+      const email = personaConfig[activePersona].user.email;
+      const current = formValue(form, 'Current password');
+      const next = formValue(form, 'New password');
+      const confirm = formValue(form, 'Confirm new password');
+      let ok = true;
+      if (current !== currentPasswordOf(email)) { showFieldError(form, 'Current password', current ? 'Current password is incorrect.' : 'Enter your current password.'); ok = false; }
+      if (next.length < 8) { showFieldError(form, 'New password', 'Use at least 8 characters.'); ok = false; }
+      else if (next === current) { showFieldError(form, 'New password', 'Choose a password different from your current one.'); ok = false; }
+      if (next.length >= 8 && confirm !== next) { showFieldError(form, 'Confirm new password', 'The two passwords do not match.'); ok = false; }
+      if (!ok) { event.stopPropagation(); return; }
+      setPassword(email);
+      CURRENT_PASSWORDS[email] = next;
+      flashMessage = { title: 'Password changed', text: `Your new password is valid for 30 days, until ${passwordInfo(email).expires}. Change it again before then to keep access.` };
     });
   });
 

@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css?v=2026-11-13h" />
+    <link rel="stylesheet" href="styles.css?v=2026-11-13i" />
   </head>
   <body>
     <div id="loginScreen" class="login-screen active">
@@ -15,10 +15,10 @@
         <div class="login-brand">
           <img src="arkhya-lockup-dark.svg" alt="Arkhya Tech" class="arkhya-logo" />
         </div>
-        <!-- Staff, vendors and vendor consultants: email (username) + password -->
+        <!-- Everyone signs in with email (username) + password. -->
         <div class="login-pane" id="paneStaff">
           <h2>Vendor Management System</h2>
-          <p class="login-sub">Staff, vendors and vendor consultants sign in with their email and password. Vendors and consultants: use the username and temporary password from your welcome email.</p>
+          <p class="login-sub">Sign in with your email and password. Vendors, consultants and W-2 / 1099 resources: use the username and temporary password from your welcome email the first time. Your password must be changed every 30 days.</p>
           <div class="login-form">
             <label for="loginEmail">Email (username)</label>
             <input type="email" id="loginEmail" value="a.krishnan@arkhyatech.com" autocomplete="username" />
@@ -33,19 +33,20 @@
               <button class="demo-chip login-chip" data-email="a.krishnan@arkhyatech.com">Super Admin · Arun Krishnan</button>
               <button class="demo-chip login-chip" data-email="a.ross@arkhyatech.com">Account Manager · Alicia Ross</button>
               <button class="demo-chip login-chip" data-email="d.ortiz@coralstaffing.com">Vendor · Daniel Ortiz</button>
+              <button class="demo-chip login-chip" data-email="maya.reed@outlook.com">W-2 · Maya Reed</button>
+              <button class="demo-chip login-chip" data-email="jordan@blakeux.studio">1099 · Jordan Blake</button>
               <button class="demo-chip login-chip" data-email="contracts@harborviewstaffing.com" data-temp="1">New vendor · first sign-in</button>
+              <button class="demo-chip login-chip" data-email="mprice@ridgelinetalent.com">Password expired (day 31)</button>
               <button class="demo-chip login-chip" data-email="billing@orbitsystems.com">Inactive vendor</button>
             </div>
           </div>
-          <div class="login-divider"><span>or</span></div>
-          <button class="btn btn-secondary login-button otp-entry" id="openOtp">W-2 or 1099 resource? Sign in with a one-time code</button>
         </div>
 
         <!-- First sign-in with a temporary password: set a new one -->
         <div class="login-pane hidden" id="paneSetPassword">
           <button class="back-link" data-pane="paneStaff">← Back to sign-in</button>
           <h2>Set a new password</h2>
-          <p class="login-sub">You signed in with the temporary password from your welcome email (<b id="tempFor">contracts@harborviewstaffing.com</b>). Choose a new password to continue.</p>
+          <p class="login-sub">You signed in with a temporary password emailed to <b id="tempFor">contracts@harborviewstaffing.com</b>. Choose a new password to continue. It will be valid for 30 days.</p>
           <div class="login-form">
             <label for="newPassword">New password</label>
             <input type="password" id="newPassword" autocomplete="new-password" placeholder="At least 8 characters" />
@@ -54,47 +55,6 @@
             <div class="login-error hidden" id="setPasswordError"></div>
             <button class="btn btn-primary login-button" id="savePassword">Save &amp; Sign In</button>
           </div>
-        </div>
-
-        <!-- W-2 / 1099 resource: step 1, email -->
-        <div class="login-pane hidden" id="paneOtpEmail">
-          <button class="back-link" data-pane="paneStaff">← Email and password sign-in</button>
-          <h2>Sign in with a one-time code</h2>
-          <p class="login-sub">For W-2 and 1099 resources. Enter the email your account manager registered and we’ll send a 6-digit code. Vendors sign in with their username and password.</p>
-          <div class="login-form">
-            <label for="otpEmail">Email</label>
-            <input type="email" id="otpEmail" value="maya.reed@outlook.com" autocomplete="email" />
-            <div class="login-error hidden" id="otpEmailError"></div>
-            <button class="btn btn-primary login-button" id="sendCode">Send Code</button>
-          </div>
-          <div class="demo-accounts">
-            <div class="demo-title">Prototype demo accounts</div>
-            <div class="demo-row">
-              <button class="demo-chip" data-email="maya.reed@outlook.com">W-2 · Maya Reed</button>
-              <button class="demo-chip" data-email="jordan@blakeux.studio">1099 · Jordan Blake</button>
-            </div>
-          </div>
-          <div class="login-alt">First time signing in? Use the link in your invitation email. Invitation links are single-use and expire after 72 hours.</div>
-        </div>
-
-        <!-- W-2 / 1099 resource: step 2, code -->
-        <div class="login-pane hidden" id="paneOtpCode">
-          <button class="back-link" data-pane="paneOtpEmail">← Use a different email</button>
-          <h2>Check your email</h2>
-          <p class="login-sub">We sent a 6-digit code to <b id="otpSentTo">maya.reed@outlook.com</b>. It expires in 10 minutes.</p>
-          <div class="otp-boxes" id="otpBoxes">
-            <input inputmode="numeric" maxlength="1" aria-label="Digit 1" />
-            <input inputmode="numeric" maxlength="1" aria-label="Digit 2" />
-            <input inputmode="numeric" maxlength="1" aria-label="Digit 3" />
-            <span class="otp-dash">–</span>
-            <input inputmode="numeric" maxlength="1" aria-label="Digit 4" />
-            <input inputmode="numeric" maxlength="1" aria-label="Digit 5" />
-            <input inputmode="numeric" maxlength="1" aria-label="Digit 6" />
-          </div>
-          <div class="login-error hidden" id="otpCodeError"></div>
-          <button class="btn btn-primary login-button otp-verify" id="verifyCode" disabled>Verify &amp; Sign In</button>
-          <div class="otp-resend">Didn’t get it? <button class="link-btn" id="resendCode" disabled>Resend code in <span id="resendTimer">30</span>s</button></div>
-          <div class="login-alt">Prototype: any 6 digits sign you in. Enter <b>000000</b> to see the wrong-code state.</div>
         </div>
       </div>
     </div>
@@ -141,6 +101,6 @@
       </main>
     </div>
 
-    <script src="script.js?v=2026-11-13n"></script>
+    <script src="script.js?v=2026-11-13o"></script>
   </body>
 </html>

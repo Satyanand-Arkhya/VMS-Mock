@@ -662,6 +662,11 @@ h1 {
 .btn-sm { padding: 6px 10px; font-size: 0.8rem; }
 
 .alert { display: flex; justify-content: space-between; align-items: center; gap: 16px; border-radius: 14px; padding: 14px 18px; margin-bottom: 18px; border: 1px solid; }
+/* Sign-in / password status block (Edit Vendor, Edit Team Member) */
+.pw-status { display: grid; gap: 8px; justify-items: start; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: #f8fbff; }
+.pw-line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 0.9rem; }
+.pw-meta { font-size: 0.82rem; color: var(--muted); }
+.pw-sent { font-size: 0.84rem; font-weight: 600; color: var(--success); }
 .alert-danger { background: #fff5f5; border-color: #fbd0d0; border-left: 4px solid var(--danger); }
 .alert-warning { background: #fffaf0; border-color: #fbe2b0; border-left: 4px solid var(--warning); }
 .alert-title { font-weight: 700; margin-bottom: 3px; }
