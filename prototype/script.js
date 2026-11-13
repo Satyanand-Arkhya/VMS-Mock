@@ -1263,8 +1263,39 @@ function consultantAddScreen(screen) {
   return copy;
 }
 
+const DOWNLOAD_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>';
+
+// Super Admin / Account Manager: every invoice and timesheet of the person, latest month first (no other details).
+function invoiceHistoryScreen(screen, id, inv) {
+  const monthKey = (period) => new Date(`${period.split(' ')[0].slice(0, 3)} 1, ${period.split(' ')[1]}`).getTime();
+  const rows = (MEMBER_SUBMISSIONS[inv.person] || []).map((r) => ({ ...r }));
+  // The current month's record comes from the shared invoice if the person's history doesn't have it yet.
+  const current = inv.period.slice(0, 3) + ' ' + inv.period.split(' ')[1];
+  if (!rows.some((r) => r.period === current)) {
+    rows.push({ period: current, ref: id.startsWith('NS-') ? '—' : id, hours: inv.hours ?? '—', invoice: inv.invoice, timesheet: inv.timesheet, status: inv.status });
+  }
+  rows.sort((a, b) => monthKey(b.period) - monthKey(a.period));
+  const fileCell = (file) => (file === 'na' ? '<span class="person-sub inline">Not applicable</span>'
+    : file ? `<div class="doc-cell">${fileChip(file)}<div class="row-actions"><button type="button" class="link-btn" data-preview="${file}">View</button><button type="button" class="link-btn icon-btn" data-download aria-label="Download" title="Download">${DOWNLOAD_ICON}</button></div></div>`
+      : '<span class="person-sub inline">Not uploaded</span>');
+  return {
+    ...screen,
+    parent: invoiceReturn || screen.parent,
+    title: `${inv.person} · Invoices & timesheets`,
+    description: `${inv.vendor ? `${inv.vendor} · ` : ''}${inv.client}. Latest month first.`,
+    actions: [],
+    table: {
+      title: `${rows.length} month${rows.length === 1 ? '' : 's'}`,
+      noSearch: true,
+      headers: ['Month', 'Hours', ...(inv.w2 ? [] : ['Invoice']), 'Timesheet', 'Status'],
+      rows: rows.map((r) => [`<span class="person-name nowrap">${r.period}</span><span class="person-sub nowrap">${r.ref === '—' ? 'Not submitted' : r.ref}</span>`, r.hours, ...(inv.w2 ? [] : [fileCell(r.invoice)]), fileCell(r.timesheet), b(r.status)])
+    }
+  };
+}
+
 function invoiceDetailScreen(screen, id) {
   const inv = INVOICES[id] || INVOICES['INV-2026-10-0142'];
+  if (canManageInvoices()) return invoiceHistoryScreen(screen, id, inv);
   const actions = [];
   if (inv.status === 'Rejected' && activePersona === 'vendor') actions.push({ label: 'Resubmit Invoice', target: 'rejectedInvoice', primary: true });
   const uploader = inv.vendor ? `the vendor, ${inv.vendor}` : `the ${inv.w2 ? 'W-2' : '1099'} resource`;
@@ -1477,6 +1508,7 @@ const personaConfig = {
   superadmin: {
     name: 'Super Admin',
     user: { name: 'Arun Krishnan', role: 'Super Admin', email: 'a.krishnan@arkhyatech.com' },
+    profileMenu: [], // top-right profile menu: Sign Out only
     notifications: 6,
     nav: [
       { label: 'Dashboard', target: 'dashboard' },
@@ -1619,15 +1651,15 @@ const personaConfig = {
         table: {
           title: 'All vendors',
           total: 84,
-          headers: ['Vendor', 'Account Manager', 'Status', 'Actions', ''],
+          headers: ['Vendor', 'Account Manager', 'Phone', 'Status', 'Actions', ''],
           // Rows (with the ▾ consultants panel) are built by vendorListTable().
           vendors: [
-            { name: 'Coral Staffing LLC', cells: [sub('Coral Staffing LLC', 'Austin, TX'), 'Alicia Ross', b('Active')] },
-            { name: 'Ridgeline Talent Group', cells: [sub('Ridgeline Talent Group', 'Charlotte, NC'), 'Benjamin Cole', b('Onboarding')] },
-            { name: 'BluePeak Consulting Inc.', cells: [sub('BluePeak Consulting Inc.', 'Denver, CO'), 'Benjamin Cole', b('Active')] },
-            { name: 'Summit IT Solutions', cells: [sub('Summit IT Solutions', 'Edison, NJ'), 'Alicia Ross', b('Active')] },
-            { name: 'Keystone Tech Partners', cells: [sub('Keystone Tech Partners', 'Pittsburgh, PA'), 'Priya Natarajan', b('Invited')] },
-            { name: 'Orbit Systems Group', cells: [sub('Orbit Systems Group', 'San Jose, CA'), 'Priya Natarajan', b('Inactive')] }
+            { name: 'Coral Staffing LLC', cells: [sub('Coral Staffing LLC', 'Austin, TX'), 'Alicia Ross', '(512) 555-0136', b('Active')] },
+            { name: 'Ridgeline Talent Group', cells: [sub('Ridgeline Talent Group', 'Charlotte, NC'), 'Benjamin Cole', '(704) 555-0119', b('Onboarding')] },
+            { name: 'BluePeak Consulting Inc.', cells: [sub('BluePeak Consulting Inc.', 'Denver, CO'), 'Benjamin Cole', '(303) 555-0142', b('Active')] },
+            { name: 'Summit IT Solutions', cells: [sub('Summit IT Solutions', 'Edison, NJ'), 'Alicia Ross', '(732) 555-0108', b('Active')] },
+            { name: 'Keystone Tech Partners', cells: [sub('Keystone Tech Partners', 'Pittsburgh, PA'), 'Priya Natarajan', '(412) 555-0175', b('Invited')] },
+            { name: 'Orbit Systems Group', cells: [sub('Orbit Systems Group', 'San Jose, CA'), 'Priya Natarajan', '(408) 555-0131', b('Inactive')] }
           ],
           rows: []
         }
@@ -1832,6 +1864,7 @@ const personaConfig = {
   accountmanager: {
     name: 'Account Manager',
     user: { name: 'Alicia Ross', role: 'Account Manager', email: 'a.ross@arkhyatech.com' },
+    profileMenu: [], // top-right profile menu: Sign Out only
     notifications: 4,
     nav: [
       { label: 'Dashboard', target: 'dashboard' },
@@ -1895,12 +1928,12 @@ const personaConfig = {
         table: {
           title: 'Assigned vendors',
           total: 18,
-          headers: ['Vendor', 'Primary Contact', 'Status', 'Actions', ''],
+          headers: ['Vendor', 'Primary Contact', 'Phone', 'Status', 'Actions', ''],
           vendors: [
-            { name: 'Coral Staffing LLC', cells: [sub('Coral Staffing LLC', 'Austin, TX'), sub('Daniel Ortiz', 'd.ortiz@coralstaffing.com'), b('Active')] },
-            { name: 'Summit IT Solutions', cells: [sub('Summit IT Solutions', 'Edison, NJ'), sub('Ravi Menon', 'ravi@summitits.com'), b('Active')] },
-            { name: 'Ridgeline Talent Group', cells: [sub('Ridgeline Talent Group', 'Charlotte, NC'), sub('Megan Price', 'mprice@ridgelinetalent.com'), b('Onboarding')] },
-            { name: 'Cascade Data Partners', cells: [sub('Cascade Data Partners', 'Seattle, WA'), sub('Tom Hughes', 'tom@cascadedata.io'), b('Active')] }
+            { name: 'Coral Staffing LLC', cells: [sub('Coral Staffing LLC', 'Austin, TX'), sub('Daniel Ortiz', 'd.ortiz@coralstaffing.com'), '(512) 555-0136', b('Active')] },
+            { name: 'Summit IT Solutions', cells: [sub('Summit IT Solutions', 'Edison, NJ'), sub('Ravi Menon', 'ravi@summitits.com'), '(732) 555-0108', b('Active')] },
+            { name: 'Ridgeline Talent Group', cells: [sub('Ridgeline Talent Group', 'Charlotte, NC'), sub('Megan Price', 'mprice@ridgelinetalent.com'), '(704) 555-0119', b('Onboarding')] },
+            { name: 'Cascade Data Partners', cells: [sub('Cascade Data Partners', 'Seattle, WA'), sub('Tom Hughes', 'tom@cascadedata.io'), '(206) 555-0164', b('Active')] }
           ],
           rows: []
         }
@@ -2747,7 +2780,7 @@ function renderProfileMenu() {
       <div class="profile-menu-email">${user.email || user.role}</div>
     </div>
     ${items.map((i) => `<button type="button" role="menuitem" class="profile-menu-item${i.target === activeScreen ? ' active' : ''}" data-profile-target="${i.target}">${i.label}</button>`).join('')}
-    <div class="profile-menu-sep"></div>
+    ${items.length ? '<div class="profile-menu-sep"></div>' : ''}
     <button type="button" role="menuitem" class="profile-menu-item profile-signout" data-profile-signout>Sign Out</button>`;
 }
 

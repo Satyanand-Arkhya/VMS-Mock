@@ -677,6 +677,8 @@ tr.expand-row > td { background: #f6f9fc; padding: 0 16px 16px; }
 .sub-table td { padding: 10px 14px; border-top: 1px solid var(--line); background: white; }
 .vx-inv { display: flex; align-items: center; gap: 8px; }
 
+.nowrap { white-space: nowrap; }
+
 /* Clients page: the selected client's details above the tabs */
 .client-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 32px; padding: 14px 18px; margin: 4px 0 14px; background: white; border: 1px solid var(--line); border-radius: 12px; }
 .client-strip > div { display: flex; flex-direction: column; gap: 2px; }
