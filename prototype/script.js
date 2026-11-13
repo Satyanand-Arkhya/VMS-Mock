@@ -262,7 +262,8 @@ const TEAM_MEMBERS = {
       ['Resume', 'Deepa_Kumar_Resume.pdf', 'Jan 5, 2026', '—', 'Valid'],
       ['Work authorization (H-1B)', 'Kumar_H1B_Approval.pdf', 'Dec 1, 2025', 'Nov 30, 2026', 'Expiring Soon'],
       // Audit report: [doc, file, uploaded, period end, status, period covered, earlier reports kept in history]
-      ['I-9 audit report', 'Kumar_I9_Audit_Jul-Dec26.pdf', 'Jul 3, 2026', 'Dec 31, 2026', 'Valid', 'Jul 1, 2026 – Dec 31, 2026 (6 months)', 1],
+      ['I-9', 'Kumar_I9.pdf', 'Jan 9, 2026', '—', 'Valid'],
+      ['Audit report', 'Kumar_Audit_Jul-Dec26.pdf', 'Jul 3, 2026', 'Dec 31, 2026', 'Valid', 'Jul 1, 2026 – Dec 31, 2026 (6 months)', 1],
       ['E-Verify document', 'Kumar_EVerify.pdf', 'Jan 9, 2026', '—', 'Valid']
     ]
   },
@@ -274,7 +275,8 @@ const TEAM_MEMBERS = {
     docs: [
       ['Resume', 'Rinaldo_Silva_Resume.pdf', 'Sep 1, 2026', '—', 'Valid'],
       ['Work authorization (Green Card)', 'Silva_GC.pdf', 'Sep 1, 2026', 'Aug 14, 2033', 'Valid'],
-      ['I-9 audit report', 'Silva_I9_Audit_Sep-Dec26.pdf', 'Sep 15, 2026', 'Dec 13, 2026', 'Valid', 'Sep 14, 2026 – Dec 13, 2026 (3 months)', 0],
+      ['I-9', 'Silva_I9.pdf', 'Sep 10, 2026', '—', 'Valid'],
+      ['Audit report', 'Silva_Audit_Sep-Dec26.pdf', 'Sep 15, 2026', 'Dec 13, 2026', 'Valid', 'Sep 14, 2026 – Dec 13, 2026 (3 months)', 0],
       ['E-Verify document', 'Silva_EVerify.pdf', 'Sep 10, 2026', '—', 'Valid']
     ]
   },
@@ -286,7 +288,8 @@ const TEAM_MEMBERS = {
     docs: [
       ['Resume', 'Kevin_Singh_Resume.pdf', 'Mar 20, 2026', '—', 'Valid'],
       ['Work authorization (EAD)', 'Singh_EAD.pdf', 'Mar 20, 2026', 'Jun 30, 2027', 'Valid'],
-      ['I-9 audit report', 'Singh_I9_Audit_Q4-26.pdf', 'Oct 2, 2026', 'Dec 31, 2026', 'Valid', 'Oct 1, 2026 – Dec 31, 2026 (3 months)', 2],
+      ['I-9', 'Singh_I9.pdf', 'Mar 28, 2026', '—', 'Valid'],
+      ['Audit report', 'Singh_Audit_Q4-26.pdf', 'Oct 2, 2026', 'Dec 31, 2026', 'Valid', 'Oct 1, 2026 – Dec 31, 2026 (3 months)', 2],
       ['E-Verify document', 'Singh_EVerify.pdf', 'Mar 28, 2026', '—', 'Valid']
     ]
   },
@@ -298,7 +301,8 @@ const TEAM_MEMBERS = {
     docs: [
       ['Resume', 'Omar_Haddad_Resume.pdf', 'Jan 20, 2026', '—', 'Valid'],
       ['Work authorization (Green Card)', 'Haddad_GC.pdf', 'Jan 20, 2026', 'Mar 3, 2034', 'Valid'],
-      ['I-9 audit report', 'Haddad_I9_Audit_Aug26-Jan27.pdf', 'Aug 3, 2026', 'Jan 31, 2027', 'Valid', 'Aug 1, 2026 – Jan 31, 2027 (6 months)', 1],
+      ['I-9', 'Haddad_I9.pdf', 'Jan 28, 2026', '—', 'Valid'],
+      ['Audit report', 'Haddad_Audit_Aug26-Jan27.pdf', 'Aug 3, 2026', 'Jan 31, 2027', 'Valid', 'Aug 1, 2026 – Jan 31, 2027 (6 months)', 1],
       ['E-Verify document', 'Haddad_EVerify.pdf', 'Jan 28, 2026', '—', 'Valid']
     ]
   },
@@ -310,7 +314,8 @@ const TEAM_MEMBERS = {
     docs: [
       ['Resume', 'Sofia_Marin_Resume.pdf', 'Apr 22, 2026', '—', 'Valid'],
       ['Work authorization (TN)', 'Marin_TN_Approval.pdf', 'Apr 22, 2026', 'Apr 30, 2029', 'Valid'],
-      ['I-9 audit report', 'Marin_I9_Audit_Nov26-Jan27.pdf', 'Nov 2, 2026', 'Jan 31, 2027', 'Valid', 'Nov 1, 2026 – Jan 31, 2027 (3 months)', 2],
+      ['I-9', 'Marin_I9.pdf', 'Apr 30, 2026', '—', 'Valid'],
+      ['Audit report', 'Marin_Audit_Nov26-Jan27.pdf', 'Nov 2, 2026', 'Jan 31, 2027', 'Valid', 'Nov 1, 2026 – Jan 31, 2027 (3 months)', 2],
       ['E-Verify document', null, '—', '—', 'Incomplete']
     ]
   },
@@ -322,7 +327,8 @@ const TEAM_MEMBERS = {
     docs: [
       ['Resume', 'Priya_Shah_Resume.pdf', 'Nov 9, 2026', '—', 'Valid'],
       ['Work authorization (H-1B)', 'Shah_H1B_Approval.pdf', 'Nov 9, 2026', 'Oct 1, 2028', 'Valid'],
-      ['I-9 audit report', null, '—', '—', 'Incomplete'],
+      ['I-9', null, '—', '—', 'Incomplete'],
+      ['Audit report', null, '—', '—', 'Incomplete'],
       ['E-Verify document', null, '—', '—', 'Incomplete']
     ]
   },
@@ -336,7 +342,7 @@ const TEAM_MEMBERS = {
       ['Resume', 'Marcus_Lee_Resume.pdf', 'Nov 12, 2026', '—', 'Valid'],
       ['I-9', null, '—', '—', 'Incomplete'],
       ['E-Verify document', null, '—', '—', 'Incomplete'],
-      ['I-9 audit report', null, '—', '—', 'Incomplete']
+      ['Audit report', null, '—', '—', 'Incomplete']
     ]
   }
 };
@@ -510,15 +516,20 @@ function memberSubmissionsScreen(screen, name) {
   const m = TEAM_MEMBERS[name] || TEAM_MEMBERS['Maya Reed'];
   const rows = MEMBER_SUBMISSIONS[name] || [];
   const missing = rows.reduce((n, r) => n + (r.invoice === null) + (r.timesheet === null), 0);
+  // Vendor consultants: view only. Their invoices and timesheets are uploaded by the vendor, never on their behalf.
+  const consultant = m.type === 'Consultant';
+  const cell = (file, kind) => (consultant && !file ? '<span class="person-sub inline">Not uploaded</span>' : submissionDocCell(file, kind));
   return {
     ...screen,
     title: `${name} · Invoices & Timesheets`,
     description: m.type === 'W-2'
       ? 'W-2 resources submit a monthly timesheet only. You can submit a timesheet on their behalf, or upload one that is missing.'
-      : `${m.type === 'Consultant' ? `Normally submitted by ${m.vendor}. ` : ''}You can submit an invoice and timesheet on their behalf, or upload a missing document.`,
+      : consultant
+        ? `Invoices and timesheets are uploaded by the vendor, ${m.vendor}. View only: they cannot be uploaded on the consultant’s behalf.`
+        : 'You can submit an invoice and timesheet on their behalf, or upload a missing document.',
     actions: [
       { label: 'View Profile', target: 'memberDetail' },
-      { label: m.type === 'W-2' ? 'Upload Timesheet' : 'Upload Invoice', target: 'submitOnBehalf', primary: true }
+      ...(consultant ? [] : [{ label: m.type === 'W-2' ? 'Upload Timesheet' : 'Upload Invoice', target: 'submitOnBehalf', primary: true }])
     ],
     table: {
       title: 'Submissions',
@@ -528,7 +539,7 @@ function memberSubmissionsScreen(screen, name) {
       rows: rows.map((r) => [
         r.period, r.client,
         r.ref === '—' ? '—' : `${mono(r.ref)}${r.by ? `<span class="person-sub">By ${r.by} (on behalf)</span>` : ''}`,
-        r.hours, r.amount, submissionDocCell(r.invoice, 'invoice'), submissionDocCell(r.timesheet, 'timesheet'), b(r.status)
+        r.hours, r.amount, cell(r.invoice, 'invoice'), cell(r.timesheet, 'timesheet'), b(r.status)
       ])
     }
   };
@@ -1114,15 +1125,21 @@ const invHours = (inv) => {
   return `${mismatch ? diff(String(inv.hours)) : inv.hours} / ${inv.clientHours ?? '—'}`;
 };
 
+// Super Admin / Account Manager may upload on behalf of W-2 and 1099 resources only. A vendor consultant's invoice
+// and timesheet are always uploaded by their vendor.
+function canUploadFor(inv) {
+  return canManageInvoices() && !inv.vendor;
+}
+
 function invoiceActions(id) {
   const inv = INVOICES[id];
   const link = (label, target, cls = '') => `<button class="link-btn ${cls}" data-target="${target}" data-inv="${id}">${label}</button>`;
   if (inv.status === 'Not Submitted') {
-    return canManageInvoices() ? `<div class="row-actions">${link('Upload', 'invoiceUpdate')}</div>` : '<span class="person-sub inline">Due Nov 15, 2026</span>';
+    return canUploadFor(inv) ? `<div class="row-actions">${link('Upload', 'invoiceUpdate')}</div>` : '<span class="person-sub inline">Due Nov 15, 2026</span>';
   }
   // A submitted invoice / timesheet can't be edited by anyone; only a rejected one can be corrected.
   const parts = [link('View', 'invoiceDetail')];
-  if (inv.status === 'Rejected' && canManageInvoices()) parts.push(link('Upload corrected', 'invoiceUpdate'));
+  if (inv.status === 'Rejected' && canUploadFor(inv)) parts.push(link('Upload corrected', 'invoiceUpdate'));
   return `<div class="row-actions">${parts.join('')}</div>`;
 }
 
@@ -1132,7 +1149,7 @@ function invoiceFileCell(id, kind) {
   const file = inv[kind];
   if (file === 'na') return '<span class="person-sub inline">Not applicable</span>';
   if (file) return fileChip(file);
-  if (inv.status === 'Not Submitted' || !canManageInvoices()) return '<span class="person-sub inline">Not uploaded</span>';
+  if (inv.status === 'Not Submitted' || !canUploadFor(inv)) return '<span class="person-sub inline">Not uploaded</span>';
   return `<span class="cell-upload-wrap"><button type="button" class="upload-mini inv-upload" data-inv="${id}" data-kind="${kind}">Upload ${kind}</button>
     <input type="file" class="upload-input" accept=".pdf,.docx,.jpg,.jpeg,.png" hidden /></span>`;
 }
@@ -1151,10 +1168,11 @@ function vendorInvoicesTable(table) {
 function invoiceDetailScreen(screen, id) {
   id = INVOICE_ALIASES[id] || id;
   const inv = INVOICES[id] || INVOICES['INV-2026-10-0142'];
-  const manage = canManageInvoices();
+  const manage = canUploadFor(inv); // no on-behalf uploads for vendor consultants
   const actions = [];
   if (inv.status === 'Rejected') {
-    actions.push(manage ? { label: 'Upload Corrected Invoice', target: 'invoiceUpdate', primary: true } : { label: 'Resubmit Invoice', target: 'rejectedInvoice', primary: true });
+    if (manage) actions.push({ label: 'Upload Corrected Invoice', target: 'invoiceUpdate', primary: true });
+    else if (activePersona === 'vendor') actions.push({ label: 'Resubmit Invoice', target: 'rejectedInvoice', primary: true });
   } else if (inv.status === 'Not Submitted' && manage) {
     actions.push({ label: inv.w2 ? 'Upload Timesheet' : 'Upload Invoice & Timesheet', target: 'invoiceUpdate', primary: true });
   }
@@ -1178,7 +1196,7 @@ function invoiceDetailScreen(screen, id) {
     alert: inv.status === 'Rejected'
       ? { tone: 'danger', title: 'Rejected by reconciliation', text: `Total hours: expected ${inv.clientHours} (client invoice), submitted ${inv.hours}.` }
       : inv.status === 'Not Submitted'
-        ? { tone: 'warning', title: 'Not submitted yet', text: `No invoice or timesheet for ${inv.period}. Due Nov 15, 2026.${manage ? ' You can upload them on their behalf.' : ''}` }
+        ? { tone: 'warning', title: 'Not submitted yet', text: `No invoice or timesheet for ${inv.period}. Due Nov 15, 2026.${manage ? ' You can upload them on their behalf.' : inv.vendor && canManageInvoices() ? ` They are uploaded by the vendor, ${inv.vendor}.` : ''}` }
         : undefined,
     detail: {
       sections: [{
@@ -2016,13 +2034,13 @@ const personaConfig = {
             },
             {
               title: 'Documents',
-              hint: 'PDF, DOCX, JPG or PNG · max 5 MB each. Enter a start and end date for each document. Missing documents can be added later; the I-9 audit report is added later, for each 3- or 6-month period.',
+              hint: 'PDF, DOCX, JPG or PNG · max 5 MB each. Enter a start and end date for each document. Missing documents can be added later; the audit report (a separate document from the I-9) is added later, for each 3- or 6-month period.',
               fields: [
                 { label: 'Resume', type: 'upload', validity: true, file: 'Marcus_Lee_Resume.pdf', size: '186 KB' },
                 { label: 'I-9', type: 'upload', validity: true },
                 { label: 'E-Verify document', type: 'upload', validity: true },
                 { label: 'Other documents', type: 'extraDocs', full: true, validity: true },
-                { label: 'I-9 audit report', type: 'upload', auditPeriod: true }
+                { label: 'Audit report', type: 'upload', auditPeriod: true }
               ]
             },
             {
@@ -2271,13 +2289,13 @@ const personaConfig = {
         table: {
           title: 'Coral Staffing LLC',
           total: 5,
-          headers: ['Document', 'Validity', 'Version', 'Last Updated', 'Status', 'Actions'],
+          headers: ['Document', 'Version', 'Last Updated', 'Status', 'Actions'],
           rows: [
-            ['MSA', 'Jan 1, 2026 – Dec 31, 2027', 'v2', 'Jan 3, 2026', b('Valid'), '<div class="row-actions"><button type="button" class="link-btn" data-preview>View</button><button type="button" class="link-btn" data-download>Download</button><span class="lock">Uploaded by account manager</span></div>'],
-            ['PO #PO-38817', 'Jan 1, 2026 – Dec 31, 2026', 'v1', 'Jan 3, 2026', b('Valid'), '<div class="row-actions"><button type="button" class="link-btn" data-preview>View</button><button type="button" class="link-btn" data-download>Download</button><span class="lock">Uploaded by account manager</span></div>'],
-            ['W-9', 'Jan 1, 2026 – Dec 31, 2026', 'v3', 'Feb 11, 2026', b('Valid'), acts('View', 'Download', 'Replace')],
-            ['COI', 'Nov 26, 2025 – Nov 25, 2026', 'v2', 'Nov 20, 2025', b('Expiring Soon'), acts('View', 'Download', 'Replace')],
-            ['ACH form', '—', 'v1', 'Jan 3, 2026', b('Valid'), acts('View', 'Download', 'Replace')]
+            ['MSA', 'v2', 'Jan 3, 2026', b('Valid'), '<div class="row-actions"><button type="button" class="link-btn" data-preview>View</button><button type="button" class="link-btn" data-download>Download</button><span class="lock">Uploaded by account manager</span></div>'],
+            ['PO #PO-38817', 'v1', 'Jan 3, 2026', b('Valid'), '<div class="row-actions"><button type="button" class="link-btn" data-preview>View</button><button type="button" class="link-btn" data-download>Download</button><span class="lock">Uploaded by account manager</span></div>'],
+            ['W-9', 'v3', 'Feb 11, 2026', b('Valid'), acts('View', 'Download', 'Replace')],
+            ['COI', 'v2', 'Nov 20, 2025', b('Expiring Soon'), acts('View', 'Download', 'Replace')],
+            ['ACH form', 'v1', 'Jan 3, 2026', b('Valid'), acts('View', 'Download', 'Replace')]
           ]
         }
       },
@@ -3281,7 +3299,7 @@ const UPLOAD_ICON = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none"
 function uploadParts(field) {
   const locked = field.amOnly || field.byOther;
   let file;
-  // Uploaded only by the account manager (e.g. a consultant's I-9 audit report): the vendor can view and download, never edit or delete.
+  // Uploaded only by the account manager (e.g. a consultant's audit report): the vendor can view and download, never edit or delete.
   // `byOther`: the document is uploaded by someone else (e.g. the vendor uploads W-9 / COI / ACH), so this form shows a note.
   if (locked) {
     file = field.file
