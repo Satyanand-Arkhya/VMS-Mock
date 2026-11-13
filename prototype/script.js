@@ -2108,7 +2108,10 @@ const personaConfig = {
     nav: [
       { label: 'Dashboard', target: 'dashboard' },
       { label: 'Consultants', target: 'consultants' },
-      { label: 'Invoices', target: 'invoices' },
+      { label: 'Invoices', target: 'invoices' }
+    ],
+    // Top-right profile menu (Change Password and Sign Out are added for every external portal below).
+    profileMenu: [
       { label: 'Documents', target: 'docs' },
       { label: 'Company Profile', target: 'profile' }
     ],
@@ -2319,9 +2322,9 @@ const personaConfig = {
     notifications: 1,
     nav: [
       { label: 'Dashboard', target: 'dashboard' },
-      { label: 'Timesheets', target: 'status' },
-      { label: 'My Documents', target: 'docs' }
+      { label: 'Timesheets', target: 'status' }
     ],
+    profileMenu: [{ label: 'My Documents', target: 'docs' }],
     screens: [
       {
         id: 'dashboard',
@@ -2415,9 +2418,9 @@ const personaConfig = {
     notifications: 2,
     nav: [
       { label: 'Dashboard', target: 'dashboard' },
-      { label: 'Invoices', target: 'status' },
-      { label: 'My Documents', target: 'docs' }
+      { label: 'Invoices', target: 'status' }
     ],
+    profileMenu: [{ label: 'My Documents', target: 'docs' }],
     screens: [
       {
         id: 'dashboard',
@@ -2632,9 +2635,9 @@ const personaConfig = {
   });
   personaConfig.vendor.screens.push({ id: 'invoiceDetail', parent: 'invoices', title: 'Invoice' });
 
-  // Vendor, W-2 and 1099 portals: Change Password (passwords expire every 30 days).
+  // Vendor, W-2 and 1099 portals: Change Password (passwords expire every 30 days), in the top-right profile menu.
   EXTERNAL_PERSONAS.forEach((key) => {
-    personaConfig[key].nav.push({ label: 'Change Password', target: 'changePassword' });
+    personaConfig[key].profileMenu.push({ label: 'Change Password', target: 'changePassword' });
     personaConfig[key].screens.push({
       id: 'changePassword',
       title: 'Change Password',
@@ -2778,10 +2781,60 @@ document.getElementById('savePassword').addEventListener('click', () => {
   enterApp(pendingPersona);
 });
 
-document.getElementById('signOut').addEventListener('click', () => {
+function signOut() {
+  closeProfileMenu();
   appShell.classList.add('hidden');
   loginScreen.classList.remove('hidden');
   showPane('paneStaff');
+}
+document.getElementById('signOut').addEventListener('click', signOut);
+
+/* ---------- Top-right profile menu (vendor, W-2 and 1099 portals) ---------- */
+const profileTrigger = document.getElementById('profileTrigger');
+const profileMenu = document.getElementById('profileMenu');
+
+function closeProfileMenu() {
+  profileMenu.classList.add('hidden');
+  profileTrigger.setAttribute('aria-expanded', 'false');
+}
+
+function renderProfileMenu() {
+  const { user, profileMenu: items } = currentPersona();
+  const hasMenu = !!items;
+  profileTrigger.disabled = !hasMenu;
+  profileTrigger.classList.toggle('has-menu', hasMenu);
+  document.getElementById('profileCaret').hidden = !hasMenu;
+  document.getElementById('signOut').style.display = hasMenu ? 'none' : ''; // Sign Out lives in the profile menu instead
+  if (!hasMenu) { closeProfileMenu(); profileMenu.innerHTML = ''; return; }
+  profileMenu.innerHTML = `
+    <div class="profile-menu-head">
+      <div class="user-name">${user.name}</div>
+      <div class="profile-menu-email">${user.email || user.role}</div>
+    </div>
+    ${items.map((i) => `<button type="button" role="menuitem" class="profile-menu-item${i.target === activeScreen ? ' active' : ''}" data-profile-target="${i.target}">${i.label}</button>`).join('')}
+    <div class="profile-menu-sep"></div>
+    <button type="button" role="menuitem" class="profile-menu-item profile-signout" data-profile-signout>Sign Out</button>`;
+}
+
+profileTrigger.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const open = profileMenu.classList.contains('hidden');
+  profileMenu.classList.toggle('hidden', !open);
+  profileTrigger.setAttribute('aria-expanded', String(open));
+});
+profileMenu.addEventListener('click', (e) => {
+  const item = e.target.closest('.profile-menu-item');
+  if (!item) return;
+  if (item.hasAttribute('data-profile-signout')) { signOut(); return; }
+  closeProfileMenu();
+  closeMobileMenu();
+  goToScreen(item.dataset.profileTarget);
+});
+document.addEventListener('click', (e) => {
+  if (!profileMenu.classList.contains('hidden') && !e.target.closest('.user-block')) closeProfileMenu();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !profileMenu.classList.contains('hidden')) { closeProfileMenu(); profileTrigger.focus(); }
 });
 
 /* ---------- Mobile menu (☰ Menu on phones) ---------- */
@@ -3037,6 +3090,7 @@ function renderUser() {
   userPill.textContent = user.name.split(' ').map((p) => p[0]).join('');
   notifCount.textContent = notifications;
   notifCount.style.display = notifications ? '' : 'none';
+  renderProfileMenu();
 }
 
 function renderBreadcrumb(screen) {

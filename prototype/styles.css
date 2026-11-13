@@ -648,7 +648,20 @@ h1 {
 .notif-button { position: relative; display: grid; place-items: center; width: 40px; height: 40px; padding: 0; color: var(--muted); }
 .notif-count { position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--danger); color: #fff; font-size: 0.68rem; font-weight: 700; display: grid; place-items: center; border: 2px solid #f2f7fb; }
 
-.user-block { display: flex; align-items: center; gap: 10px; padding-left: 4px; }
+.user-block { display: flex; align-items: center; gap: 10px; padding-left: 4px; position: relative; }
+.profile-trigger { display: flex; align-items: center; gap: 10px; background: none; border: 1px solid transparent; border-radius: 12px; padding: 3px 8px 3px 3px; font: inherit; color: inherit; text-align: left; cursor: default; }
+.profile-trigger.has-menu { cursor: pointer; }
+.profile-trigger.has-menu:hover, .profile-trigger[aria-expanded="true"] { background: white; border-color: var(--line); }
+.profile-trigger .user-name, .profile-trigger .user-role { display: block; }
+.profile-caret { color: var(--muted); font-size: 0.8rem; }
+.profile-menu { position: absolute; top: calc(100% + 8px); right: 0; z-index: 60; min-width: 230px; background: white; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 32px rgba(15, 35, 60, 0.16); padding: 6px; }
+.profile-menu-head { padding: 8px 10px 10px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+.profile-menu-email { font-size: 0.78rem; color: var(--muted); word-break: break-all; }
+.profile-menu-item { display: block; width: 100%; text-align: left; background: none; border: none; border-radius: 8px; padding: 9px 10px; font: inherit; font-size: 0.88rem; color: var(--text); cursor: pointer; }
+.profile-menu-item:hover, .profile-menu-item:focus-visible { background: var(--brand-50, #eef4fb); }
+.profile-menu-item.active { color: var(--brand-500); font-weight: 600; }
+.profile-menu-sep { height: 1px; background: var(--line); margin: 4px 0; }
+.profile-signout { color: var(--danger); }
 .user-name { font-weight: 700; font-size: 0.88rem; }
 .user-role { font-size: 0.75rem; color: var(--muted); }
 

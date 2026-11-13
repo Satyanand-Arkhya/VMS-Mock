@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css?v=2026-11-13i" />
+    <link rel="stylesheet" href="styles.css?v=2026-11-13j" />
   </head>
   <body>
     <div id="loginScreen" class="login-screen active">
@@ -87,11 +87,15 @@
               <span class="notif-count" id="notifCount">0</span>
             </button>
             <div class="user-block">
-              <div class="user-pill" id="userPill">AK</div>
-              <div class="user-meta">
-                <div class="user-name" id="userName">Arun Krishnan</div>
-                <div class="user-role" id="userRole">Super Admin</div>
-              </div>
+              <button type="button" class="profile-trigger" id="profileTrigger" aria-haspopup="menu" aria-expanded="false" aria-controls="profileMenu">
+                <span class="user-pill" id="userPill">AK</span>
+                <span class="user-meta">
+                  <span class="user-name" id="userName">Arun Krishnan</span>
+                  <span class="user-role" id="userRole">Super Admin</span>
+                </span>
+                <span class="profile-caret" id="profileCaret" aria-hidden="true">▾</span>
+              </button>
+              <div class="profile-menu hidden" id="profileMenu" role="menu"></div>
               <button class="ghost-button signout-button" id="signOut">Sign out</button>
             </div>
           </div>
@@ -101,6 +105,6 @@
       </main>
     </div>
 
-    <script src="script.js?v=2026-11-13o"></script>
+    <script src="script.js?v=2026-11-13p"></script>
   </body>
 </html>
