@@ -453,7 +453,7 @@ function passwordAlert(screen) {
       action: { label: 'Change Password', target: 'changePassword' }
     });
   }
-  const expired = Object.entries(TEAM_MEMBERS).filter(([, m]) => passwordInfo(m.email).expired);
+  const expired = Object.entries(TEAM_MEMBERS).filter(([, m]) => m.type !== 'Consultant' && passwordInfo(m.email).expired);
   if (!expired.length) return '';
   const [name] = expired[0];
   return createAlert({
@@ -1471,8 +1471,8 @@ function memberEditScreen(screen, name) {
     form: {
       sections: [
         { title: 'Personal details', fields: personal },
-        // Sign-in status; an expired password (day 31) is replaced by emailing a new temporary password.
-        { title: 'Sign-in', fields: [{ type: 'html', full: true, html: passwordStatusHtml(m.email, name) }] },
+        // Sign-in status (W-2 / 1099 only; vendor consultants have no login); an expired password is replaced by emailing a new temporary password.
+        ...(m.type === 'Consultant' ? [] : [{ title: 'Sign-in', fields: [{ type: 'html', full: true, html: passwordStatusHtml(m.email, name) }] }]),
         { title: 'Assignment', fields: engagement },
         {
           title: 'Documents',
@@ -1974,14 +1974,14 @@ const personaConfig = {
         id: 'consultantAdd',
         parent: 'vendorList',
         title: 'Add Consultant',
-        description: 'Add a consultant for this vendor and their first client assignment. Only account managers and the Super Admin add vendor consultants; the consultant is emailed a username and temporary password.',
+        description: 'Add a consultant for this vendor and their first client assignment. Only account managers and the Super Admin add vendor consultants. Consultants do not sign in; their vendor submits their invoices and timesheets.',
         form: {
           sections: [
             {
               title: 'Consultant & assignment',
               fields: [
                 { label: 'Consultant name', value: 'Marcus Lee', required: true },
-                { label: 'Email (username)', value: 'marcus.lee@coralstaffing.com', required: true, note: 'Sign-in username. Login details are sent to this address.' },
+                { label: 'Email', value: 'marcus.lee@coralstaffing.com', required: true },
                 { label: 'Role', value: 'Salesforce Developer', required: true },
                 { label: 'Client', type: 'select', options: CLIENT_NAMES, required: true },
                 { label: 'Hourly rate (USD)', value: '92.00', required: true },
@@ -2002,14 +2002,10 @@ const personaConfig = {
                 { label: 'Other documents', type: 'extraDocs', full: true, validity: true },
                 { label: 'Audit report', type: 'upload', auditPeriod: true }
               ]
-            },
-            {
-              title: 'Sign-in',
-              hint: 'On save, the consultant gets an email with their username (the email above) and a temporary password. They must set a new password at first sign-in. Passwords expire every 30 days.',
-              fields: []
             }
+            // No Sign-in section: vendor consultants do not log in; their vendor submits for them.
           ],
-          submit: { label: 'Save & Send Login Details', target: 'vendorList', action: 'consultant-invite' },
+          submit: { label: 'Save Consultant', target: 'vendorList', action: 'consultant-invite' },
           cancel: { label: 'Cancel', target: 'vendorList' }
         }
       },
@@ -3983,14 +3979,20 @@ function wireFormControls(root) {
       const vendor = kind === 'vendor';
       const who = kind;
       const nameLabel = { vendor: 'Name', consultant: 'Consultant name', resource: 'Full name' }[kind];
+      const emailLabel = kind === 'consultant' ? 'Email' : 'Email (username)';
       const form = btn.closest('.form-card');
       form.querySelectorAll('.field-error').forEach((n) => n.remove());
       const name = formValue(form, nameLabel);
-      const email = formValue(form, 'Email (username)');
+      const email = formValue(form, emailLabel);
       let ok = true;
       if (!name) { showFieldError(form, nameLabel, `Enter the ${who}’s name.`); ok = false; }
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showFieldError(form, 'Email (username)', `Enter a valid email address. It is the ${who}’s sign-in username.`); ok = false; }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showFieldError(form, emailLabel, kind === 'consultant' ? 'Enter a valid email address.' : `Enter a valid email address. It is the ${who}’s sign-in username.`); ok = false; }
       if (!ok) { event.stopPropagation(); return; }
+      // Vendor consultants have no login: no login details are sent.
+      if (kind === 'consultant') {
+        flashMessage = { title: 'Consultant added', text: `${name} was added to the vendor. Consultants do not sign in; the vendor submits their invoices and timesheets.` };
+        return;
+      }
       flashMessage = {
         title: `${who[0].toUpperCase() + who.slice(1)} added · login details sent`,
         text: `${name} was added. An email with their username (${email}) and a temporary password was sent to ${email}. They must set a new password at first sign-in; after that the password must be changed every 30 days.`
