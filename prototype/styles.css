@@ -654,7 +654,7 @@ h1 {
 .profile-trigger.has-menu:hover, .profile-trigger[aria-expanded="true"] { background: white; border-color: var(--line); }
 .profile-trigger .user-name, .profile-trigger .user-role { display: block; }
 .profile-caret { color: var(--muted); font-size: 0.8rem; }
-.profile-menu { position: absolute; top: calc(100% + 8px); right: 0; z-index: 60; min-width: 230px; background: white; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 32px rgba(15, 35, 60, 0.16); padding: 6px; }
+.profile-menu { position: absolute; top: calc(100% + 8px); right: 0; z-index: 60; min-width: 230px; max-width: calc(100vw - 32px); background: white; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 32px rgba(15, 35, 60, 0.16); padding: 6px; }
 .profile-menu-head { padding: 8px 10px 10px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
 .profile-menu-email { font-size: 0.78rem; color: var(--muted); word-break: break-all; }
 .profile-menu-item { display: block; width: 100%; text-align: left; background: none; border: none; border-radius: 8px; padding: 9px 10px; font: inherit; font-size: 0.88rem; color: var(--text); cursor: pointer; }

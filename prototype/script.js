@@ -2816,11 +2816,19 @@ function renderProfileMenu() {
     <button type="button" role="menuitem" class="profile-menu-item profile-signout" data-profile-signout>Sign Out</button>`;
 }
 
+function openProfileMenu() {
+  profileMenu.classList.remove('hidden');
+  profileTrigger.setAttribute('aria-expanded', 'true');
+  // Keep the menu on screen: on narrow screens the profile button sits at the left, so open the menu to the right.
+  const r = profileTrigger.getBoundingClientRect();
+  const alignLeft = r.right < profileMenu.offsetWidth + 16;
+  profileMenu.style.left = alignLeft ? '0' : 'auto';
+  profileMenu.style.right = alignLeft ? 'auto' : '0';
+}
+
 profileTrigger.addEventListener('click', (e) => {
   e.stopPropagation();
-  const open = profileMenu.classList.contains('hidden');
-  profileMenu.classList.toggle('hidden', !open);
-  profileTrigger.setAttribute('aria-expanded', String(open));
+  if (profileMenu.classList.contains('hidden')) openProfileMenu(); else closeProfileMenu();
 });
 profileMenu.addEventListener('click', (e) => {
   const item = e.target.closest('.profile-menu-item');
