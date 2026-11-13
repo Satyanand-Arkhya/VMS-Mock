@@ -1544,7 +1544,7 @@ const personaConfig = {
         id: 'vendorAdd',
         parent: 'vendors',
         title: 'Add Vendor',
-        description: 'Create the vendor record. A single-use magic link (valid 72 h) is emailed on save.',
+        description: 'Create the vendor record. On save the vendor is emailed a username and temporary password. Only account managers and the Super Admin create vendors.',
         form: {
           sections: [
             {
@@ -1552,7 +1552,7 @@ const personaConfig = {
               fields: [
                 { label: 'Name', value: 'Harborview Staffing LLC', required: true },
                 { label: 'Address', value: '75 State St, Floor 9, Boston, MA 02109', full: true, required: true },
-                { label: 'Email', value: 'contracts@harborviewstaffing.com', required: true },
+                { label: 'Email (username)', value: 'contracts@harborviewstaffing.com', required: true, note: 'Sign-in username. Login details are sent to this address.' },
                 { label: 'Federal ID (EIN)', value: '47-2810356', required: true },
                 { label: 'Phone', value: '(617) 555-0142', required: true },
                 { label: 'State of incorporation', type: 'select', options: ['Massachusetts', 'Delaware', 'New York'], required: true },
@@ -1572,15 +1572,20 @@ const personaConfig = {
             },
             {
               title: 'Documents uploaded by the vendor',
-              hint: 'The vendor uploads these after signing in with the magic link. Until then they show as Incomplete.',
+              hint: 'The vendor uploads these after signing in with the username and password from their welcome email. Until then they show as Incomplete.',
               fields: [
                 { label: 'W-9 (start / end date)', type: 'upload', byOther: 'Uploaded by the vendor, with start and end date.', readonly: true, lock: 'Vendor uploads' },
                 { label: 'COI (start / end date)', type: 'upload', byOther: 'Uploaded by the vendor, with start and end date.', readonly: true, lock: 'Vendor uploads' },
                 { label: 'ACH form', type: 'upload', byOther: 'Uploaded by the vendor.', readonly: true, lock: 'Vendor uploads' }
               ]
+            },
+            {
+              title: 'Sign-in',
+              hint: 'On save, the vendor gets an email with their username (the email above) and a temporary password. They must set a new password at first sign-in.',
+              fields: []
             }
           ],
-          submit: { label: 'Save & Send Invite', target: 'vendors' },
+          submit: { label: 'Save & Send Login Details', target: 'vendors', action: 'vendor-invite' },
           cancel: { label: 'Cancel', target: 'vendors' }
         }
       },
@@ -2566,7 +2571,7 @@ let activeScreen = 'dashboard';
 let activeTab = 0;
 let selectedClientInvoiceClient = 'All clients'; // Invoice Management client filter
 
-/* ---------- Sign-in: staff password, or one-time code for vendors / resources ---------- */
+/* ---------- Sign-in: email + password (staff, vendors, consultants), or one-time code for W-2 / 1099 resources ---------- */
 
 function enterApp(personaKey) {
   activePersona = personaKey;
@@ -2579,7 +2584,61 @@ function enterApp(personaKey) {
   history.pushState({ nav: navSnapshot(), depth: 0 }, '');
 }
 
-loginButton.addEventListener('click', () => enterApp('superadmin'));
+// Email (username) + password: staff, vendors and vendor consultants. Vendors and consultants get their username and
+// a temporary password by email when the account manager / Super Admin creates them; the first sign-in asks for a new password.
+// Prototype: any non-empty password works.
+const passwordAccounts = {
+  'a.krishnan@arkhyatech.com': { persona: 'superadmin' },
+  'a.ross@arkhyatech.com': { persona: 'accountmanager' },
+  'd.ortiz@coralstaffing.com': { persona: 'vendor' },
+  'contracts@harborviewstaffing.com': { persona: 'vendor', temp: true }
+};
+const loginEmail = document.getElementById('loginEmail');
+const loginPassword = document.getElementById('loginPassword');
+const loginError = document.getElementById('loginError');
+let pendingPersona = null;
+
+function passwordSignIn() {
+  const email = loginEmail.value.trim().toLowerCase();
+  const err = (m) => { loginError.textContent = m; loginError.classList.toggle('hidden', !m); };
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return err('Enter a valid email address.');
+  if (!loginPassword.value) return err('Enter your password.');
+  if (inactiveAccounts.includes(email)) return err('This account is inactive. Contact your account manager to restore access.');
+  if (otpAccounts[email]) return err('W-2 and 1099 resources sign in with a one-time code. Use the button below.');
+  const account = passwordAccounts[email];
+  if (!account) return err('Email or password is incorrect.');
+  err('');
+  if (account.temp) {
+    pendingPersona = account.persona;
+    document.getElementById('tempFor').textContent = email;
+    document.getElementById('newPassword').value = '';
+    document.getElementById('confirmPassword').value = '';
+    document.getElementById('setPasswordError').classList.add('hidden');
+    showPane('paneSetPassword');
+    return;
+  }
+  enterApp(account.persona);
+}
+
+loginButton.addEventListener('click', passwordSignIn);
+[loginEmail, loginPassword].forEach((el) => el.addEventListener('keydown', (e) => { if (e.key === 'Enter') passwordSignIn(); }));
+document.querySelectorAll('.login-chip').forEach((chip) => chip.addEventListener('click', () => {
+  loginEmail.value = chip.dataset.email;
+  loginPassword.value = chip.dataset.temp ? 'Temp-7Qx2#' : 'password123';
+  loginError.classList.add('hidden');
+}));
+
+document.getElementById('savePassword').addEventListener('click', () => {
+  const pw = document.getElementById('newPassword').value;
+  const confirm = document.getElementById('confirmPassword').value;
+  const errEl = document.getElementById('setPasswordError');
+  const msg = pw.length < 8 ? 'Use at least 8 characters.' : pw !== confirm ? 'The two passwords do not match.' : '';
+  errEl.textContent = msg;
+  errEl.classList.toggle('hidden', !msg);
+  if (msg) return;
+  passwordAccounts[document.getElementById('tempFor').textContent].temp = false;
+  enterApp(pendingPersona);
+});
 
 document.getElementById('signOut').addEventListener('click', () => {
   appShell.classList.add('hidden');
@@ -2587,8 +2646,8 @@ document.getElementById('signOut').addEventListener('click', () => {
   showPane('paneStaff');
 });
 
+// One-time code sign-in: W-2 and 1099 resources only (vendors use username + password).
 const otpAccounts = {
-  'd.ortiz@coralstaffing.com': 'vendor',
   'maya.reed@outlook.com': 'w2',
   'jordan@blakeux.studio': 'w9'
 };
@@ -2605,6 +2664,7 @@ let attemptsLeft = 5;
 
 function showPane(id) {
   document.querySelectorAll('.login-pane').forEach((pane) => pane.classList.toggle('hidden', pane.id !== id));
+  document.querySelectorAll('.login-error').forEach((e) => { e.textContent = ''; e.classList.add('hidden'); });
   if (id === 'paneOtpEmail') otpEmail.focus();
   if (id === 'paneOtpCode') otpInputs[0].focus();
 }
@@ -2617,7 +2677,7 @@ function showError(el, message) {
 document.getElementById('openOtp').addEventListener('click', () => showPane('paneOtpEmail'));
 document.querySelectorAll('.back-link').forEach((btn) => btn.addEventListener('click', () => showPane(btn.dataset.pane)));
 
-document.querySelectorAll('.demo-chip').forEach((chip) => {
+document.querySelectorAll('.demo-chip:not(.login-chip)').forEach((chip) => {
   chip.addEventListener('click', () => {
     otpEmail.value = chip.dataset.email;
     showError(otpEmailError, '');
@@ -2657,8 +2717,12 @@ function sendCode() {
     showError(otpEmailError, 'This account is inactive. Contact your account manager to restore access.');
     return;
   }
+  if (passwordAccounts[email]) {
+    showError(otpEmailError, 'This account signs in with a username and password. Go back and use email and password sign-in.');
+    return;
+  }
   if (!otpAccounts[email]) {
-    showError(otpEmailError, 'We couldn’t find a vendor or resource account for this email. Check the address or contact your account manager.');
+    showError(otpEmailError, 'We couldn’t find a W-2 or 1099 resource account for this email. Check the address or contact your account manager.');
     return;
   }
   showError(otpEmailError, '');
@@ -4011,18 +4075,22 @@ function wireFormControls(root) {
   });
 
   // Add Consultant (Account Manager / Super Admin): validate the email, then email the consultant a username + temporary password.
-  root.querySelectorAll('[data-action="consultant-invite"]').forEach((btn) => {
+  // Add Vendor works the same way: the vendor is emailed a username + temporary password.
+  root.querySelectorAll('[data-action="consultant-invite"], [data-action="vendor-invite"]').forEach((btn) => {
     btn.addEventListener('click', (event) => {
+      const vendor = btn.dataset.action === 'vendor-invite';
+      const who = vendor ? 'vendor' : 'consultant';
+      const nameLabel = vendor ? 'Name' : 'Consultant name';
       const form = btn.closest('.form-card');
       form.querySelectorAll('.field-error').forEach((n) => n.remove());
-      const name = formValue(form, 'Consultant name');
+      const name = formValue(form, nameLabel);
       const email = formValue(form, 'Email (username)');
       let ok = true;
-      if (!name) { showFieldError(form, 'Consultant name', 'Enter the consultant’s name.'); ok = false; }
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showFieldError(form, 'Email (username)', 'Enter a valid email address. It is the consultant’s sign-in username.'); ok = false; }
+      if (!name) { showFieldError(form, nameLabel, `Enter the ${who}’s name.`); ok = false; }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showFieldError(form, 'Email (username)', `Enter a valid email address. It is the ${who}’s sign-in username.`); ok = false; }
       if (!ok) { event.stopPropagation(); return; }
       flashMessage = {
-        title: 'Consultant added · login details sent',
+        title: `${vendor ? 'Vendor' : 'Consultant'} added · login details sent`,
         text: `${name} was added. An email with their username (${email}) and a temporary password was sent to ${email}. They must set a new password at first sign-in.`
       };
     });
