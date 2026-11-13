@@ -360,8 +360,9 @@ const NOT_MAPPED = '<span class="person-sub inline">Not mapped</span>';
 let selectedMember = 'Maya Reed';
 
 // Vendor consultant rows: View opens the consultant's profile, Edit opens their edit form (both pop-ups).
-function consultantActions(name) {
-  return `<div class="row-actions"><button class="link-btn" data-target="memberDetail" data-member="${name}">View</button><button class="link-btn" data-target="memberEdit" data-member="${name}">Edit</button></div>`;
+function consultantActions(name, viewOnly = false) {
+  const edit = viewOnly ? '' : `<button class="link-btn" data-target="memberEdit" data-member="${name}">Edit</button>`;
+  return `<div class="row-actions"><button class="link-btn" data-target="memberDetail" data-member="${name}">View</button>${edit}</div>`;
 }
 
 function memberAction(name, withSubmissions) {
@@ -1173,28 +1174,6 @@ function withCurrent(value, options) {
   return [value, ...options.filter((o) => o !== value)];
 }
 
-// Documents a vendor uploads for its consultant: Resume, I-9, E-Verify and any other named document,
-// each with a start and end date. The I-9 audit report is uploaded only by the account manager;
-// the vendor can view and download it but not edit or delete it.
-// `files` maps document name → [file, size]; `extra` lists other documents already on file.
-function vendorConsultantDocFields(files = {}, extra = [], auditPeriod = '') {
-  const doc = (label) => {
-    const [file, size] = files[label] || [];
-    return { label, type: 'upload', validity: true, file, size };
-  };
-  const [auditFile, auditSize] = files['I-9 audit report'] || [];
-  // The account manager uploads a new audit report every 3 or 6 months; only the latest is shown.
-  const auditNote = auditPeriod ? `Latest report · covers ${auditPeriod}` : 'A new report is uploaded for each 3- or 6-month period; only the latest is shown.';
-  return [
-    doc('Resume'),
-    doc('I-9'),
-    doc('E-Verify document'),
-    ...extra.map(doc),
-    { label: 'Other documents', type: 'extraDocs', full: true, validity: true },
-    { label: 'I-9 audit report', type: 'upload', amOnly: true, readonly: true, lock: 'Uploaded by account manager', file: auditFile, size: auditSize, note: auditNote }
-  ];
-}
-
 function memberDetailScreen(screen, name) {
   const m = TEAM_MEMBERS[name] || TEAM_MEMBERS['Maya Reed'];
   const personal = [
@@ -1239,7 +1218,8 @@ function memberDetailScreen(screen, name) {
           expires,
           b(status),
           file ? '<div class="row-actions"><button type="button" class="link-btn" data-preview>View</button><button type="button" class="link-btn" data-download>Download</button></div>'
-            : activePersona === 'vendor' && doc === 'I-9 audit report' ? '<span class="person-sub inline">Uploaded by account manager</span>'
+            // The vendor only views and downloads; every consultant document is uploaded by the account manager.
+            : activePersona === 'vendor' ? '<span class="person-sub inline">Uploaded by account manager</span>'
             : `<button type="button" class="link-btn doc-notify" data-kind="request" data-owner="${name}" data-docname="${doc}">Request</button>`
         ])
       }
@@ -1264,10 +1244,9 @@ function memberEditScreen(screen, name) {
           { label: 'Address', value: m.address, full: true }
         ])
   ];
-  // A vendor never picks the client for its consultant; the account manager maps it.
-  const vendorEditing = activePersona === 'vendor';
+  // Only the account manager / Super Admin edit people (vendors cannot edit their consultants).
   const engagement = [
-    ...(vendorEditing ? [] : [{ label: 'Client', type: 'select', options: withCurrent(m.client || 'Select client to map…', CLIENT_NAMES), required: true }]),
+    { label: 'Client', type: 'select', options: withCurrent(m.client || 'Select client to map…', CLIENT_NAMES), required: true },
     { label: 'Role', value: m.role, required: true },
     { label: 'Hourly rate (USD)', value: m.rate, required: true },
     { label: 'Work location', type: 'select', options: withCurrent(m.location, ['Remote', 'Location']), addOption: { trigger: 'Location', placeholder: 'Enter location name, e.g. San Francisco, CA' } },
@@ -1282,14 +1261,7 @@ function memberEditScreen(screen, name) {
       : { label: 'Account manager', value: m.am, readonly: true, lock: 'Assigned by Super Admin' },
     { label: 'Status', type: 'select', options: withCurrent(m.status, ['Active', 'Onboarding', 'Inactive', 'Ended']) }
   ];
-  const vendorDocNames = ['Resume', 'I-9', 'E-Verify document', 'I-9 audit report'];
-  const documents = vendorEditing && m.type === 'Consultant'
-    ? vendorConsultantDocFields(
-        Object.fromEntries(m.docs.filter(([, file]) => file).map(([doc, file]) => [doc, [file]])),
-        m.docs.filter(([doc]) => !vendorDocNames.includes(doc)).map(([doc]) => doc),
-        (m.docs.find(([doc]) => doc === 'I-9 audit report') || [])[5]
-      )
-    : m.docs.map(([doc, file, , expires, , period]) => (/audit report/i.test(doc)
+  const documents = m.docs.map(([doc, file, , expires, , period]) => (/audit report/i.test(doc)
       // Account manager / Super Admin: upload the next periodic audit report (3 or 6 months).
       ? { label: doc, type: 'upload', file: file || undefined, auditPeriod: true, note: period ? `Latest report · covers ${period}` : '' }
       : {
@@ -1304,7 +1276,7 @@ function memberEditScreen(screen, name) {
     form: {
       sections: [
         { title: 'Personal details', fields: personal },
-        { title: 'Assignment', ...(vendorEditing ? { hint: 'The client is mapped by your account manager.' } : {}), fields: engagement },
+        { title: 'Assignment', fields: engagement },
         {
           title: 'Documents',
           hint: 'PDF, DOCX, JPG or PNG · max 5 MB each. Replacing a file keeps the previous version.',
@@ -2084,12 +2056,12 @@ const personaConfig = {
           // No Client column: the vendor does not choose or manage the client (the account manager maps it).
           headers: ['Consultant', 'Hourly Rate', 'Assignment Period', 'Location', 'Status', 'Actions'],
           rows: [
-            [person('Deepa Kumar', 'Business Analyst'), '$80.00', 'Jan 12, 2026 – Dec 31, 2026', 'Boston, MA', b('Active'), consultantActions('Deepa Kumar')],
-            [person('Rinaldo Silva', 'QA Engineer'), '$72.00', 'Sep 14, 2026 – Mar 12, 2027', 'Remote', b('Active'), consultantActions('Rinaldo Silva')],
-            [person('Omar Haddad', 'DevOps Engineer'), '$84.00', 'Feb 2, 2026 – Jan 29, 2027', 'Chicago, IL', b('Active'), consultantActions('Omar Haddad')],
-            [person('Sofia Marin', 'Scrum Master'), '$76.00', 'May 4, 2026 – Nov 27, 2026', 'Remote', b('Active'), consultantActions('Sofia Marin')],
-            [person('Priya Shah', 'Data Engineer'), '$88.00', 'Nov 16, 2026 – May 14, 2027', 'Remote', b('Onboarding'), consultantActions('Priya Shah')],
-            [person('Marcus Lee', 'Salesforce Developer'), '$92.00', 'Dec 7, 2026 – Jun 4, 2027', 'San Francisco, CA', b('Onboarding'), consultantActions('Marcus Lee')]
+            [person('Deepa Kumar', 'Business Analyst'), '$80.00', 'Jan 12, 2026 – Dec 31, 2026', 'Boston, MA', b('Active'), consultantActions('Deepa Kumar', true)],
+            [person('Rinaldo Silva', 'QA Engineer'), '$72.00', 'Sep 14, 2026 – Mar 12, 2027', 'Remote', b('Active'), consultantActions('Rinaldo Silva', true)],
+            [person('Omar Haddad', 'DevOps Engineer'), '$84.00', 'Feb 2, 2026 – Jan 29, 2027', 'Chicago, IL', b('Active'), consultantActions('Omar Haddad', true)],
+            [person('Sofia Marin', 'Scrum Master'), '$76.00', 'May 4, 2026 – Nov 27, 2026', 'Remote', b('Active'), consultantActions('Sofia Marin', true)],
+            [person('Priya Shah', 'Data Engineer'), '$88.00', 'Nov 16, 2026 – May 14, 2027', 'Remote', b('Onboarding'), consultantActions('Priya Shah', true)],
+            [person('Marcus Lee', 'Salesforce Developer'), '$92.00', 'Dec 7, 2026 – Jun 4, 2027', 'San Francisco, CA', b('Onboarding'), consultantActions('Marcus Lee', true)]
           ]
         }
       },
@@ -2549,8 +2521,8 @@ const personaConfig = {
   });
   personaConfig.vendor.screens.push({ id: 'invoiceDetail', parent: 'invoices', title: 'Invoice' });
 
-  // Vendor: View / Edit on their own consultants opens the consultant's profile / edit form.
-  MEMBER_SCREENS.forEach((s) => personaConfig.vendor.screens.push({ ...JSON.parse(JSON.stringify(s)), parent: 'consultants' }));
+  // Vendor: View only on their own consultants (the account manager / Super Admin add and edit them).
+  MEMBER_SCREENS.filter((s) => s.id === 'memberDetail').forEach((s) => personaConfig.vendor.screens.push({ ...JSON.parse(JSON.stringify(s)), parent: 'consultants' }));
 
   // Document Tracker: View opens the document with its full version history.
   personaConfig.superadmin.screens.push({ id: 'docDetail', parent: 'documentTracker', title: 'Document' });
