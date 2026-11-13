@@ -196,7 +196,7 @@ function clientInvoiceAction(clientName) {
 }
 
 const DASHBOARD_KPI_TARGETS = {
-  superadmin: ['clients', 'vendors', 'teamMembers', 'teamMembers'],
+  superadmin: ['clients', 'vendors', 'w2Resources', 'w9Resources'],
   accountmanager: ['clients', 'vendorList', 'invoiceUpload', 'invoiceUpload'],
   vendor: ['consultants', 'invoices', 'rejectedInvoice', 'docs'],
   w2: ['status', 'status', 'docs'],
@@ -224,7 +224,7 @@ function fileChip(name, size) {
   return `<span class="file-chip"><span class="file-ext">${name.split('.').pop().toUpperCase()}</span>${name}${size ? `<span class="person-sub inline">${size}</span>` : ''}</span>`;
 }
 
-/* ---------- Team member profiles (View / Edit from Team Members) ---------- */
+/* ---------- People profiles (View / Edit from W-2 Resources, 1099 Resources and a vendor's consultants) ---------- */
 
 // Document row: [name, file or null, last updated, expires, status]
 const TEAM_MEMBERS = {
@@ -249,6 +249,52 @@ const TEAM_MEMBERS = {
       ['1099 contract — HTC', 'Blake_1099_HTC.pdf', 'Jul 1, 2026', 'Jan 8, 2027', 'Signed'],
       ['W-9', 'Blake_W9_2026.pdf', 'Jun 30, 2026', '—', 'Valid'],
       ['ACH form', 'Blake_ACH.pdf', 'Jun 30, 2026', '—', 'Valid']
+    ]
+  },
+  'Alex Morgan': {
+    type: 'W-2', role: 'Business Intelligence Developer', email: 'alex.morgan@gmail.com', phone: '(646) 555-0172',
+    address: '88 Leonard St, Apt 12C, New York, NY 10013', ssn: '•••-••-6604',
+    client: 'HTC', rate: '68.00', location: 'New York, NY', start: '2026-05-04', end: '2027-05-03',
+    term: 'Net 10', status: 'Active', am: 'Alicia Ross',
+    docs: [
+      ['W-4', 'W4_Morgan_2026.pdf', 'May 1, 2026', '—', 'Valid'],
+      ['I-9', 'Morgan_I9.pdf', 'May 1, 2026', '—', 'Valid'],
+      ['Employment contract', 'Morgan_Employment_Contract.pdf', 'Apr 28, 2026', 'May 3, 2027', 'Valid'],
+      ['ACH form', 'Morgan_ACH.pdf', 'May 1, 2026', '—', 'Valid']
+    ]
+  },
+  'Grace Liu': {
+    type: 'W-2', role: 'Cloud Engineer', email: 'grace.liu@outlook.com', phone: '(617) 555-0149',
+    address: '45 Province St, Unit 2304, Boston, MA 02108', ssn: '•••-••-3187',
+    client: 'Persistent', rate: '74.00', location: 'Boston, MA', start: '2026-08-03', end: '2027-08-02',
+    term: 'Net 10', status: 'Active', am: 'Alicia Ross',
+    docs: [
+      ['W-4', 'W4_Liu_2026.pdf', 'Jul 30, 2026', '—', 'Valid'],
+      ['I-9', 'Liu_I9.pdf', 'Jul 30, 2026', '—', 'Valid'],
+      ['Employment contract', 'Liu_Employment_Contract.pdf', 'Jul 27, 2026', 'Aug 2, 2027', 'Valid'],
+      ['ACH form', null, '—', '—', 'Incomplete']
+    ]
+  },
+  'Ava Chen': {
+    type: '1099', role: 'Mobile Developer', email: 'ava@chendev.io', phone: '(206) 555-0133',
+    address: '1201 2nd Ave, Suite 900, Seattle, WA 98101', ssn: '•••-••-5520',
+    client: 'HTC', rate: '86.00', location: 'Remote', start: '2026-06-01', end: '2026-12-18',
+    term: 'Net 10', status: 'Active', am: 'Alicia Ross',
+    docs: [
+      ['1099 contract — HTC', 'Chen_1099_HTC.pdf', 'May 27, 2026', 'Dec 18, 2026', 'Signed'],
+      ['W-9', 'Chen_W9_2026.pdf', 'May 27, 2026', '—', 'Valid'],
+      ['ACH form', 'Chen_ACH.pdf', 'May 27, 2026', '—', 'Valid']
+    ]
+  },
+  'Noah Patel': {
+    type: '1099', role: 'Security Consultant', email: 'noah@patelsec.com', phone: '(312) 555-0190',
+    address: '233 S Wacker Dr, Suite 4100, Chicago, IL 60606', ssn: '•••-••-8842',
+    client: 'Citus Tech', rate: '95.00', location: 'Chicago, IL', start: '2026-09-01', end: '2027-02-26',
+    term: 'Net 10', status: 'Active', am: 'Benjamin Cole',
+    docs: [
+      ['1099 contract — Citus Tech', 'Patel_1099_CitusTech.pdf', 'Aug 26, 2026', 'Feb 26, 2027', 'Signed'],
+      ['W-9', 'Patel_W9_2026.pdf', 'Aug 26, 2026', '—', 'Valid'],
+      ['ACH form', 'Patel_ACH.pdf', 'Aug 26, 2026', '—', 'Valid']
     ]
   },
   'Deepa Kumar': {
@@ -1108,7 +1154,7 @@ function vendorConsultantsPanel(vendor) {
         ? `${b('Not Submitted')}<span class="person-sub">${inv.period} · due Nov 15, 2026</span>`
         : `<div class="vx-inv">${mono(invId)} ${b(inv.status)}</div><span class="person-sub">${inv.period}</span>`;
     const actions = [
-      c.profile ? `<button class="link-btn" data-target="memberDetail" data-member="${c.name}">View</button>` : '',
+      c.profile ? `<button class="link-btn" data-target="memberDetail" data-member="${c.name}">View</button><button class="link-btn" data-target="memberEdit" data-member="${c.name}">Edit</button>` : '',
       inv ? `<button class="link-btn" data-target="invoiceDetail" data-inv="${invId}">View Invoice</button>` : ''
     ].join('');
     return `<tr><td>${person(c.name, c.role)}</td><td>${c.client || NOT_MAPPED}</td><td>${b(c.status)}</td><td>${invoice}</td><td><div class="row-actions">${actions}</div></td></tr>`;
@@ -1120,6 +1166,43 @@ function vendorConsultantsPanel(vendor) {
         <tbody>${rows}</tbody>
       </table>
     </div>`;
+}
+
+// W-2 Resources / 1099 Resources lists (Super Admin: all; Account Manager: own clients).
+function resourceListTable(table) {
+  const people = Object.entries(TEAM_MEMBERS).filter(([, m]) => m.type === table.resourceType);
+  const am = activePersona === 'accountmanager';
+  const latest = (name) => (Object.values(INVOICES).find((i) => i.person === name) || {}).status || 'Not Started';
+  return {
+    ...table,
+    total: people.length,
+    headers: ['Name', 'Client', 'Hourly Rate', am ? 'Oct Submission' : 'Assignment Period', 'Status', 'Actions'],
+    rows: people.map(([name, m]) => [
+      person(name, m.role), m.client, `$${m.rate}`,
+      am ? b(latest(name)) : `${fmtDate(m.start)} – ${fmtDate(m.end)}`,
+      b(m.status), memberAction(name, true)
+    ])
+  };
+}
+
+// A person's profile, edit form and submissions belong to the list they come from.
+function withMemberParent(screen, name) {
+  if (!canManageInvoices()) return screen;
+  const type = (TEAM_MEMBERS[name] || {}).type;
+  const parent = type === '1099' ? 'w9Resources' : type === 'Consultant' ? (activePersona === 'superadmin' ? 'vendors' : 'vendorList') : 'w2Resources';
+  return { ...screen, parent };
+}
+
+// Add Resource opened from W-2 Resources or 1099 Resources: preselect that type and return there.
+function resourceAddScreen(screen) {
+  const list = modalBase && modalBase.screen === 'w9Resources' ? 'w9Resources' : 'w2Resources';
+  const copy = JSON.parse(JSON.stringify(screen));
+  copy.parent = list;
+  copy.form.submit.target = list;
+  copy.form.cancel.target = list;
+  const seg = copy.form.sections[0].fields.find((f) => f.type === 'segmented');
+  if (seg) seg.selected = list === 'w9Resources' ? 1 : 0;
+  return copy;
 }
 
 const CHEVRON_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
@@ -1339,13 +1422,13 @@ function memberEditScreen(screen, name) {
 const MEMBER_SCREENS = [
   {
     id: 'memberDetail',
-    parent: 'teamMembers',
-    title: 'Team Member',
+    parent: 'w2Resources',
+    title: 'Profile',
   },
   {
     id: 'memberEdit',
-    parent: 'teamMembers',
-    title: 'Edit Team Member'
+    parent: 'w2Resources',
+    title: 'Edit Profile'
   }
 ];
 
@@ -1361,7 +1444,8 @@ const personaConfig = {
       { label: 'Dashboard', target: 'dashboard' },
       { label: 'Clients', target: 'clients' },
       { label: 'Vendors', target: 'vendors' },
-      { label: 'Team Members', target: 'teamMembers' },
+      { label: 'W-2 Resources', target: 'w2Resources' },
+      { label: '1099 Resources', target: 'w9Resources' },
       { label: 'Invoice Management', target: 'invoiceUpload' },
       { label: 'Document Tracker', target: 'documentTracker' },
       // Grouped under a collapsible "Settings" item in the left menu.
@@ -1601,28 +1685,23 @@ const personaConfig = {
         }
       },
       {
-        id: 'teamMembers',
-        title: 'Team Members',
-        description: 'Vendor consultants plus in-house W-2 and 1099 resources. Each person works for one client and submits one invoice or timesheet per month.',
+        id: 'w2Resources',
+        title: 'W-2 Resources',
+        description: 'In-house W-2 employees. Each works for one client and submits one timesheet per month.',
         actions: [{ label: 'Add Resource', target: 'resourceAdd', primary: true }],
-        table: {
-          title: 'All team members',
-          total: 707,
-          headers: ['Name', 'Type', 'Client', 'Hourly Rate', 'Assignment Period', 'Status', 'Actions'],
-          rows: [
-            [person('Maya Reed', 'Data Analyst'), 'W-2', 'HTC', '$62.00', 'Mar 2, 2026 – Feb 26, 2027', b('Active'), memberAction('Maya Reed', true)],
-            [person('Jordan Blake', 'UX Consultant'), '1099', 'HTC', '$90.00', 'Jul 6, 2026 – Jan 8, 2027', b('Active'), memberAction('Jordan Blake', true)],
-            [person('Deepa Kumar', 'Business Analyst · Coral Staffing'), 'Consultant', 'Persistent', '$80.00', 'Jan 12, 2026 – Dec 31, 2026', b('Active'), memberAction('Deepa Kumar', true)],
-            [person('Rinaldo Silva', 'QA Engineer · Coral Staffing'), 'Consultant', 'Citus Tech', '$72.00', 'Sep 14, 2026 – Mar 12, 2027', b('Active'), memberAction('Rinaldo Silva', true)],
-            [person('Kevin Singh', 'Java Developer · Summit IT'), 'Consultant', 'Persistent', '$85.00', 'Apr 1, 2026 – Mar 31, 2027', b('Active'), memberAction('Kevin Singh', true)],
-            [person('Priya Shah', 'Data Engineer · Coral Staffing'), 'Consultant', 'Citus Tech', '$88.00', 'Nov 16, 2026 – May 14, 2027', b('Onboarding'), memberAction('Priya Shah', true)],
-            [person('Marcus Lee', 'Salesforce Developer · Coral Staffing'), 'Consultant', NOT_MAPPED, '$92.00', 'Dec 7, 2026 – Jun 4, 2027', b('Onboarding'), memberAction('Marcus Lee', false)]
-          ]
-        }
+        // Rows are built from the profiles by resourceListTable().
+        table: { title: 'W-2 resources', resourceType: 'W-2', headers: [], rows: [] }
+      },
+      {
+        id: 'w9Resources',
+        title: '1099 Resources',
+        description: 'In-house 1099 contractors. Each works for one client and submits one invoice and timesheet per month.',
+        actions: [{ label: 'Add Resource', target: 'resourceAdd', primary: true }],
+        table: { title: '1099 resources', resourceType: '1099', headers: [], rows: [] }
       },
       {
         id: 'resourceAdd',
-        parent: 'teamMembers',
+        parent: 'w2Resources',
         title: 'Add Resource',
         description: 'Add a W-2 or 1099 resource with personal, assignment and payment details.',
         form: {
@@ -1705,8 +1784,8 @@ const personaConfig = {
               fields: []
             }
           ],
-          submit: { label: 'Save & Send Login Details', target: 'teamMembers', action: 'resource-invite' },
-          cancel: { label: 'Cancel', target: 'teamMembers' }
+          submit: { label: 'Save & Send Login Details', target: 'w2Resources', action: 'resource-invite' },
+          cancel: { label: 'Cancel', target: 'w2Resources' }
         }
       },
       {
@@ -1758,7 +1837,8 @@ const personaConfig = {
       { label: 'Dashboard', target: 'dashboard' },
       { label: 'My Clients', target: 'clients' },
       { label: 'My Vendors', target: 'vendorList' },
-      { label: 'Team Members', target: 'teamMembers' },
+      { label: 'W-2 Resources', target: 'w2Resources' },
+      { label: '1099 Resources', target: 'w9Resources' },
       { label: 'Invoice Management', target: 'invoiceUpload' },
       { label: 'Document Tracker', target: 'docs' },
       { label: 'Audit Log', target: 'auditLog' }
@@ -1910,24 +1990,19 @@ const personaConfig = {
         }
       },
       {
-        id: 'teamMembers',
-        title: 'Team Members',
-        description: 'Consultants and resources working on your clients.',
+        id: 'w2Resources',
+        title: 'W-2 Resources',
+        description: 'W-2 employees working on your clients. Each submits one timesheet per month.',
         actions: [{ label: 'Add Resource', target: 'resourceAdd', primary: true }],
-        table: {
-          title: 'People on your clients',
-          total: 23,
-          headers: ['Name', 'Type', 'Client', 'Hourly Rate', 'Oct Submission', 'Status', 'Actions'],
-          rows: [
-            [person('Maya Reed', 'Data Analyst'), 'W-2', 'HTC', '$62.00', b('Approved'), b('Active'), memberAction('Maya Reed', true)],
-            [person('Jordan Blake', 'UX Consultant'), '1099', 'HTC', '$90.00', b('In Progress'), b('Active'), memberAction('Jordan Blake', true)],
-            [person('Deepa Kumar', 'Business Analyst · Coral Staffing'), 'Consultant', 'Persistent', '$80.00', b('Rejected'), b('Active'), memberAction('Deepa Kumar', true)],
-            [person('Kevin Singh', 'Java Developer · Summit IT'), 'Consultant', 'Persistent', '$85.00', b('Rejected'), b('Active'), memberAction('Kevin Singh', true)],
-            [person('Priya Shah', 'Data Engineer · Coral Staffing'), 'Consultant', 'Citus Tech', '$88.00', b('Not Started'), b('Onboarding'), memberAction('Priya Shah', true)],
-            // Added for Coral Staffing; no client mapped yet.
-            [person('Marcus Lee', 'Salesforce Developer · Coral Staffing'), 'Consultant', NOT_MAPPED, '$92.00', b('Not Started'), b('Onboarding'), memberAction('Marcus Lee', false)]
-          ]
-        }
+        // Rows are built from the profiles by resourceListTable().
+        table: { title: 'W-2 resources', resourceType: 'W-2', headers: [], rows: [] }
+      },
+      {
+        id: 'w9Resources',
+        title: '1099 Resources',
+        description: '1099 contractors working on your clients. Each submits one invoice and timesheet per month.',
+        actions: [{ label: 'Add Resource', target: 'resourceAdd', primary: true }],
+        table: { title: '1099 resources', resourceType: '1099', headers: [], rows: [] }
       },
       {
         id: 'invoiceUpload',
@@ -2429,7 +2504,7 @@ const personaConfig = {
    pre-assigned to themselves. */
 (function shareOnboardingForms() {
   const am = personaConfig.accountmanager;
-  const parents = { vendorAdd: 'vendorList', resourceAdd: 'teamMembers' };
+  const parents = { vendorAdd: 'vendorList', resourceAdd: 'w2Resources' };
   Object.entries(parents).forEach(([id, parent]) => {
     const source = personaConfig.superadmin.screens.find((s) => s.id === id);
     const copy = JSON.parse(JSON.stringify(source));
@@ -2470,7 +2545,7 @@ const personaConfig = {
   // or submit a new invoice / timesheet on the person's behalf.
   ['superadmin', 'accountmanager'].forEach((key) => {
     personaConfig[key].screens.push(
-      { id: 'memberSubmissions', parent: 'teamMembers', title: 'Invoices & Timesheets' }
+      { id: 'memberSubmissions', parent: 'w2Resources', title: 'Invoices & Timesheets' }
     );
   });
 
@@ -3396,9 +3471,11 @@ function formViewScreen(screen, editId, title) {
 function resolveScreenState(screen) {
   if (screen.id === 'clientView') return formViewScreen(screen, 'clientEdit', 'Client');
   if (screen.id === 'vendorView') return formViewScreen(screen, 'vendorEdit', 'Vendor');
-  if (screen.id === 'memberDetail') return memberDetailScreen(screen, selectedMember);
-  if (screen.id === 'memberEdit') return memberEditScreen(screen, selectedMember);
-  if (screen.id === 'memberSubmissions') return memberSubmissionsScreen(screen, selectedMember);
+  if (screen.id === 'memberDetail') return memberDetailScreen(withMemberParent(screen, selectedMember), selectedMember);
+  if (screen.id === 'memberEdit') return memberEditScreen(withMemberParent(screen, selectedMember), selectedMember);
+  if (screen.id === 'memberSubmissions') return memberSubmissionsScreen(withMemberParent(screen, selectedMember), selectedMember);
+  if (screen.id === 'w2Resources' || screen.id === 'w9Resources') return { ...screen, table: resourceListTable(screen.table) };
+  if (screen.id === 'resourceAdd') return resourceAddScreen(screen);
   if (screen.id === 'invoiceView') return invoiceViewScreen(screen, selectedInvoice);
   if (screen.id === 'clientAdd' || screen.id === 'clientEdit') return clientFormScreen(screen);
   if (screen.id === 'clients' && activePersona === 'superadmin') return { ...screen, table: clientsTable(screen.table) };
