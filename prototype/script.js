@@ -298,7 +298,7 @@ const TEAM_MEMBERS = {
     client: 'Persistent', rate: '80.00', location: 'Boston, MA', start: '2026-01-12', end: '2026-12-31',
     term: 'Net 10', status: 'Active', am: 'Alicia Ross',
     docs: [
-      ['Resume', 'Deepa_Kumar_Resume.pdf', 'Jan 5, 2026', '—', 'Valid'],
+      ['Resume', 'Deepa_Kumar_Resume.pdf', 'Jan 5, 2026', '—', '—'],
       ['Work authorization (H-1B)', 'Kumar_H1B_Approval.pdf', 'Dec 1, 2025', 'Nov 30, 2026', 'Expiring Soon'],
       // Audit report: [doc, file, uploaded, period end, status, period covered, earlier reports kept in history]
       ['I-9', 'Kumar_I9.pdf', 'Jan 9, 2026', '—', 'Valid'],
@@ -312,7 +312,7 @@ const TEAM_MEMBERS = {
     client: 'Citus Tech', rate: '72.00', location: 'Remote', start: '2026-09-14', end: '2027-03-12',
     term: 'Net 10', status: 'Active', am: 'Benjamin Cole',
     docs: [
-      ['Resume', 'Rinaldo_Silva_Resume.pdf', 'Sep 1, 2026', '—', 'Valid'],
+      ['Resume', 'Rinaldo_Silva_Resume.pdf', 'Sep 1, 2026', '—', '—'],
       ['Work authorization (Green Card)', 'Silva_GC.pdf', 'Sep 1, 2026', 'Aug 14, 2033', 'Valid'],
       ['I-9', 'Silva_I9.pdf', 'Sep 10, 2026', '—', 'Valid'],
       ['Audit report', 'Silva_Audit_Sep-Dec26.pdf', 'Sep 15, 2026', 'Dec 13, 2026', 'Valid', 'Sep 14, 2026 – Dec 13, 2026 (3 months)', 0],
@@ -325,7 +325,7 @@ const TEAM_MEMBERS = {
     client: 'Persistent', rate: '85.00', location: 'Boston, MA', start: '2026-04-01', end: '2027-03-31',
     term: 'Net 10', status: 'Active', am: 'Alicia Ross',
     docs: [
-      ['Resume', 'Kevin_Singh_Resume.pdf', 'Mar 20, 2026', '—', 'Valid'],
+      ['Resume', 'Kevin_Singh_Resume.pdf', 'Mar 20, 2026', '—', '—'],
       ['Work authorization (EAD)', 'Singh_EAD.pdf', 'Mar 20, 2026', 'Jun 30, 2027', 'Valid'],
       ['I-9', 'Singh_I9.pdf', 'Mar 28, 2026', '—', 'Valid'],
       ['Audit report', 'Singh_Audit_Q4-26.pdf', 'Oct 2, 2026', 'Dec 31, 2026', 'Valid', 'Oct 1, 2026 – Dec 31, 2026 (3 months)', 2],
@@ -338,7 +338,7 @@ const TEAM_MEMBERS = {
     client: 'Persistent', rate: '84.00', location: 'Chicago, IL', start: '2026-02-02', end: '2027-01-29',
     term: 'Net 10', status: 'Active', am: 'Alicia Ross',
     docs: [
-      ['Resume', 'Omar_Haddad_Resume.pdf', 'Jan 20, 2026', '—', 'Valid'],
+      ['Resume', 'Omar_Haddad_Resume.pdf', 'Jan 20, 2026', '—', '—'],
       ['Work authorization (Green Card)', 'Haddad_GC.pdf', 'Jan 20, 2026', 'Mar 3, 2034', 'Valid'],
       ['I-9', 'Haddad_I9.pdf', 'Jan 28, 2026', '—', 'Valid'],
       ['Audit report', 'Haddad_Audit_Aug26-Jan27.pdf', 'Aug 3, 2026', 'Jan 31, 2027', 'Valid', 'Aug 1, 2026 – Jan 31, 2027 (6 months)', 1],
@@ -351,7 +351,7 @@ const TEAM_MEMBERS = {
     client: 'Citus Tech', rate: '76.00', location: 'Remote', start: '2026-05-04', end: '2026-11-27',
     term: 'Net 10', status: 'Active', am: 'Alicia Ross',
     docs: [
-      ['Resume', 'Sofia_Marin_Resume.pdf', 'Apr 22, 2026', '—', 'Valid'],
+      ['Resume', 'Sofia_Marin_Resume.pdf', 'Apr 22, 2026', '—', '—'],
       ['Work authorization (TN)', 'Marin_TN_Approval.pdf', 'Apr 22, 2026', 'Apr 30, 2029', 'Valid'],
       ['I-9', 'Marin_I9.pdf', 'Apr 30, 2026', '—', 'Valid'],
       ['Audit report', 'Marin_Audit_Nov26-Jan27.pdf', 'Nov 2, 2026', 'Jan 31, 2027', 'Valid', 'Nov 1, 2026 – Jan 31, 2027 (3 months)', 2],
@@ -364,7 +364,7 @@ const TEAM_MEMBERS = {
     client: 'Citus Tech', rate: '88.00', location: 'Remote', start: '2026-11-16', end: '2027-05-14',
     term: 'Net 10', status: 'Onboarding', am: 'Alicia Ross',
     docs: [
-      ['Resume', 'Priya_Shah_Resume.pdf', 'Nov 9, 2026', '—', 'Valid'],
+      ['Resume', 'Priya_Shah_Resume.pdf', 'Nov 9, 2026', '—', '—'],
       ['Work authorization (H-1B)', 'Shah_H1B_Approval.pdf', 'Nov 9, 2026', 'Oct 1, 2028', 'Valid'],
       ['I-9', null, '—', '—', 'Incomplete'],
       ['Audit report', null, '—', '—', 'Incomplete'],
@@ -378,7 +378,7 @@ const TEAM_MEMBERS = {
     client: '', rate: '92.00', location: 'San Francisco, CA', start: '2026-12-07', end: '2027-06-04',
     term: 'Net 10', status: 'Onboarding', am: 'Alicia Ross',
     docs: [
-      ['Resume', 'Marcus_Lee_Resume.pdf', 'Nov 12, 2026', '—', 'Valid'],
+      ['Resume', 'Marcus_Lee_Resume.pdf', 'Nov 12, 2026', '—', '—'],
       ['I-9', null, '—', '—', 'Incomplete'],
       ['E-Verify document', null, '—', '—', 'Incomplete'],
       ['Audit report', null, '—', '—', 'Incomplete']
@@ -1409,7 +1409,7 @@ function memberDetailScreen(screen, name) {
           file ? fileChip(file) : '<span class="person-sub inline">Not uploaded</span>',
           updated,
           expires,
-          b(status),
+          status === '—' ? '—' : b(status), // e.g. Resume: no status
           file ? '<div class="row-actions"><button type="button" class="link-btn" data-preview>View</button><button type="button" class="link-btn" data-download>Download</button></div>'
             // The vendor only views and downloads; every consultant document is uploaded by the account manager.
             : activePersona === 'vendor' ? '<span class="person-sub inline">Uploaded by account manager</span>'
