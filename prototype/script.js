@@ -1386,7 +1386,7 @@ const personaConfig = {
         activity: [
           { who: 'Alicia Ross', what: 'uploaded Oct 2026 client invoices for <b>Persistent</b> (2 of 5 people)', when: '12 min ago' },
           { who: 'Alicia Ross', what: 'rejected <b>INV-2026-10-0187</b> (Kevin Singh) — hours mismatch', when: '12 min ago' },
-          { who: 'Daniel Ortiz', what: 'added consultant <b>Priya Shah</b> to Coral Staffing LLC', when: '39 min ago' },
+          { who: 'Alicia Ross', what: 'added consultant <b>Priya Shah</b> to Coral Staffing LLC', when: '39 min ago' },
           { who: 'Benjamin Cole', what: 'onboarded vendor <b>Keystone Tech Partners</b>', when: '2 hrs ago' },
           { who: 'Arun Krishnan', what: 'renewed MSA for <b>Citus Tech</b> through Jan 30, 2028', when: 'Yesterday' }
         ]
@@ -1747,7 +1747,7 @@ const personaConfig = {
             ['10:12 AM', person('Arun Krishnan', 'Super Admin'), 'Updated client', 'Citus Tech', `MSA end: Jan 30, 2027 → <b>Jan 30, 2028</b>`],
             ['09:58 AM', person('Alicia Ross', 'Account Manager'), 'Uploaded client invoice', 'Persistent · Oct 2026', '— → PER-Oct26-Singh.pdf, PER-Oct26-Kumar.pdf'],
             ['09:58 AM', person('System', 'Reconciliation'), 'Status change', 'INV-2026-10-0187', `In Progress → ${b('Rejected')}`],
-            ['09:31 AM', person('Daniel Ortiz', 'Vendor · Coral Staffing'), 'Created consultant', 'Priya Shah', '— → Data Engineer, $88.00/hr'],
+            ['09:31 AM', person('Alicia Ross', 'Account Manager'), 'Created consultant · login details emailed', 'Priya Shah (Coral Staffing)', '— → Data Engineer, $88.00/hr'],
             ['09:05 AM', person('Priya Natarajan', 'Account Manager'), 'Changed vendor status', 'Orbit Systems Group', `${b('Active')} → ${b('Inactive')}`],
             ['08:47 AM', person('Jordan Blake', '1099 Resource'), 'Login (OTP verified)', 'Session', '—']
           ]
@@ -1913,13 +1913,14 @@ const personaConfig = {
         id: 'consultantAdd',
         parent: 'vendorConsultants',
         title: 'Add Consultant',
-        description: 'Add a consultant and their first client assignment.',
+        description: 'Add a consultant for this vendor and their first client assignment. Only account managers and the Super Admin add vendor consultants; the consultant is emailed a username and temporary password.',
         form: {
           sections: [
             {
               title: 'Consultant & assignment',
               fields: [
                 { label: 'Consultant name', value: 'Marcus Lee', required: true },
+                { label: 'Email (username)', value: 'marcus.lee@coralstaffing.com', required: true, note: 'Sign-in username. Login details are sent to this address.' },
                 { label: 'Role', value: 'Salesforce Developer', required: true },
                 { label: 'Client', type: 'select', options: CLIENT_NAMES, required: true },
                 { label: 'Hourly rate (USD)', value: '92.00', required: true },
@@ -1932,17 +1933,22 @@ const personaConfig = {
             },
             {
               title: 'Documents',
-              hint: 'PDF, DOCX, JPG or PNG · max 5 MB each. Missing documents can be added later.',
+              hint: 'PDF, DOCX, JPG or PNG · max 5 MB each. Enter a start and end date for each document. Missing documents can be added later; the I-9 audit report is added later, for each 3- or 6-month period.',
               fields: [
                 { label: 'Resume', type: 'upload', validity: true, file: 'Marcus_Lee_Resume.pdf', size: '186 KB' },
-                { label: 'Work authorization', type: 'upload', validity: true, file: 'Lee_EAD_2026.pdf', size: '1.2 MB' },
-                { label: 'I-9 audit report', type: 'upload', auditPeriod: true },
+                { label: 'I-9', type: 'upload', validity: true },
                 { label: 'E-Verify document', type: 'upload', validity: true },
-                { label: 'Other documents', type: 'extraDocs', full: true, validity: true }
+                { label: 'Other documents', type: 'extraDocs', full: true, validity: true },
+                { label: 'I-9 audit report', type: 'upload', auditPeriod: true }
               ]
+            },
+            {
+              title: 'Sign-in',
+              hint: 'On save, the consultant gets an email with their username (the email above) and a temporary password. They must set a new password at first sign-in.',
+              fields: []
             }
           ],
-          submit: { label: 'Save Consultant', target: 'vendorConsultants' },
+          submit: { label: 'Save & Send Login Details', target: 'vendorConsultants', action: 'consultant-invite' },
           cancel: { label: 'Cancel', target: 'vendorConsultants' }
         }
       },
@@ -1961,7 +1967,7 @@ const personaConfig = {
             [person('Deepa Kumar', 'Business Analyst · Coral Staffing'), 'Consultant', 'Persistent', '$80.00', b('Rejected'), b('Active'), memberAction('Deepa Kumar', true)],
             [person('Kevin Singh', 'Java Developer · Summit IT'), 'Consultant', 'Persistent', '$85.00', b('Rejected'), b('Active'), memberAction('Kevin Singh', true)],
             [person('Priya Shah', 'Data Engineer · Coral Staffing'), 'Consultant', 'Citus Tech', '$88.00', b('Not Started'), b('Onboarding'), memberAction('Priya Shah', true)],
-            // Added by the vendor; this account manager has not mapped a client yet.
+            // Added for Coral Staffing; no client mapped yet.
             [person('Marcus Lee', 'Salesforce Developer · Coral Staffing'), 'Consultant', NOT_MAPPED, '$92.00', b('Not Started'), b('Onboarding'), memberAction('Marcus Lee', false)]
           ]
         }
@@ -2003,7 +2009,7 @@ const personaConfig = {
           rows: [
             ['09:58 AM', person('Alicia Ross', 'Account Manager'), 'Uploaded client invoice', 'Persistent · Oct 2026', '— → PER-Oct26-Singh.pdf, PER-Oct26-Kumar.pdf'],
             ['09:58 AM', person('System', 'Reconciliation'), 'Status change', 'INV-2026-10-0187', `In Progress → ${b('Rejected')}`],
-            ['09:31 AM', person('Daniel Ortiz', 'Vendor · Coral Staffing'), 'Created consultant', 'Priya Shah', '— → Data Engineer, $88.00/hr'],
+            ['09:31 AM', person('Alicia Ross', 'Account Manager'), 'Created consultant · login details emailed', 'Priya Shah (Coral Staffing)', '— → Data Engineer, $88.00/hr'],
             ['08:56 AM', person('Daniel Ortiz', 'Vendor · Coral Staffing'), 'Resubmitted invoice', 'INV-2026-10-0142 (v2)', 'Hours: 160 → <b>168</b>']
           ]
         }
@@ -2063,15 +2069,15 @@ const personaConfig = {
         ],
         activity: [
           { who: 'Alicia Ross', what: 'rejected <b>INV-2026-10-0203</b> (Deepa Kumar) — 160 h submitted vs. 168 h on client invoice', when: '12 min ago' },
-          { who: 'Daniel Ortiz', what: 'added consultant <b>Priya Shah</b>', when: '39 min ago' },
+          { who: 'Alicia Ross', what: 'added consultant <b>Priya Shah</b>', when: '39 min ago' },
           { who: 'Alicia Ross', what: 'approved <b>INV-2026-10-0142</b> (Rinaldo Silva) after resubmission', when: '1 hr ago' }
         ]
       },
       {
         id: 'consultants',
         title: 'Consultants',
-        description: 'Your consultants. Clients are mapped by your account manager.',
-        actions: [{ label: 'Add Consultant', target: 'consultantAdd', primary: true }],
+        description: 'Your consultants. New consultants are added by your account manager, who also maps each one to a client. To add someone, contact Alicia Ross.',
+        // No Add Consultant: only the account manager or Super Admin adds vendor consultants.
         table: {
           title: 'Coral Staffing consultants',
           total: 12,
@@ -2085,37 +2091,6 @@ const personaConfig = {
             [person('Priya Shah', 'Data Engineer'), '$88.00', 'Nov 16, 2026 – May 14, 2027', 'Remote', b('Onboarding'), consultantActions('Priya Shah')],
             [person('Marcus Lee', 'Salesforce Developer'), '$92.00', 'Dec 7, 2026 – Jun 4, 2027', 'San Francisco, CA', b('Onboarding'), consultantActions('Marcus Lee')]
           ]
-        }
-      },
-      {
-        id: 'consultantAdd',
-        parent: 'consultants',
-        title: 'Add Consultant',
-        description: 'Add a consultant. Your account manager maps them to a client after you save.',
-        form: {
-          sections: [
-            {
-              title: 'Consultant & assignment',
-              hint: 'The client is not selected here. Your account manager maps the consultant to a client.',
-              fields: [
-                { label: 'Consultant name', value: 'Marcus Lee', required: true },
-                { label: 'Role', value: 'Salesforce Developer', required: true },
-                { label: 'Hourly rate (USD)', value: '92.00', required: true },
-                { label: 'Start date', type: 'date', value: '2026-12-07' },
-                { label: 'End date', type: 'date', value: '2027-06-04' },
-                { label: 'Duration', value: '26 weeks', readonly: true },
-                { label: 'Payment term', value: vendorPaymentTerm('Coral Staffing LLC'), readonly: true, lock: 'From vendor · set by account manager' },
-                { label: 'Work location', type: 'select', options: ['Remote', 'Location'], addOption: { trigger: 'Location', placeholder: 'Enter location name, e.g. San Francisco, CA' } }
-              ]
-            },
-            {
-              title: 'Documents',
-              hint: 'PDF, DOCX, JPG or PNG · max 5 MB each. Enter a start and end date for each document. Missing documents can be added later.',
-              fields: vendorConsultantDocFields({ 'Resume': ['Marcus_Lee_Resume.pdf', '186 KB'] })
-            }
-          ],
-          submit: { label: 'Save Consultant', target: 'consultants' },
-          cancel: { label: 'Cancel', target: 'consultants' }
         }
       },
       {
@@ -4059,6 +4034,24 @@ function wireFormControls(root) {
       flashMessage = {
         title: activeScreen === 'clientEdit' ? 'Client updated' : 'Client saved',
         text: `${client} is managed by ${picked.join(', ')}.`
+      };
+    });
+  });
+
+  // Add Consultant (Account Manager / Super Admin): validate the email, then email the consultant a username + temporary password.
+  root.querySelectorAll('[data-action="consultant-invite"]').forEach((btn) => {
+    btn.addEventListener('click', (event) => {
+      const form = btn.closest('.form-card');
+      form.querySelectorAll('.field-error').forEach((n) => n.remove());
+      const name = formValue(form, 'Consultant name');
+      const email = formValue(form, 'Email (username)');
+      let ok = true;
+      if (!name) { showFieldError(form, 'Consultant name', 'Enter the consultant’s name.'); ok = false; }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showFieldError(form, 'Email (username)', 'Enter a valid email address. It is the consultant’s sign-in username.'); ok = false; }
+      if (!ok) { event.stopPropagation(); return; }
+      flashMessage = {
+        title: 'Consultant added · login details sent',
+        text: `${name} was added. An email with their username (${email}) and a temporary password was sent to ${email}. They must set a new password at first sign-in.`
       };
     });
   });
