@@ -1917,8 +1917,8 @@ const personaConfig = {
       {
         id: 'clients',
         title: 'My Clients',
-        description: 'Choose one of your clients, a status and a month, then upload the client invoice for each consultant or resource with its billable hours. Approving or rejecting is done in Invoice Management.',
-        actions: [{ label: 'Add Client', target: 'clientAdd', primary: true }]
+        description: 'Choose one of your clients, a status and a month, then upload the client invoice for each consultant or resource with its billable hours. Approving or rejecting is done in Invoice Management.'
+        // No Add Client: only the Super Admin creates clients.
       },
       {
         id: 'vendorList',
@@ -1994,9 +1994,9 @@ const personaConfig = {
             },
             {
               title: 'Documents',
-              hint: 'PDF, DOCX, JPG or PNG · max 5 MB each. Enter a start and end date for each document. Missing documents can be added later; the audit report (a separate document from the I-9) is added later, for each 3- or 6-month period.',
+              hint: 'PDF, DOCX, JPG or PNG · max 5 MB each. Enter a start and end date for each document except the resume (it has no dates). Missing documents can be added later; the audit report (a separate document from the I-9) is added later, for each 3- or 6-month period.',
               fields: [
-                { label: 'Resume', type: 'upload', validity: true, file: 'Marcus_Lee_Resume.pdf', size: '186 KB' },
+                { label: 'Resume', type: 'upload', file: 'Marcus_Lee_Resume.pdf', size: '186 KB' }, // a resume has no dates
                 { label: 'I-9', type: 'upload', validity: true },
                 { label: 'E-Verify document', type: 'upload', validity: true },
                 { label: 'Other documents', type: 'extraDocs', full: true, validity: true },
@@ -2528,7 +2528,7 @@ const personaConfig = {
    pre-assigned to themselves. */
 (function shareOnboardingForms() {
   const am = personaConfig.accountmanager;
-  const parents = { vendorAdd: 'vendorList', resourceAdd: 'w2Resources', clientAdd: 'clients' };
+  const parents = { vendorAdd: 'vendorList', resourceAdd: 'w2Resources' };
   Object.entries(parents).forEach(([id, parent]) => {
     const source = personaConfig.superadmin.screens.find((s) => s.id === id);
     const copy = JSON.parse(JSON.stringify(source));
